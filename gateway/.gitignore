@@ -1,0 +1,14 @@
+# Środowisko wirtualne
+venv/
+__pycache__/
+*.pyc
+
+# Pliki systemowe
+.DS_Store
+Thumbs.db
+
+# Logi
+*.log
+
+# Docker
+*.env
