@@ -1,0 +1,14 @@
+Brama całego api z którego będzie korzystać dashboard musi być możliwość puszczenia
+całego flow np 
+
+POST /pipeline/run
+{
+  "file": "dataset.csv",
+  "steps": ["upload", "train", "rl"]
+}
+
+lub 
+
+{ "jobId": "123", "action": "train_model", "filePath": "/storage/file123.csv" }
+
+jeszcze do przemyslenia
