@@ -53,5 +53,6 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieautoryzowany")
         return user.user
     
+    
     def get_current_user_dep(self, request: Request):
         return self.get_current_user(request)

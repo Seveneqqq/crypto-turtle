@@ -22,6 +22,6 @@ def read_me(current_user = Depends(auth_service.get_current_user_dep)):
         "name": current_user.user_metadata.get("name")
     }
 
-# @router.get("/private")
-# def private_data(user = Depends(auth_service.require_auth)):
-#     return {"msg": f"Witaj, {user.user_metadata.get('name')}"}
+@router.get("/private")
+def private_data(user = Depends(auth_service.require_auth)):
+    return {"msg": f"Witaj, {user.user_metadata.get('name')}"}
