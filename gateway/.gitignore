@@ -12,3 +12,7 @@ Thumbs.db
 
 # Docker
 *.env
+
+__pycache__/
+*.pyc
+.vs

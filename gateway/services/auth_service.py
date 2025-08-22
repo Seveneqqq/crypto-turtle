@@ -1,93 +1,57 @@
+from http.client import HTTPException
+from httpcore import request
 from supabase import create_client, Client
 from fastapi.responses import RedirectResponse
-import httpx
-import os
+from fastapi import HTTPException, status, Depends, Request
+from starlette.middleware.sessions import SessionMiddleware
 
-class Auth_Service:
-
-    def __init__(self, GOOGLE_AUTH_URI, GOOGLE_REDIRECT_URI, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_USERINFO_URI, GOOGLE_TOKEN_URI, SUPABASE_URL, SUPABASE_KEY):
-        self.GOOGLE_AUTH_URI = GOOGLE_AUTH_URI
-        self.GOOGLE_REDIRECT_URI = GOOGLE_REDIRECT_URI
-        self.GOOGLE_CLIENT_ID = GOOGLE_CLIENT_ID
-        self.GOOGLE_CLIENT_SECRET = GOOGLE_CLIENT_SECRET
-        self.GOOGLE_USERINFO_URI = GOOGLE_USERINFO_URI
-        self.GOOGLE_TOKEN_URI = GOOGLE_TOKEN_URI
-        self.SUPABASE_URL = SUPABASE_URL
-        self.SUPABASE_KEY = SUPABASE_KEY
-        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-    def login(self):
-    # Redirect użytkownika do Google OAuth
-        redirect_uri = (
-            f"{self.GOOGLE_AUTH_URI}?response_type=code&client_id={self.GOOGLE_CLIENT_ID}"
-            f"&redirect_uri={self.GOOGLE_REDIRECT_URI}&scope=email%20profile&access_type=offline&prompt=consent"
-        )
-        return RedirectResponse(url=redirect_uri)
+class AuthService:
     
-    def login_callback(self, code):
-        try:
-            # Zamiana kodu na token
-            data = {
-                "code": code,
-                "client_id": self.GOOGLE_CLIENT_ID,
-                "client_secret": self.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": self.GOOGLE_REDIRECT_URI,
-                "grant_type": "authorization_code"
+    def __init__(self, SUPABASE_URL: str, SUPABASE_KEY: str, GOOGLE_REDIRECT_URI: str):
+        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        self.GOOGLE_REDIRECT_URI = GOOGLE_REDIRECT_URI
+
+    def login_with_google(self):
+        response = self.supabase.auth.sign_in_with_oauth({
+            "provider": "google",
+            "options": {
+                "redirect_to": self.GOOGLE_REDIRECT_URI,
+                "scopes": "email profile",
+                "flow_type": "pkce",
+                "query_params": {"prompt": "consent"}
             }
-            r = httpx.post(self.GOOGLE_TOKEN_URI, data=data)
-            token_data = r.json()
-            access_token = token_data.get("access_token")
+        })
+        return RedirectResponse(url=response.url)
 
-            if not access_token:
-                return {"error": "Nie udało się pobrać tokenu z Google", "details": token_data}
+    def login_callback(self, request: Request):
+        code = request.query_params.get("code")
+        response = self.supabase.auth.exchange_code_for_session({
+            "auth_code": code
+        })
+        return response
 
-            # Pobranie info o użytkowniku z Google
-            headers = {"Authorization": f"Bearer {access_token}"}
-            r = httpx.get(self.GOOGLE_USERINFO_URI, headers=headers)
-            user_info = r.json()
-            email = user_info.get("email")
-            name = user_info.get("name")
+    def require_auth(self, request: Request):
+        try:
+            return self.get_current_user(request)
+        except HTTPException:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieautoryzowany")
 
-            if not email:
-                return {"error": "Nie udało się pobrać emaila użytkownika"}
+    def get_current_user(self, request: Request):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Brak tokena")
 
-            print(f"Próba utworzenia użytkownika: {email}")
+        try:
+            token_type, access_token = auth_header.split()
+            if token_type.lower() != "bearer":
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Niepoprawny typ tokena")
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Niepoprawny nagłówek Authorization")
 
-            # Próba utworzenia użytkownika - jeśli już istnieje, Supabase zwróci błąd
-            try:
-                create_response = self.supabase.auth.admin.create_user({
-                    "email": email,
-                    "password": os.urandom(16).hex(),  # losowe hasło
-                    "email_confirm": True,
-                    "user_metadata": {"name": name}
-                })
-
-                print(f"Create response: {create_response}")
-
-                if create_response.user:
-                    return {
-                        "email": email, 
-                        "name": name, 
-                        "message": "Nowy użytkownik utworzony i zalogowany",
-                        "user_id": create_response.user.id
-                    }
-                else:
-                    return {"error": "Nie udało się utworzyć użytkownika", "details": str(create_response)}
-
-            except Exception as create_error:
-                print(f"Create error: {create_error}")
-                error_str = str(create_error).lower()
-
-                # Sprawdź czy to błąd "użytkownik już istnieje"
-                if any(phrase in error_str for phrase in ["already registered", "already exists", "duplicate", "user_email_exists"]):
-                    return {
-                        "email": email, 
-                        "name": name, 
-                        "message": "Użytkownik już istnieje - zalogowany pomyślnie"
-                    }
-                else:
-                    # Inny błąd
-                    return {"error": "Błąd podczas tworzenia użytkownika", "details": str(create_error)}
-
-        except Exception as e:
-            return {"error": "Wystąpił błąd podczas logowania", "details": str(e)}
+        user = self.supabase.auth.get_user(access_token)
+        if not user.user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Nieautoryzowany")
+        return user.user
+    
+    def get_current_user_dep(self, request: Request):
+        return self.get_current_user(request)
