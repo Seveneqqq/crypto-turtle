@@ -1,3 +1,15 @@
+// Uruchomienie rabbita ( sam, lokalnie )
+- docker-compose up -d rabbitmq
+- RabbitMQ dostępny na portach 5672 (AMQP) i 15672 (UI).
+
+// Budowanie obrazu na podstawie dockerfile z danego modulu np:
+- docker build -t gateway_cryptoturtle ./gateway
+
+// Uruchamianie całej aplikacji w dockerze 
+- docker-compose up --build
+- RabbitMQ dostępny na portach 5672 (AMQP) i 15672 (UI).
+- Gateway dostępny pod portem 8000
+
 Brama całego api z którego będzie korzystać dashboard musi być możliwość puszczenia
 całego flow np 
 
