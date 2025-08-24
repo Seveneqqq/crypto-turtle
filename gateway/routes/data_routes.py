@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.params import Depends
-from routes.auth_routes import auth_service
+from services import auth_service
 
 router = APIRouter(prefix="/data", tags=["data"])
 

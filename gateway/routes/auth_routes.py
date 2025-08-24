@@ -1,9 +1,6 @@
-from fastapi import APIRouter, Request
-from fastapi.params import Depends
-from services.auth_service import AuthService
-from configuration.configuration import SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI
+from fastapi import APIRouter, Request, Depends
+from services import auth_service
 
-auth_service = AuthService(SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/login")
