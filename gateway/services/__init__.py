@@ -1,4 +1,4 @@
-from services.data_service import DataService
+from services.file_service import FileService
 from .auth_service import AuthService
 from configuration.configuration import SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI
 from services.rabbitmq_service import RabbitMQService
@@ -14,4 +14,4 @@ rabbitmq_service = RabbitMQService(
 )
 
 auth_service = AuthService(SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI)
-data_service = DataService()
+file_service = FileService()
