@@ -13,6 +13,25 @@
 Brama całego api z którego będzie korzystać dashboard musi być możliwość puszczenia
 całego flow np 
 
+Endpoints:
+
+File : crud (caly file, update - podmiana pliku), podglad
+Auth : Login,callback,Me
+data : /process-data, /process-data-result?, /reset
+ml : /train, /result?, /reset
+rl : /start, /stop, ?
+xai : /explain, ??? 
+email? : wyslanie notyfikacji np o zakonczneiu zadania
+
+utworzenie środowisk venv w każdym module !!!
+utworzenie struktury podstawowej ( dla rabbita, ? DB ?, REST)
+
+Db:
+supabase (auth)
+mongodb / baza wektorowa (ktore serwisy? czy kazdy serwis ma dostep do bazy ?) 
+
+
+
 POST /pipeline/run
 {
   "file": "dataset.csv",
