@@ -15,3 +15,4 @@ rabbitmq_service = RabbitMQService(
 
 auth_service = AuthService(SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI)
 file_service = FileService()
+rabbitmq_service = RabbitMQService( host=RABBITMQ_HOST, port=RABBITMQ_PORT, username=RABBITMQ_USERNAME, password=RABBITMQ_PASSWORD )

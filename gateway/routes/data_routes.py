@@ -1,6 +1,7 @@
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.params import Depends
 from services import auth_service
+from services import rabbitmq_service
 
 router = APIRouter(prefix="/data", tags=["data"])
 

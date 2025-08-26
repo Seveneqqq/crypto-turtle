@@ -12,5 +12,5 @@ app.add_middleware(SessionMiddleware, secret_key=SESSION_MIDDLEWARE_SECRET)
 
 @app.get("/")
 def root():
-    return {"message": "Hello World"}
+    return {"message": "Hello from gateway"}
 
