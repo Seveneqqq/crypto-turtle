@@ -13,3 +13,7 @@ RL_RESPONSE_QUEUE = "rl.response"
 # XAI service queues
 XAI_REQUEST_QUEUE = "xai.request"
 XAI_RESPONSE_QUEUE = "xai.response"
+
+# Test service queues
+TEST_REQUEST_QUEUE = "test.request"
+TEST_RESPONSE_QUEUE = "test.response"
