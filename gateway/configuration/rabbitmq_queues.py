@@ -16,4 +16,4 @@ XAI_RESPONSE_QUEUE = "xai.response"
 
 # Test service queues
 TEST_REQUEST_QUEUE = "test.request"
-TEST_RESPONSE_QUEUE = "test.response"
+TEST_RESPONSE_QUEUE = "test.response" 
