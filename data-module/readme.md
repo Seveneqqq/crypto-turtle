@@ -27,3 +27,9 @@ Folder zawierajacy serwisy (klasy grupujace logike, **klasą sterującą jest ra
 
 **main.py** - plik w głównym folderze modułu, tutaj będą importowane endpointy i jest cały przepływ aplikacji.
 **Reszta struktury wedle uznania ale zachęcam do zachowania czystej i przejrzystej struktury**
+
+
+
+
+
+

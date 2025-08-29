@@ -12,6 +12,8 @@ def private_data(
     ):
     return {"msg": f"Witaj w data, {user.user_metadata.get('name')}"}
 
+
+#Tutaj powinno byc wywolanie serwisu i w serwisie opublikowanie wiadomosci
 @router.get("/rabbitest")
 def rabbit_test():
     rabbitmq_service.publish(DATA_REQUEST_QUEUE, {

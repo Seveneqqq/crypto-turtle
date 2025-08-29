@@ -20,6 +20,8 @@ services:
     build:
       context: ./gateway
       dockerfile: Dockerfile
+    volumes:
+      - ./shared:/app/shared
     ports:
       - "8000:8000"
     depends_on:           
