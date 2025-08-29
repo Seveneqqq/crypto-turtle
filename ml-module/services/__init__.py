@@ -18,8 +18,6 @@ rabbitmq_service = RabbitMQService(
     password=RABBITMQ_PASSWORD
 )
 
-
+print("Initializing RabbitMQ Service...")
 rabbitmq_service = RabbitMQService( host=RABBITMQ_HOST, port=RABBITMQ_PORT, username=RABBITMQ_USERNAME, password=RABBITMQ_PASSWORD )
-rabbitmq_service.consume(queue=ML_REQUEST_QUEUE, callback = data_service.handle_response)
-
 

@@ -15,7 +15,7 @@ def private_data(
 @router.get("/rabbitest")
 def rabbit_test():
     rabbitmq_service.publish(DATA_REQUEST_QUEUE, {
-        "task": "test rabbitmq",
+        "task": "normalize_data",
         "file": "dataset1.csv"
         })
     return {"msg": "Test message sent to RabbitMQ"}

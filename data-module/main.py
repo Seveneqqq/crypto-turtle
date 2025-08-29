@@ -9,5 +9,5 @@ app = FastAPI()
 def root():
     return {"message": "Hello from data-module"}
 
-rabbitmq_service.consume(queue=DATA_REQUEST_QUEUE, callback = rabbitmq_service.handle_response)
+rabbitmq_service.consume(queue=DATA_REQUEST_QUEUE, callback = rabbitmq_service.handle_request)
 

@@ -32,8 +32,10 @@ class RabbitMQService:
         print(f" [x] Sent {message} to {queue}")
         connection.close()
 
-    def handle_response(self, data):
-        print(f"Handling response: {data}")
+    def handle_request(self, data):
+        #Tutaj będzie obsługa requesta z gateway
+        print(f"Handling request: {data}")
+        #Na koniec bedzie za pomoca publish zwracany wynik do gatewaya
 
     def consume(self, queue: str, callback):
         def _consume():
