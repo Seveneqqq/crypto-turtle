@@ -1,5 +1,6 @@
 from http.client import HTTPException
 from typing import Optional
+from urllib.parse import urlencode
 from httpcore import request
 from supabase import create_client, Client
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -12,11 +13,14 @@ class AuthService:
         self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
         self.GOOGLE_REDIRECT_URI = GOOGLE_REDIRECT_URI
 
-    def login_with_google(self):
+    def login_with_google(self, origin_url: str):
+
+        params = urlencode({"next": origin_url})
+
         response = self.supabase.auth.sign_in_with_oauth({
             "provider": "google",
             "options": {
-                "redirect_to": self.GOOGLE_REDIRECT_URI,
+                "redirect_to": f"{self.GOOGLE_REDIRECT_URI}?{params}",
                 "scopes": "email profile",
                 "flow_type": "pkce",
                 "query_params": {"prompt": "consent"}
@@ -24,10 +28,10 @@ class AuthService:
         })
         return RedirectResponse(url=response.url)
 
-    from fastapi.responses import JSONResponse
-
     def login_callback(self, request: Request):
         code = request.query_params.get("code")
+        next_url = request.query_params.get("next", "/")  # fallback = "/"
+    
         response = self.supabase.auth.exchange_code_for_session({
             "auth_code": code
         })
@@ -35,27 +39,22 @@ class AuthService:
         access_token = response.session.access_token
         refresh_token = response.session.refresh_token
     
-        user_data = {
-            "id": response.session.user.id,
-            "email": response.session.user.email,
-            "name": response.session.user.user_metadata.get("name"),
-        }
+        # Zachowujemy parametr code w URL, żeby frontend mógł go odczytać
+        if "?" in next_url:
+            redirect_url = f"{next_url}&code={code}"
+        else:
+            redirect_url = f"{next_url}?code={code}"
     
-        res = JSONResponse(
-            content={
-                "user": user_data
-            }
-        )
-    
-        res.set_cookie(
+        redirect_response = RedirectResponse(url=redirect_url)
+        redirect_response.set_cookie(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False,   
+            secure=False,
             samesite="lax",
             max_age=3600
         )
-        res.set_cookie(
+        redirect_response.set_cookie(
             key="refresh_token",
             value=refresh_token,
             httponly=True,
@@ -64,7 +63,7 @@ class AuthService:
             max_age=60*60*24*14
         )
     
-        return res
+        return redirect_response
 
     def require_auth(self, request: Request):
         try:

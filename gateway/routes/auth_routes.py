@@ -4,8 +4,9 @@ from services import auth_service
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/login")
-def login():
-    return auth_service.login_with_google()
+def login(request: Request):
+    next_url = request.query_params.get("next") or request.headers.get("referer") or "/"
+    return auth_service.login_with_google(next_url)
 
 @router.get("/login/callback")
 def callback(request: Request):
