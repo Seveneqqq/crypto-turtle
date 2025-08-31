@@ -9,8 +9,10 @@ class BinanceService:
     def __init__(self, api_key, api_url="https://api.binance.com/api/v3"):
         self.api_key = api_key
         self.api_url = api_url
-        self.base_dir = "../shared/files/binance_historical_raw_data"
-
+        self.base_dir = os.getenv(
+            "SHARED_DIR",
+            os.path.join("shared", "files", "binance_historical_raw_data")
+        )
         os.makedirs(self.base_dir, exist_ok=True)
 
     def get_klines_batch(self, symbol, interval, start_time, end_time, limit=1000):
