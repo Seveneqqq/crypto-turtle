@@ -43,3 +43,5 @@ lub
 { "jobId": "123", "action": "train_model", "filePath": "/storage/file123.csv" }
 
 jeszcze do przemyslenia
+
+//-----------------------------------------------------------------------------------------
