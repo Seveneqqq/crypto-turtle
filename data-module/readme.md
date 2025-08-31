@@ -28,7 +28,10 @@ Folder zawierajacy serwisy (klasy grupujace logike, **klasą sterującą jest ra
 **main.py** - plik w głównym folderze modułu, tutaj będą importowane endpointy i jest cały przepływ aplikacji.
 **Reszta struktury wedle uznania ale zachęcam do zachowania czystej i przejrzystej struktury**
 
-
+//-----------------------------------------------------------------------------------------
+Surowe pliki pobrane z binance są zapisywanie w ../shared/files/binance_historical_raw_data
+Dane są pobierane w czystej postaci i zapisywane w csv. Gdy plik zostanie zapisany wtedy inne serwisy mogą
+otworzyc ten plik i zrobic z niego data frame.
 
 
 
