@@ -14,6 +14,7 @@ def private_data(
 
 
 #Tutaj powinno byc wywolanie serwisu i w serwisie opublikowanie wiadomosci
+#Przenieść do serwisow i zrobic walidacje, sprawdzenie czy pola sie zgadzaja i czy nie sa puste, wtedy mozna przekazac rabbitem
 @router.get("/rabbitest")
 def rabbit_test():
     rabbitmq_service.publish(DATA_REQUEST_QUEUE, {
@@ -21,3 +22,16 @@ def rabbit_test():
         "file": "dataset1.csv"
         })
     return {"msg": "Test message sent to RabbitMQ"}
+
+@router.get("/get-historical-data")
+def get_historical_data():
+    rabbitmq_service.publish(DATA_REQUEST_QUEUE, {
+        "action": "get_historical_data",
+        "symbol": "BTCUSDT",
+        "interval": "1h",
+        "start_dt": "2025-06-01",
+        "end_dt": "2025-08-31",
+        "filename": "1btc_1h_2m.csv"
+    })
+    return {"msg": "Request for historical data sent to RabbitMQ"}
+

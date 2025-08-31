@@ -31,20 +31,19 @@ class AuthService:
     def login_callback(self, request: Request):
         code = request.query_params.get("code")
         next_url = request.query_params.get("next", "/")  # fallback = "/"
-    
+
         response = self.supabase.auth.exchange_code_for_session({
             "auth_code": code
         })
-    
+
         access_token = response.session.access_token
         refresh_token = response.session.refresh_token
-    
-        # Zachowujemy parametr code w URL, żeby frontend mógł go odczytać
+
         if "?" in next_url:
             redirect_url = f"{next_url}&code={code}"
         else:
             redirect_url = f"{next_url}?code={code}"
-    
+
         redirect_response = RedirectResponse(url=redirect_url)
         redirect_response.set_cookie(
             key="access_token",
@@ -62,7 +61,7 @@ class AuthService:
             samesite="lax",
             max_age=60*60*24*14
         )
-    
+
         return redirect_response
 
     def require_auth(self, request: Request):
