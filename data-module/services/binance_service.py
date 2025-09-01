@@ -25,10 +25,14 @@ class BinanceService:
             "endTime": end_time,
             "limit": limit
         }
+        
+        print("Params from query /klines")
+        print(params)
+
         response = requests.get(url, params=params)
         return response.json()
 
-    def get_historical_klines(self, symbol, interval, start_dt, end_dt, filename):
+    def get_historical_klines(self, rabbitmq_msg_id, symbol, interval, start_dt, end_dt, filename):
 
         start_ts = int(pd.to_datetime(start_dt).timestamp() * 1000)
         end_ts = int(pd.to_datetime(end_dt).timestamp() * 1000)
@@ -63,6 +67,7 @@ class BinanceService:
         df.to_csv(full_path, index=False)
 
         return {
+            "rabbit_msg_id": rabbitmq_msg_id,
             "result": "success",
             "message": "Successfully retrieved historical data",
             "filename": filename,

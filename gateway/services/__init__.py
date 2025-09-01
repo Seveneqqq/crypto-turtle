@@ -3,7 +3,7 @@ from services.file_service import FileService
 from .auth_service import AuthService
 from configuration.configuration import SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI
 from services.rabbitmq_service import RabbitMQService
-from services.sqlite_service import SQLiteService
+from .sqlite_service import SQLiteService
 from configuration.rabbitmq_configuration import (
     RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_USERNAME, RABBITMQ_PASSWORD
 )
@@ -18,9 +18,6 @@ from configuration.rabbitmq_queues import (
 # --- Inicjalizacja serwisów ---
 auth_service = AuthService(SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI)
 file_service = FileService()
-data_service = DataService()
-
-# SQLite service
 sqlite_service = SQLiteService() 
 
 # RabbitMQ service
@@ -30,6 +27,8 @@ rabbitmq_service = RabbitMQService(
     username=RABBITMQ_USERNAME,
     password=RABBITMQ_PASSWORD
 )
+
+data_service = DataService(sqlite_service, rabbitmq_service)
 
 # Konsumowanie wiadomości
 rabbitmq_service.consume(queue=DATA_RESPONSE_QUEUE, callback=data_service.handle_response)
