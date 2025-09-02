@@ -16,6 +16,8 @@ import {
   SidebarMenuItem,
 } from "../components/ui/sidebar"
 
+import ApiPanel from "../components/data/apiPanel.jsx"
+
 import { Home, Inbox, Calendar, Search, Settings, User2, GraduationCap } from "lucide-react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
@@ -150,7 +152,8 @@ export default function HomePage() {
 
         <main className="flex-1 p-6">
           <h1 className="text-3xl font-bold">Welcome to the Home Page!</h1>
-          <p className="mt-4 text-gray-600">This is your main content area.</p>
+          <p className="mt-4 text-gray-600">This is your main content area.</p> 
+          <ApiPanel />
         </main>
       </div>
     </SidebarProvider>
