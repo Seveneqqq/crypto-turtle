@@ -35,3 +35,4 @@ os.makedirs(MODEL_DIR, exist_ok=True)  # utworzy folder jeśli go nie ma
 MODEL_PATH = os.path.join(MODEL_DIR, "btc_model_cls.pkl")
 joblib.dump(cls_model, MODEL_PATH)
 print("✅ Model klasyfikatora zapisany jako btc_model_cls.pkl")
+
