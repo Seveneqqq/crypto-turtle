@@ -2,6 +2,7 @@ from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.params import Depends
 from services import auth_service
 from services import rabbitmq_service
+from services import data_service
 from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -24,14 +25,19 @@ def rabbit_test():
     return {"msg": "Test message sent to RabbitMQ"}
 
 @router.get("/get-historical-data")
-def get_historical_data():
-    rabbitmq_service.publish(DATA_REQUEST_QUEUE, {
-        "action": "get_historical_data",
-        "symbol": "BTCUSDT",
-        "interval": "1h",
-        "start_dt": "2025-06-01",
-        "end_dt": "2025-08-31",
-        "filename": "1btc_1h_2m.csv"
-    })
+def get_historical_data(
+    symbol: str,
+    interval: str,
+    start_dt: str,
+    end_dt: str,
+    filename: str
+):
+    data_service.request_historical_data(
+        symbol=symbol,
+        interval=interval,
+        start_dt=start_dt,
+        end_dt=end_dt,
+        filename=filename
+    )
     return {"msg": "Request for historical data sent to RabbitMQ"}
 
