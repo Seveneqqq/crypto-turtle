@@ -22,6 +22,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./shared:/app/shared
+      - ./gateway/db:/app/db   
     ports:
       - "8000:8000"
     depends_on:           
