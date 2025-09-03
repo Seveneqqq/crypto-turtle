@@ -150,9 +150,8 @@ export default function HomePage() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 p-6">
-          <h1 className="text-3xl font-bold">Welcome to the Home Page!</h1>
-          <p className="mt-4 text-gray-600">This is your main content area.</p> 
+        <main className="flex-1 px-6 py-2">
+          <h1 className="text-3xl font-bold my-2">Welcome to the Home Page!</h1>
           <ApiPanel />
         </main>
       </div>
