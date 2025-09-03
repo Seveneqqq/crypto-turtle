@@ -16,6 +16,9 @@ import {
   SidebarMenuItem,
 } from "../components/ui/sidebar"
 
+import ApiPanel from "../components/data/apiPanel.jsx"
+import TasksHistoryPanel from "../components/data/tasksHistoryPanel.jsx"
+
 import { Home, Inbox, Calendar, Search, Settings, User2, GraduationCap } from "lucide-react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
@@ -42,7 +45,7 @@ export default function HomePage() {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen">
+      <div className="flex h-screen w-full">
         <Sidebar>
           <SidebarHeader>
             <SidebarMenu>
@@ -148,9 +151,10 @@ export default function HomePage() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 p-6">
-          <h1 className="text-3xl font-bold">Welcome to the Home Page!</h1>
-          <p className="mt-4 text-gray-600">This is your main content area.</p>
+        <main className="w-full flex-1 px-6 py-2">
+          <h1 className="text-3xl font-bold my-2">Welcome to the Home Page!</h1>
+          <ApiPanel />
+          <TasksHistoryPanel />
         </main>
       </div>
     </SidebarProvider>
