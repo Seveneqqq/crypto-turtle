@@ -170,6 +170,30 @@ class SQLiteService:
             traceback.print_exc()
             raise
 
+    def get_messages_by_action(self, action: str = None):
+    
+        try:
+            print(f"Fetching messages (action={action})...")
+            query = "SELECT * FROM messages"
+            values = []
+
+            if action:
+                query += " WHERE request LIKE ?"
+                values.append(f"%\'action\': \'{action}\'%")
+
+            query += " ORDER BY created_at DESC"
+
+            cursor = self.conn.execute(query, values)
+            messages = [dict(row) for row in cursor.fetchall()]
+            print(f"Retrieved {len(messages)} messages")
+            return messages
+
+        except Exception as e:
+            print(f"ERROR: Failed to get messages by action: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+
     def close(self):
         try:
             print("Closing SQLite connection...")

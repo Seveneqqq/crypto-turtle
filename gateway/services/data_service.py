@@ -35,6 +35,6 @@ class DataService:
         print(request_payload)
         self.sqlite_service.insert_message(
             rabbit_msg_id=rabbit_msg_id,
-            state="in progress",
+            state="created",
             request=str(request_payload)
         )

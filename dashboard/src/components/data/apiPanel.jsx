@@ -63,7 +63,7 @@ function ApiPanel() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto items-start gap-6">
+    <div className="w-full max-w-2xl gap-6">
       <Toaster position="top-right" />
       <Card className="shadow-lg rounded-2xl">
         <CardContent className="space-y-4 px-6">
