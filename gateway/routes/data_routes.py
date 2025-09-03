@@ -16,13 +16,13 @@ def private_data(
 
 #Tutaj powinno byc wywolanie serwisu i w serwisie opublikowanie wiadomosci
 #Przenieść do serwisow i zrobic walidacje, sprawdzenie czy pola sie zgadzaja i czy nie sa puste, wtedy mozna przekazac rabbitem
-@router.get("/rabbitest")
-def rabbit_test():
-    rabbitmq_service.publish(DATA_REQUEST_QUEUE, {
-        "task": "normalize_data",
-        "file": "dataset1.csv"
-        })
-    return {"msg": "Test message sent to RabbitMQ"}
+# @router.get("/rabbitest")
+# def rabbit_test():
+#     rabbitmq_service.publish(DATA_REQUEST_QUEUE, {
+#         "task": "normalize_data",
+#         "file": "dataset1.csv"
+#         })
+#     return {"msg": "Test message sent to RabbitMQ"}
 
 @router.get("/get-historical-data")
 def get_historical_data(
@@ -39,5 +39,5 @@ def get_historical_data(
         end_dt=end_dt,
         filename=filename
     )
-    return {"msg": "Request for historical data sent to RabbitMQ"}
+    return {"msg": "Request added to queue."}
 
