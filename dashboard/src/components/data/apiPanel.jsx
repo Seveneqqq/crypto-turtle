@@ -21,7 +21,7 @@ const symbols = [
   "MATICUSDT",
 ];
 
-const intervals = ["1m", "5m", "15m", "1h", "4h", "1d"];
+const intervals = ["1s", "15s", "1m", "5m", "15m", "1h", "4h", "1d"];
 
 function ApiPanel() {
   const today = new Date();
