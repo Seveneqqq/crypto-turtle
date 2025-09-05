@@ -31,10 +31,9 @@ export default function TasksHistoryPanel() {
     fetchTasks()
   }, [])
 
-  // Auto-refresh logic
   useEffect(() => {
     if (autoRefresh) {
-      intervalRef.current = setInterval(fetchTasks, 5000) // odpytywanie co 5 sekund
+      intervalRef.current = setInterval(fetchTasks, 5000) 
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
