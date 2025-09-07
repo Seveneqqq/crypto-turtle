@@ -4,6 +4,10 @@ from services.rabbitmq_request_service import RabbitMQRequestService
 from configuration.rabbitmq_configuration import (
     RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_USERNAME, RABBITMQ_PASSWORD
 )
+
+from .simulation_service import run_simulation
+
+
 # from configuration.configuration import BINANCE_API_KEY, BINANCE_API_URL
 
 print("Initializing RabbitMQ Service...")
