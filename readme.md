@@ -6,6 +6,8 @@ do momentu poprawy.
 1. Aplikacja lokalnie ma być uruchamiana w środowisku wirtualnym **venv**  
    ```bash
    ./venv/Scripts/activate
+
+   uvicorn main:app --reload --port <np: 8000>
    ```
 
 2. Wszystkie paczki muszą być instalowane w **venv**, a następnie przed pushem należy wykonać:
@@ -23,13 +25,14 @@ do momentu poprawy.
 5. Wszystkie parametry w funkcjach/metodach/klasach mają być przekazywane jako zmienne,  
    tak aby można je było wysłać przez **RabbitMQ**.
 
-6. Wszystkie zasoby współdzielone między modułami (datasets, modele, inne pliki)  
-   muszą być umieszczane w katalogu:
-   ```
-   /shared
-   ```
+6. Wszystkie parametry w funkcjach/metodach/klasach mają być przekazywane jako zmienne,  
+   tak aby można je było wysłać przez **RabbitMQ**.
 
-7. Każda operacja na plikach (lub innych zasobach) musi być realizowana z użyciem **ścieżek obliczanych dynamicznie w Pythonie**.  
+7. Moduły nie mogą posiadać **żadnych własnych endpointów**. Cała komunikacja jest przez rabbita.
+
+8. Edytujecie tylko własny folder ( swój moduł ). Każda zmiana poza obrębem folderu ma być konsultowana ze mną.
+
+9. Każda operacja na plikach (lub innych zasobach) musi być realizowana z użyciem **ścieżek obliczanych dynamicznie w Pythonie**.  
    Funkcja dostaje tylko **nazwę pliku**, a pełna ścieżka jest obliczana w funkcji.  
 
    **Przykład:**
@@ -66,3 +69,5 @@ do momentu poprawy.
 
    ➡️ Dzięki temu jeden moduł może zapisać plik w `/shared/files/models/`,  
    a inny moduł (znając tylko nazwę pliku i folder) może go odczytać.
+
+
