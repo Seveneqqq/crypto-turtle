@@ -21,6 +21,7 @@ import TasksHistoryPanel from "../components/data/tasksHistoryPanel.jsx"
 
 import { Home, Inbox, Calendar, Search, Settings, User2, GraduationCap } from "lucide-react"
 import { ChevronDown, ChevronUp } from "lucide-react"
+import FilePanel from "../components/data/filePanel.jsx"
 
 export default function HomePage() {
   const [openMenus, setOpenMenus] = useState({})
@@ -153,7 +154,10 @@ export default function HomePage() {
 
         <main className="w-full flex-1 px-6 py-2">
           <h1 className="text-3xl font-bold my-2">Welcome to the Home Page!</h1>
-          <ApiPanel />
+          <div className="flex gap-6">
+                <ApiPanel />
+                <FilePanel />
+          </div>
           <TasksHistoryPanel />
         </main>
       </div>

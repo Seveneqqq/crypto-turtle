@@ -21,7 +21,7 @@ const symbols = [
   "MATICUSDT",
 ];
 
-const intervals = ["1m", "5m", "15m", "1h", "4h", "1d"];
+const intervals = ["1s", "15s", "1m", "5m", "15m", "1h", "4h", "1d"];
 
 function ApiPanel() {
   const today = new Date();
@@ -65,7 +65,7 @@ function ApiPanel() {
   return (
     <div className="w-full max-w-2xl gap-6">
       <Toaster position="top-right" />
-      <Card className="shadow-lg rounded-2xl">
+      <Card className="shadow-lg rounded-2xl h-[52vh]">
         <CardContent className="space-y-4 px-6">
           <div className="space-y-1">
             <h2 className="text-xl font-bold tracking-tight">Historical Data Downloader</h2>
