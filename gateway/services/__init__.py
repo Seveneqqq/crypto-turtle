@@ -30,11 +30,11 @@ rabbitmq_service = RabbitMQService(
 )
 
 data_service = DataService(sqlite_service, rabbitmq_service)
-rl_service = RlService(sqlite_service, RabbitMQService)
+rl_service = RlService(sqlite_service, rabbitmq_service)
 
 # Konsumowanie wiadomości
 rabbitmq_service.consume(queue=DATA_RESPONSE_QUEUE, callback=data_service.handle_response)
 # rabbitmq_service.consume(queue=ML_RESPONSE_QUEUE)
-rabbitmq_service.consume(queue=RL_RESPONSE_QUEUE)
+rabbitmq_service.consume(queue=RL_RESPONSE_QUEUE, callback=rl_service.handle_response)
 # rabbitmq_service.consume(queue=TEST_RESPONSE_QUEUE)
 # rabbitmq_service.consume(queue=XAI_RESPONSE_QUEUE)
