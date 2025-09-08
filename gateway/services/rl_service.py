@@ -22,8 +22,8 @@ class RlService:
         self, 
         balance_start,
         time_step,
-        data_paths,
-        models_paths,
+        data_files,
+        models,
         threshold_buy,
         threshold_sell
     ):
@@ -34,14 +34,14 @@ class RlService:
             "rabbit_msg_id": rabbit_msg_id,  # Poprawic pola na podstawie configa od Rafała
             "balance_start": balance_start,
             "time_step": time_step,
-            "data_paths": data_paths,
-            "models_paths": models_paths,
+            "data_files": data_files,
+            "models": models,
             "threshold_buy": threshold_buy,
             "threshold_sell": threshold_sell,
         }
         print(request_payload)
         self.rabbitmq_service.publish(queue=RL_REQUEST_QUEUE, message=request_payload)
-        print("Request for historical data sent to RabbitMQ")
+        print("Request for simulation data sent to RabbitMQ")
         print(request_payload)
         self.sqlite_service.insert_message(
             rabbit_msg_id=rabbit_msg_id,

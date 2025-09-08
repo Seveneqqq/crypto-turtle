@@ -22,8 +22,8 @@ def simulate(req: SimulationRequest):
     rl_service.simulate(
         balance_start=req.balance_start,
         time_step=req.time_step,
-        data_paths=req.data_files,      # tu zmieniłem na data_paths, bo tak jest w serwisie
-        models_paths=req.models,        # tak samo models_paths
+        data_files=req.data_files,      # tu zmieniłem na data_paths, bo tak jest w serwisie
+        models=req.models,        # tak samo models_paths
         threshold_buy=req.threshold_buy,
         threshold_sell=req.threshold_sell
     )
