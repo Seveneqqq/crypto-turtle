@@ -1,6 +1,8 @@
 import os
 import json
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime
 from services.rl.wallet import Wallet
@@ -13,15 +15,26 @@ class SimulationService:
         self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "ml")
         self.LOGS_DIR = os.path.join(base_dir, "shared", "simulation", "logs")
         self.PLOTS_DIR = os.path.join(base_dir, "shared", "simulation", "plots")
+        try:
+            os.makedirs(self.LOGS_DIR, exist_ok=True)
+            os.makedirs(self.PLOTS_DIR, exist_ok=True)
+        except Exception as e:
+            print("[SimulationService.__init__] Nie udało się utworzyć katalogów:", e)
 
     def run_simulation(self, rabbitmq_msg_id=None, balance_start=1000.0, time_step=1,
                        data_files=None, models=None, threshold_buy=0.3, threshold_sell=0.7):
         try:
             print("run_simulation")
+            print(f"[run_simulation] DATA_DIR={self.DATA_DIR}")
+            print(f"[run_simulation] MODEL_DIR={self.MODEL_DIR}")
+            print(f"[run_simulation] LOGS_DIR={self.LOGS_DIR}")
+            print(f"[run_simulation] PLOTS_DIR={self.PLOTS_DIR}")
             if data_files is None:
                 data_files = {}
             if models is None:
                 models = {}
+            print(f"[run_simulation] data_files keys={list(data_files.keys())}")
+            print(f"[run_simulation] models keys={list(models.keys())}")
 
             # Ładowanie danych
             data = {}
@@ -29,19 +42,25 @@ class SimulationService:
                 filepath = os.path.join(self.DATA_DIR, filename)
                 if not os.path.exists(filepath):
                     raise FileNotFoundError(f"Brak pliku: {filepath}")
+                print(f"[run_simulation] Wczytuję dane: {symbol} -> {filepath}")
                 df = pd.read_csv(filepath)
+                print(f"[run_simulation] {symbol} rows={len(df)} cols={list(df.columns)}")
                 data[symbol] = df[["timestamp", "close"]].copy()
 
             symbols = list(data.keys())
+            print(f"[run_simulation] symbols={symbols}")
 
             # Inicjalizacja portfela i engine
             wallet = Wallet(balance_start, symbols)
+            print(f"[run_simulation] Wallet start balance={wallet.balance}")
             engines = {}
             for symbol in symbols:
                 model_path = os.path.join(self.MODEL_DIR, models[symbol])
+                print(f"[run_simulation] Init DecisionEngine for {symbol} model_path={model_path}")
                 engines[symbol] = DecisionEngine(model_path=model_path, threshold=threshold_buy)
 
             num_ticks = min(len(df) for df in data.values())
+            print(f"[run_simulation] num_ticks={num_ticks}")
             portfolio_values = []
             timestamps = []
             logs = []
@@ -55,6 +74,8 @@ class SimulationService:
                     if len(history) < 15:
                         continue
                     features = self.extract_features(history)
+                    if features is None:
+                        continue
                     amount, action = engines[symbol].decide(features)
                     action_end, amount_end = wallet.execute(action, symbol, prices[symbol], amount)
 
@@ -66,7 +87,8 @@ class SimulationService:
                             "usd_balance": f"{wallet.balance:.2f}",
                             "portfel": f"{wallet.total_value(prices):.2f}"
                         })
-
+                if t in (0, num_ticks - 1) or (t % 100 == 0):
+                    print(f"[run_simulation] t={t} prices={prices} balance={wallet.balance:.2f}")
                 portfolio_values.append(wallet.total_value(prices))
 
             # Wykres
@@ -82,10 +104,12 @@ class SimulationService:
             timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             log_path = os.path.join(self.LOGS_DIR, f"{timestamp_str}_simulation_logs.txt")
             plot_path = os.path.join(self.PLOTS_DIR, f"{timestamp_str}_simulation_plot.png")
+            print(f"[run_simulation] Zapis wykresu do: {plot_path}")
             plt.savefig(plot_path, format="png")
             plt.close()
 
             # Zapis logów
+            print(f"[run_simulation] Zapis logów do: {log_path}")
             with open(log_path, "w", encoding="utf-8") as f:
                 for line in logs:
                     f.write(json.dumps(line) + "\n")
@@ -102,6 +126,9 @@ class SimulationService:
             }
 
         except Exception as e:
+            import traceback
+            print("[run_simulation][ERROR]", e)
+            traceback.print_exc()
             return {
                 "rabbit_msg_id": rabbitmq_msg_id,
                 "result": "failed",

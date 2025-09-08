@@ -19,6 +19,7 @@ class Wallet:
             model_value = 0.6
         amount = mincost + (model_value - 0.6) / (1.0 - 0.6) * (maxcost - mincost)
 
+        print(f"[Wallet.execute] action={action} symbol={symbol} price={price} model_value={model_value}")
         if action == "buy":
             cost = amount * price
             if cost <= self.balance:
