@@ -82,7 +82,7 @@ export default function SimulatePanel() {
       threshold_sell: thresholdSell[0],
     };
 
-    fetch("http://localhost:8000/rl/simulate", {
+    fetch("http://localhost:8000/tests/simulate", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
