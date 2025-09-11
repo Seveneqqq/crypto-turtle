@@ -26,6 +26,7 @@ class RabbitMQRequestService:
                 else:
                     print("Failed to retrieve simulate data")
                     self.rabbitmq_service.publish(RL_RESPONSE_QUEUE, {
+                        "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "result": "failed",
                         "message": "Failed to retrieve simulation data"
                     })
