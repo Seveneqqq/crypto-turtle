@@ -15,7 +15,7 @@ export default function TasksHistoryPanel() {
   const intervalRef = useRef(null)
 
   const fetchTasks = () => {
-    fetch("http://localhost:8000/tasks-history/?action=get_historical_data")
+    fetch("http://localhost:8000/tasks-history/?action=simulate")
       .then((res) => res.json())
       .then((data) => {
         setTasks(data.Tasks)

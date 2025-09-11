@@ -1,3 +1,4 @@
+from collections import defaultdict
 import os
 import shutil
 import csv
@@ -5,12 +6,20 @@ from fastapi import UploadFile
 from pathlib import Path
 
 class FileService:
+
     def __init__(self):
         self.base_path = Path(__file__).resolve().parent.parent / "shared" / "files"
         self.base_path.mkdir(parents=True, exist_ok=True)
 
         self.binance_raw_path = self.base_path / "binance_historical_raw_data"
         self.binance_raw_path.mkdir(parents=True, exist_ok=True)
+
+        self.project_root = Path(__file__).resolve().parent.parent  
+        self.shared_path = self.project_root / "shared"
+        self.plots_path = self.shared_path / "simulation" / "plots"
+
+        self.models_path = self.shared_path / "models" / "ml"
+        self.logs_path = self.shared_path / "simulation" / "logs"
 
     # multipart/form-data -> body multipart->file
     def upload_file(self, file: UploadFile):
@@ -22,6 +31,49 @@ class FileService:
             "filename": file.filename,
             "filepath": str(save_path)
         }
+    
+    def get_models(self):
+        """Zwraca wszystkie modele"""
+        models = []
+        for filename in os.listdir(self.models_path):
+            file_path = self.models_path / filename
+            if file_path.is_file():
+                models.append({
+                    "name": filename,
+                    "path": str(file_path)
+                })
+        return models
+
+    def get_simulation_results(self):
+        """Zwraca sparowane logi i wykresy"""
+        results = defaultdict(lambda: {"log": None, "plot": None})
+
+        def extract_key(filename: str):
+            parts = filename.split("_")
+            if len(parts) >= 2:
+                return f"{parts[0]}_{parts[1]}" 
+            return None
+
+        for filename in os.listdir(self.logs_path):
+            key = extract_key(filename)
+            if key:
+                results[key]["log"] = str(self.logs_path / filename)
+
+        # wykresy
+        for filename in os.listdir(self.plots_path):
+            key = extract_key(filename)
+            if key:
+                results[key]["plot"] = str(self.plots_path / filename)
+
+        return [
+            {
+                "key": key,
+                "log": files["log"],
+                "plot": files["plot"]
+            }
+            for key, files in results.items()
+            if files["log"] or files["plot"]
+        ]
 
     def get_all_files(self):
         files = []

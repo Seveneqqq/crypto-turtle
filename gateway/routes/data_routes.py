@@ -11,7 +11,7 @@ router = APIRouter(prefix="/data", tags=["data"])
 def private_data(
     user = Depends(auth_service.require_auth)
     ):
-    return {"msg": f"Witaj w data, {user.user_metadata.get('name')}"}
+    return {"msg": f"Witaj w data module, {user.user_metadata.get('name')}"}
 
 
 #Tutaj powinno byc wywolanie serwisu i w serwisie opublikowanie wiadomosci

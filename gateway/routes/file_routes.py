@@ -22,6 +22,13 @@ def upload_file(
 def get_files(user=Depends(auth_service.require_auth)):
     return file_service.get_all_files()
 
+@router.get("/models")
+def get_models_files(user=Depends(auth_service.require_auth)):
+    return file_service.get_models()
+
+@router.get("/simulation-results")
+def get_simulation_results(user=Depends(auth_service.require_auth)):
+    return file_service.get_simulation_results()
 
 @router.delete("/{filename}")
 def delete_file(
