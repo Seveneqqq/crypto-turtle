@@ -1,6 +1,6 @@
 from services.data_service import DataService
 from services.file_service import FileService
-from services.rl_service import RlService
+from services.tests_service import TestsService
 from .auth_service import AuthService
 from configuration.configuration import SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI
 from services.rabbitmq_service import RabbitMQService
@@ -30,11 +30,11 @@ rabbitmq_service = RabbitMQService(
 )
 
 data_service = DataService(sqlite_service, rabbitmq_service)
-rl_service = RlService(sqlite_service, rabbitmq_service)
+tests_service = TestsService(sqlite_service, rabbitmq_service)
 
 # Konsumowanie wiadomości
 rabbitmq_service.consume(queue=DATA_RESPONSE_QUEUE, callback=data_service.handle_response)
 # rabbitmq_service.consume(queue=ML_RESPONSE_QUEUE)
-rabbitmq_service.consume(queue=RL_RESPONSE_QUEUE, callback=rl_service.handle_response)
+rabbitmq_service.consume(queue=TEST_RESPONSE_QUEUE, callback=tests_service.handle_response)
 # rabbitmq_service.consume(queue=TEST_RESPONSE_QUEUE)
 # rabbitmq_service.consume(queue=XAI_RESPONSE_QUEUE)
