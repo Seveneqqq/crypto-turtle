@@ -56,14 +56,28 @@ services:
     networks:
       - backend
 
-  rl-module:
+  # rl-module:
+  #   build:
+  #     context: ./rl-module
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ./shared:/app/shared
+  #   ports:
+  #     - "8003:8003"
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   networks:
+  #     - backend
+
+  tests-module:
     build:
-      context: ./rl-module
+      context: ./test-module
       dockerfile: Dockerfile
     volumes:
       - ./shared:/app/shared
     ports:
-      - "8003:8003"
+      - "8004:8004"
     depends_on:
       rabbitmq:
         condition: service_healthy

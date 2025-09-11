@@ -22,19 +22,13 @@ class SimulationService:
             print("[SimulationService.__init__] Nie udało się utworzyć katalogów:", e)
 
     def run_simulation(self, rabbitmq_msg_id=None, balance_start=1000.0, time_step=1,
-                       data_files=None, models=None, threshold_buy=0.3, threshold_sell=0.7):
+                       data_files=None, models=None, threshold_buy=0.6, threshold_sell=0.6):
         try:
-            print("run_simulation")
-            print(f"[run_simulation] DATA_DIR={self.DATA_DIR}")
-            print(f"[run_simulation] MODEL_DIR={self.MODEL_DIR}")
-            print(f"[run_simulation] LOGS_DIR={self.LOGS_DIR}")
-            print(f"[run_simulation] PLOTS_DIR={self.PLOTS_DIR}")
+            print("Start Simulation")
             if data_files is None:
                 data_files = {}
             if models is None:
                 models = {}
-            print(f"[run_simulation] data_files keys={list(data_files.keys())}")
-            print(f"[run_simulation] models keys={list(models.keys())}")
 
             # Ładowanie danych
             data = {}
@@ -51,13 +45,13 @@ class SimulationService:
             print(f"[run_simulation] symbols={symbols}")
 
             # Inicjalizacja portfela i engine
-            wallet = Wallet(balance_start, symbols)
+            wallet = Wallet(balance_start, symbols,threshold_buy=threshold_buy, threshold_sell=threshold_sell)
             print(f"[run_simulation] Wallet start balance={wallet.balance}")
             engines = {}
             for symbol in symbols:
                 model_path = os.path.join(self.MODEL_DIR, models[symbol])
                 print(f"[run_simulation] Init DecisionEngine for {symbol} model_path={model_path}")
-                engines[symbol] = DecisionEngine(model_path=model_path, threshold=threshold_buy)
+                engines[symbol] = DecisionEngine(model_path=model_path, threshold_buy=threshold_buy,threshold_sell=threshold_sell)
 
             num_ticks = min(len(df) for df in data.values())
             print(f"[run_simulation] num_ticks={num_ticks}")
@@ -77,7 +71,10 @@ class SimulationService:
                     if features is None:
                         continue
                     amount, action = engines[symbol].decide(features)
-                    action_end, amount_end = wallet.execute(action, symbol, prices[symbol], amount)
+                    if action is not "hold":
+                        action_end, amount_end = wallet.execute(action, symbol, prices[symbol],amount)
+                    else:
+                        action_end = action
 
                     if action_end != "hold":
                         logs.append({
@@ -87,8 +84,8 @@ class SimulationService:
                             "usd_balance": f"{wallet.balance:.2f}",
                             "portfel": f"{wallet.total_value(prices):.2f}"
                         })
-                if t in (0, num_ticks - 1) or (t % 100 == 0):
-                    print(f"[run_simulation] t={t} prices={prices} balance={wallet.balance:.2f}")
+                if t in (0, num_ticks - 1) or (t % 1000 == 0):
+                    print(f"Progress = {(t / num_ticks) * 100:.2f}%")
                 portfolio_values.append(wallet.total_value(prices))
 
             # Wykres
@@ -97,19 +94,20 @@ class SimulationService:
             plt.xlabel("Timestamp")
             plt.ylabel("Wartość portfela (USD)")
             plt.title("Symulacja wartości portfela")
-            plt.xticks(rotation=45)
+            plt.gca().set_xticklabels([])  # usuwa napisy
+            plt.gca().set_xticks([])  # usuwa też kreski
             plt.legend()
             plt.tight_layout()
 
             timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
             log_path = os.path.join(self.LOGS_DIR, f"{timestamp_str}_simulation_logs.txt")
             plot_path = os.path.join(self.PLOTS_DIR, f"{timestamp_str}_simulation_plot.png")
-            print(f"[run_simulation] Zapis wykresu do: {plot_path}")
+            print(f"Zapis wykresu do: {plot_path}")
             plt.savefig(plot_path, format="png")
             plt.close()
 
             # Zapis logów
-            print(f"[run_simulation] Zapis logów do: {log_path}")
+            print(f"Zapis logów do: {log_path}")
             with open(log_path, "w", encoding="utf-8") as f:
                 for line in logs:
                     f.write(json.dumps(line) + "\n")
@@ -121,7 +119,7 @@ class SimulationService:
                 "message": "Successfully retrieved simulation data",
                 "logs_file": log_path,
                 "plot_file": plot_path,
-                "portfolio_values": portfolio_values,
+                "portfolio_values": "portfolio_values",
                 "timestamp": datetime.now().isoformat()
             }
 

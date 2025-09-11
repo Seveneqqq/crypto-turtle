@@ -4,7 +4,7 @@ import pandas as pd
 import os
 
 class DecisionEngine:
-    def __init__(self, model_path, threshold=0.6):
+    def __init__(self, model_path, threshold_buy=0.6, threshold_sell=0.6):
         # Ładowanie modelu przy starcie
         try:
             print(f"[DecisionEngine.__init__] Ładuję model: {model_path}")
@@ -15,7 +15,8 @@ class DecisionEngine:
             print("[DecisionEngine.__init__][ERROR]", e)
             traceback.print_exc()
             raise
-        self.threshold = threshold
+        self.threshold_buy = threshold_buy
+        self.threshold_sell = threshold_sell
 
     def decide(self, features):
         # Konwersja do numpy array
@@ -36,14 +37,16 @@ class DecisionEngine:
             prob_map = dict(zip(self.model.classes_, probs))
 
             # Decyzja na podstawie progów
-            if prob_map.get("buy", 0) >= self.threshold:
+            if prob_map.get("buy", 0) >= self.threshold_buy:
                 a = prob_map.get("buy", 0)
                 return a, "buy"
-            elif prob_map.get("sell", 0) >= self.threshold:
+            elif prob_map.get("sell", 0) >= self.threshold_sell:
                 b = prob_map.get("sell", 0)
                 return b, "sell"
             else:
                 return 0.0, "hold"
+
+
         except Exception as e:
             import traceback
             print("[DecisionEngine.decide][ERROR]", e)

@@ -1,8 +1,9 @@
 class Wallet:
-    def __init__(self, balance, symbols):
+    def __init__(self, balance, symbols, threshold_buy, threshold_sell):
         self.balance = balance
         self.holdings = {symbol: 0.0 for symbol in symbols}
-
+        self.threshold_buy = threshold_buy
+        self.threshold_sell = threshold_sell
     def execute(self, action, symbol, price, model_value):
         """
         action: 'buy', 'sell', 'hold'
@@ -17,10 +18,11 @@ class Wallet:
         # normalizacja model_value: 0.6 -> mincost, 1.0 -> maxcost
         if model_value < float(0.6):
             model_value = 0.6
-        amount = mincost + (model_value - 0.6) / (1.0 - 0.6) * (maxcost - mincost)
 
-        print(f"[Wallet.execute] action={action} symbol={symbol} price={price} model_value={model_value}")
+
+        # print(f"[Wallet.execute] action={action} symbol={symbol} price={price} model_value={model_value}")
         if action == "buy":
+            amount = mincost + (model_value - self.threshold_buy) / (1.0 - self.threshold_buy) * (maxcost - mincost)
             cost = amount * price
             if cost <= self.balance:
                 self.balance -= cost
@@ -32,6 +34,7 @@ class Wallet:
 
         elif action == "sell":
             if self.holdings[symbol] > 0:
+                amount = mincost + (model_value - self.threshold_sell) / (1.0 - self.threshold_sell) * (maxcost - mincost)
                 if amount <= self.holdings[symbol]:
                     self.holdings[symbol] -= amount
                     self.balance += amount * price
