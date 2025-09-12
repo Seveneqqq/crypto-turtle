@@ -22,6 +22,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./shared:/app/shared
+      - ./gateway/db:/app/db   
     ports:
       - "8000:8000"
     depends_on:           
@@ -30,16 +31,16 @@ services:
     networks:
       - backend
 
-  dashboard:
-    build:
-      context: ./dashboard
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    depends_on:
-      - rabbitmq
-    networks:
-      - backend
+  # dashboard:
+  #   build:
+  #     context: ./dashboard
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - rabbitmq
+  #   networks:
+  #     - backend
 
   data-module:
     build:
@@ -49,6 +50,34 @@ services:
       - ./shared:/app/shared
     ports:
       - "8001:8001"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # rl-module:
+  #   build:
+  #     context: ./rl-module
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ./shared:/app/shared
+  #   ports:
+  #     - "8003:8003"
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   networks:
+  #     - backend
+
+  tests-module:
+    build:
+      context: ./test-module
+      dockerfile: Dockerfile
+    volumes:
+      - ./shared:/app/shared
+    ports:
+      - "8004:8004"
     depends_on:
       rabbitmq:
         condition: service_healthy
