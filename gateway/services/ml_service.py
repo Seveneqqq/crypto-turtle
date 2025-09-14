@@ -18,6 +18,29 @@ class MlService:
         )
         print("Response updated in SQLite")
 
+    def just_send_data_to_module(self,data):  
+        rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
+        
+        action = data.get("action")
+        if not action:
+            raise ValueError("Missing 'action' in request payload")
+
+        request_payload = {
+            "action": action,
+            "rabbit_msg_id": rabbit_msg_id,
+            "data":data
+        }
+
+        self.rabbitmq_service.publish(queue=ML_REQUEST_QUEUE, message=request_payload)
+        print("Request with anything sent to RabbitMQ")
+        print(request_payload)
+        self.sqlite_service.insert_message(
+            rabbit_msg_id=rabbit_msg_id,
+            state="created",
+            request=str(request_payload)
+        )
+
+
     def train_model(
         self,
         df_filename: str,

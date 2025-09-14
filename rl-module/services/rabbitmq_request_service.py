@@ -7,6 +7,7 @@ class RabbitMQRequestService:
         self.simulation_service = simulation_service
 
     def handle_request(self, data):
+        print("Getting request ...")
         print(data)
         match data.get("action"):
             case "simulate":

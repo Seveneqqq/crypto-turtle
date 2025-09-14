@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter
+from typing import Any, Dict, List
+from fastapi import APIRouter, Body
 from pydantic import BaseModel
 from services import ml_service
 
@@ -28,3 +28,8 @@ async def train_model_endpoint(req: TrainRequest):
         # target_col=req.target_col
     )
     return {"msg": "Request added to queue."}
+
+@router.post("/anything")
+async def just_send_data_to_module(req: Dict[str, Any] = Body(...)):
+    ml_service.just_send_data_to_module(data=req)
+    return {"status": "ok"}

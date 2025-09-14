@@ -8,6 +8,7 @@ class RabbitMQRequestService:
         self.sklearn_train_service = sklearn_train_service
 
     def handle_request(self, data):
+        print("Getting request ...")
         print(data)
         match data.get("action"):
             case "train_model":
@@ -25,6 +26,6 @@ class RabbitMQRequestService:
                 else:
                     print("Failed to failed to train model")
                     self.rabbitmq_service.publish(ML_RESPONSE_QUEUE, {
-                        "result": "error",
+                        "result": "failed",
                         "message": "Failed to failed to train model"
                     })
