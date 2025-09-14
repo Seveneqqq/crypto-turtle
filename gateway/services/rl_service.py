@@ -18,30 +18,21 @@ class RlService:
         )
         print("Response updated in SQLite")
 
-    def simulate(
-        self, 
-        balance_start,
-        time_step,
-        data_files,
-        models,
-        threshold_buy,
-        threshold_sell
-    ):
-        
+    def just_send_data_to_module(self,data):  
         rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
+
+        action = data.get("action")
+        if not action:
+            raise ValueError("Missing 'action' in request payload")
+
         request_payload = {
-            "action": "simulate",
-            "rabbit_msg_id": rabbit_msg_id,  # Poprawic pola na podstawie configa od Rafała
-            "balance_start": balance_start,
-            "time_step": time_step,
-            "data_files": data_files,
-            "models": models,
-            "threshold_buy": threshold_buy,
-            "threshold_sell": threshold_sell,
+            "action": action,
+            "rabbit_msg_id": rabbit_msg_id,
+            "data":data
         }
-        print(request_payload)
+
         self.rabbitmq_service.publish(queue=RL_REQUEST_QUEUE, message=request_payload)
-        print("Request for simulation data sent to RabbitMQ")
+        print("Request with anything sent to RabbitMQ")
         print(request_payload)
         self.sqlite_service.insert_message(
             rabbit_msg_id=rabbit_msg_id,
