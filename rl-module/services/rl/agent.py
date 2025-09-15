@@ -1,55 +1,73 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import random
+import gym
+import numpy as np
+from gym import spaces
+from services.rl.wallet import Wallet
+from services.rl.decision import DecisionEngine
 
-class DQN(nn.Module):
-    def __init__(self, input_dim):
-        super(DQN, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 32)
-        self.fc2 = nn.Linear(32, 32)
-        self.fc3 = nn.Linear(32, 1)  # akcja ciągła
+class TradingEnv(gym.Env):
+    """
+    Środowisko RL dla handlu.
+    Agent uczy się optymalizować progi DecisionEngine (threshold_buy/sell)
+    korzystając z portfela Wallet.
+    """
+    metadata = {"render.modes": ["human"]}
 
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        return torch.tanh(self.fc3(x))  # [-1,1]
+    def __init__(self, data, model_path, initial_balance=1000.0):
+        super(TradingEnv, self).__init__()
 
-class Agent:
-    def __init__(self, state_size):
-        self.model = DQN(state_size)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
-        self.criterion = nn.MSELoss()
-        self.gamma = 0.95
-        self.epsilon = 1.0
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
-        self.memory = []
+        self.data = data
+        self.model_path = model_path
+        self.initial_balance = initial_balance
+        self.current_step = 0
 
-    def act(self, state):
-        if random.random() < self.epsilon:
-            return random.uniform(-1, 1)
-        state_tensor = torch.FloatTensor(state)
-        with torch.no_grad():
-            action = self.model(state_tensor).item()
-        return action
+        # --- komponenty ---
+        self.engine = DecisionEngine(model_path)
+        self.wallet = Wallet(initial_balance, symbols=["BTC"], threshold_buy=0.6, threshold_sell=0.6)
 
-    def remember(self, state, action, reward, next_state):
-        self.memory.append((state, action, reward, next_state))
+        # --- action space ---
+        # Agent steruje progami [buy, sell] -> wartości od 0.5 do 0.9
+        self.action_space = spaces.Box(low=np.array([0.5, 0.5]), high=np.array([0.9, 0.9]), dtype=np.float32)
 
-    def replay(self, batch_size=32):
-        if len(self.memory) < batch_size:
-            return
-        minibatch = random.sample(self.memory, batch_size)
-        for state, action, reward, next_state in minibatch:
-            state_tensor = torch.FloatTensor(state)
-            next_state_tensor = torch.FloatTensor(next_state)
-            target = reward + self.gamma * self.model(next_state_tensor).item()
-            output = self.model(state_tensor)
-            target_tensor = torch.tensor([target], dtype=torch.float32)
-            loss = self.criterion(output, target_tensor)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        # --- observation space ---
+        # close, return, ma_5, ma_15, balance, holdings
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(6,), dtype=np.float32)
+
+    def reset(self):
+        self.current_step = 0
+        self.wallet = Wallet(self.initial_balance, symbols=["BTC"], threshold_buy=0.6, threshold_sell=0.6)
+        return self._get_observation()
+
+    def step(self, action):
+        # ustalenie progów na podstawie akcji agenta
+        self.engine.threshold_buy = float(action[0])
+        self.engine.threshold_sell = float(action[1])
+
+        row = self.data.iloc[self.current_step]
+        features = row[["close", "return", "ma_5", "ma_15"]]
+        model_value, decision = self.engine.decide(features)
+
+        # wykonanie transakcji
+        executed_action, _ = self.wallet.execute(decision, "BTC", row["close"], model_value)
+
+        # nagroda = aktualna wartość portfela
+        reward = self.wallet.total_value({"BTC": row["close"]})
+
+        self.current_step += 1
+        done = self.current_step >= len(self.data) - 1
+        obs = self._get_observation()
+
+        return obs, reward, done, {}
+
+    def _get_observation(self):
+        row = self.data.iloc[self.current_step]
+        return np.array([
+            row["close"],
+            row["return"],
+            row["ma_5"],
+            row["ma_15"],
+            self.wallet.balance,
+            self.wallet.holdings["BTC"]
+        ], dtype=np.float32)
+
+    def render(self, mode="human"):
+        print(f"Step {self.current_step}, Balance={self.wallet.balance:.2f}, Holdings={self.wallet.holdings['BTC']:.6f}")
