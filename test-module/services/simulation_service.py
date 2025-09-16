@@ -13,13 +13,14 @@ class SimulationService:
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_files")
         self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "ml")
-        self.LOGS_DIR = os.path.join(base_dir, "shared", "simulation", "logs")
-        self.PLOTS_DIR = os.path.join(base_dir, "shared", "simulation", "plots")
-        try:
-            os.makedirs(self.LOGS_DIR, exist_ok=True)
-            os.makedirs(self.PLOTS_DIR, exist_ok=True)
-        except Exception as e:
-            print("[SimulationService.__init__] Nie udało się utworzyć katalogów:", e)
+        self.SIM_DIR = os.path.join(base_dir, "shared", "simulation")
+        # self.LOGS_DIR = os.path.join(base_dir, "shared", "simulation", "logs")
+        # self.PLOTS_DIR = os.path.join(base_dir, "shared", "simulation", "plots")
+        # try:
+        #     os.makedirs(self.LOGS_DIR, exist_ok=True)
+        #     os.makedirs(self.PLOTS_DIR, exist_ok=True)
+        # except Exception as e:
+        #     print("[SimulationService.__init__] Nie udało się utworzyć katalogów:", e)
 
     def run_simulation(self, rabbitmq_msg_id=None, balance_start=1000.0, time_step=1,
                        data_files=None, models=None, threshold_buy=0.6, threshold_sell=0.6):
@@ -99,9 +100,16 @@ class SimulationService:
             plt.legend()
             plt.tight_layout()
 
-            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-            log_path = os.path.join(self.LOGS_DIR, f"{timestamp_str}_simulation_logs.txt")
-            plot_path = os.path.join(self.PLOTS_DIR, f"{timestamp_str}_simulation_plot.png")
+# Zapis plików z wynikami do shared/simulation
+
+            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            sim_path = os.path.join(self.SIM_DIR, f"{timestamp_str}")
+            os.makedirs(sim_path, exist_ok=True)
+            log_path = os.path.join(sim_path, "sim_transaction_logs.txt")
+            plot_path = os.path.join(sim_path, "sim_plot.png")
+            results_path = os.path.join(sim_path, "sim_results.txt")
+
+            # Zapis wykresu
             print(f"Zapis wykresu do: {plot_path}")
             plt.savefig(plot_path, format="png")
             plt.close()
@@ -111,6 +119,11 @@ class SimulationService:
             with open(log_path, "w", encoding="utf-8") as f:
                 for line in logs:
                     f.write(json.dumps(line) + "\n")
+
+            # Zapis wyników
+            print(f"Zapis wyników do: {results_path}")
+            with open(results_path, "w", encoding="utf-8") as f:
+                    f.write(json.dumps("tu będą wyniki, dane o symulacji itp.") + "\n")
 
             # Zwracamy format zgodny z gateway
             return {
