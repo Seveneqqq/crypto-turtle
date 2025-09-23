@@ -7,6 +7,7 @@ import { FcGoogle } from "react-icons/fc"
 import { toast, Toaster } from "sonner"
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import HomePage from "./pages/HomePage.jsx"
+import SimulationPage from "./pages/tests/SimulationPage.jsx"
 
 const MotionButton = motion(Button)
 
@@ -65,6 +66,7 @@ export default function App() {
       <Routes>
         {/* /home dostępne tylko dla zalogowanego */}
         <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" replace />} />
+        <Route path="/simulation" element={user ? <SimulationPage /> : <Navigate to="/" replace />} />
 
         {/* Strona główna */}
         <Route

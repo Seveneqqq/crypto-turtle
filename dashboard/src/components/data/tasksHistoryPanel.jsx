@@ -8,14 +8,14 @@ import { Button } from "../ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover"
 import { format } from "date-fns"
 
-export default function TasksHistoryPanel() {
+export default function TasksHistoryPanel({action=""}) {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const intervalRef = useRef(null)
 
   const fetchTasks = () => {
-    fetch("http://localhost:8000/tasks-history/?action=simulate")
+     fetch(`http://localhost:8000/tasks-history/?action=${action}`)
       .then((res) => res.json())
       .then((data) => {
         setTasks(data.Tasks)
