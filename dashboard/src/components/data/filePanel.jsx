@@ -85,7 +85,7 @@ function FilePanel() {
                   <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-sm">
                     <FileText className="w-10 h-10 text-blue-500" />
                   </div>
-                  <span className="mt-2 text-xs max-w-36 text-center break-words">
+                  <span className="mt-2 text-xs max-w-28 text-center break-words">
                     {file.name}
                   </span>
                 </div>
