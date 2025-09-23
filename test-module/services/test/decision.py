@@ -1,7 +1,6 @@
 import joblib
-import numpy as np
 import pandas as pd
-import os
+
 
 class DecisionEngine:
     def __init__(self, model_path, threshold_buy=0.6, threshold_sell=0.6):
@@ -18,43 +17,27 @@ class DecisionEngine:
         self.threshold_buy = threshold_buy
         self.threshold_sell = threshold_sell
 
-    def decide(self, features):
-        # Konwersja do numpy array
-        try:
-            if isinstance(features, dict):
-                x = np.array([list(features.values())])
-            elif isinstance(features, np.ndarray):
-                x = features.reshape(1, -1)
-            elif isinstance(features, pd.Series):
-                x = features.values.reshape(1, -1)
-            elif isinstance(features, pd.DataFrame):
-                x = features  # pojedynczy wiersz
-            else:
-                raise ValueError("Nieobsługiwany typ danych wejściowych dla DecisionEngine")
+    def decide(self, prob_row):
 
-            # Prawdopodobieństwa klas
-            probs = self.model.predict_proba(x)[0]
-            prob_map = dict(zip(self.model.classes_, probs))
+        try:
+            # Sprawdzenie typu
+            if isinstance(prob_row, pd.Series):
+                prob_map = prob_row.to_dict()
+            elif isinstance(prob_row, dict):
+                prob_map = prob_row
+            else:
+                raise ValueError("Nieobsługiwany typ danych wejściowych. Oczekiwano dict lub pd.Series")
 
             # Decyzja na podstawie progów
             if prob_map.get("buy", 0) >= self.threshold_buy:
-                a = prob_map.get("buy", 0)
-                return a, "buy"
+                return prob_map.get("buy", 0), "buy"
             elif prob_map.get("sell", 0) >= self.threshold_sell:
-                b = prob_map.get("sell", 0)
-                return b, "sell"
+                return prob_map.get("sell", 0), "sell"
             else:
                 return 0.0, "hold"
-
 
         except Exception as e:
             import traceback
             print("[DecisionEngine.decide][ERROR]", e)
-            print("[DecisionEngine.decide] features type=", type(features))
-            if isinstance(features, (pd.Series, pd.DataFrame)):
-                try:
-                    print("[DecisionEngine.decide] features columns=", getattr(features, 'columns', None))
-                except Exception:
-                    pass
             traceback.print_exc()
             raise
