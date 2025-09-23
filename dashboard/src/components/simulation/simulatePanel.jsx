@@ -91,8 +91,8 @@ export default function SimulatePanel() {
   };
 
   return (
-    <Card className="p-4 space-y-6">
-      <CardContent className="space-y-4">
+    <Card className="p-4 max-w-2xl space-y-6">
+      <CardContent className="space-y-6">
         <div>
           <Label>Balance Start</Label>
           <Input
