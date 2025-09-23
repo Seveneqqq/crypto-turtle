@@ -1,28 +1,23 @@
 class Wallet:
-    def __init__(self, balance, symbols, threshold_buy, threshold_sell):
+    def __init__(self, balance, symbols, threshold_buy, threshold_sell,wallet_percentage_limit, mincost):
         self.balance = balance
         self.holdings = {symbol: 0.0 for symbol in symbols}
         self.threshold_buy = threshold_buy
         self.threshold_sell = threshold_sell
+        self.wallet_percentage_limit = wallet_percentage_limit
+        self.mincost = mincost
     def execute(self, action, symbol, price, model_value):
-        """
-        action: 'buy', 'sell', 'hold'
-        symbol: np. 'BTC'
-        price: aktualna cena
-        model_value: float w zakresie [0.6, 1.0] - pewność modelu
-        """
+
         executed = 0.0
-        maxcost = self.balance / price  /2 #maksymalna ilość krypto do kupienia (połowa balance)
-        mincost = 1.0 / price  # minimalna ilość krypto za 1$
+        maxcost_value = (self.balance / price) * self.wallet_percentage_limit
+        mincost_value = self.mincost / price
 
         # normalizacja model_value: 0.6 -> mincost, 1.0 -> maxcost
         if model_value < float(0.6):
             model_value = 0.6
 
-
-        # print(f"[Wallet.execute] action={action} symbol={symbol} price={price} model_value={model_value}")
         if action == "buy":
-            amount = mincost + (model_value - self.threshold_buy) / (1.0 - self.threshold_buy) * (maxcost - mincost)
+            amount = mincost_value + (model_value - self.threshold_buy) / (1.0 - self.threshold_buy) * (maxcost_value - mincost_value)
             cost = amount * price
             if cost <= self.balance:
                 self.balance -= cost
@@ -34,7 +29,7 @@ class Wallet:
 
         elif action == "sell":
             if self.holdings[symbol] > 0:
-                amount = mincost + (model_value - self.threshold_sell) / (1.0 - self.threshold_sell) * (maxcost - mincost)
+                amount = mincost_value + (model_value - self.threshold_sell) / (1.0 - self.threshold_sell) * (maxcost_value - mincost_value)
                 if amount <= self.holdings[symbol]:
                     self.holdings[symbol] -= amount
                     self.balance += amount * price

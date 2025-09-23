@@ -5,6 +5,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime
+import time
+from datetime import timedelta
 from services.test.wallet import Wallet
 from services.test.decision import DecisionEngine
 
@@ -14,66 +16,70 @@ class SimulationService:
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_files")
         self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "ml")
         self.SIM_DIR = os.path.join(base_dir, "shared", "simulation")
-        # self.LOGS_DIR = os.path.join(base_dir, "shared", "simulation", "logs")
-        # self.PLOTS_DIR = os.path.join(base_dir, "shared", "simulation", "plots")
-        # try:
-        #     os.makedirs(self.LOGS_DIR, exist_ok=True)
-        #     os.makedirs(self.PLOTS_DIR, exist_ok=True)
-        # except Exception as e:
-        #     print("[SimulationService.__init__] Nie udało się utworzyć katalogów:", e)
+        # dodatkowe wartości
+
+        self.wallet_percentage_limit = 0.5  # procent (0.0-1.0) maksymalnej wartości transakcji dla portfela
+        self.mincost = 1.0                  # minimalna wartość transakcji w USDT
+
 
     def run_simulation(self, rabbitmq_msg_id=None, balance_start=1000.0, time_step=1,
                        data_files=None, models=None, threshold_buy=0.6, threshold_sell=0.6):
         try:
             print("Start Simulation")
+            start = time.time()
+
             if data_files is None:
                 data_files = {}
             if models is None:
                 models = {}
 
-            # Ładowanie danych
+# Ładowanie danych
+
             data = {}
+
             for symbol, filename in data_files.items():
                 filepath = os.path.join(self.DATA_DIR, filename)
                 if not os.path.exists(filepath):
                     raise FileNotFoundError(f"Brak pliku: {filepath}")
-                print(f"[run_simulation] Wczytuję dane: {symbol} -> {filepath}")
                 df = pd.read_csv(filepath)
-                print(f"[run_simulation] {symbol} rows={len(df)} cols={list(df.columns)}")
-                data[symbol] = df[["timestamp", "close"]].copy()
+                data[symbol] = df.copy()
 
             symbols = list(data.keys())
-            print(f"[run_simulation] symbols={symbols}")
 
-            # Inicjalizacja portfela i engine
-            wallet = Wallet(balance_start, symbols,threshold_buy=threshold_buy, threshold_sell=threshold_sell)
-            print(f"[run_simulation] Wallet start balance={wallet.balance}")
+# Inicjalizacja portfela i engine
+
+            wallet = Wallet(balance_start, symbols,threshold_buy=threshold_buy, threshold_sell=threshold_sell, wallet_percentage_limit=self.wallet_percentage_limit, mincost=self.mincost)
             engines = {}
+            predictions = {}
             for symbol in symbols:
                 model_path = os.path.join(self.MODEL_DIR, models[symbol])
-                print(f"[run_simulation] Init DecisionEngine for {symbol} model_path={model_path}")
                 engines[symbol] = DecisionEngine(model_path=model_path, threshold_buy=threshold_buy,threshold_sell=threshold_sell)
 
+                # Przewidywanie modelu dla wszystkich wartości
+
+                history = data[symbol].copy()
+                features = engines[symbol].model.feature_names_in_
+                x = history[features].values
+                probs = engines[symbol].model.predict_proba(x)
+                predictions[symbol] = probs
+
             num_ticks = min(len(df) for df in data.values())
-            print(f"[run_simulation] num_ticks={num_ticks}")
             portfolio_values = []
             timestamps = []
             logs = []
 
-            for t in range(num_ticks):
+            for t in range(0, num_ticks):
                 prices = {symbol: data[symbol].iloc[t]["close"] for symbol in symbols}
-                timestamps.append(data[symbols[0]].iloc[t]["timestamp"])
+                timestamps.append(data[symbols[0]].iloc[t]["close_time"])
 
                 for symbol in symbols:
-                    history = data[symbol].iloc[:t + 1].copy()
-                    if len(history) < 15:
-                        continue
-                    features = self.extract_features(history)
-                    if features is None:
-                        continue
-                    amount, action = engines[symbol].decide(features)
+
+                    probs_array = predictions[symbol][t]
+                    prob_row = dict(zip(engines[symbol].model.classes_, probs_array))
+                    amount, action = engines[symbol].decide(prob_row)
+
                     if action != "hold":
-                        action_end, amount_end = wallet.execute(action, symbol, prices[symbol],amount)
+                        action_end, amount_end = wallet.execute(action, symbol, prices[symbol], amount)
                     else:
                         action_end = action
 
@@ -81,10 +87,11 @@ class SimulationService:
                         logs.append({
                             "symbol": symbol,
                             "action": action_end,
-                            "timestamp": history.iloc[-1]["timestamp"],
+                            "timestamp": data[symbol].iloc[t]["open_time"],
                             "usd_balance": f"{wallet.balance:.2f}",
                             "portfel": f"{wallet.total_value(prices):.2f}"
                         })
+
                 if t in (0, num_ticks - 1) or (t % 1000 == 0):
                     print(f"Progress = {(t / num_ticks) * 100:.2f}%")
                 portfolio_values.append(wallet.total_value(prices))
@@ -121,9 +128,12 @@ class SimulationService:
                     f.write(json.dumps(line) + "\n")
 
             # Zapis wyników
+            end = time.time()
+            duration = timedelta(seconds=end - start)
             print(f"Zapis wyników do: {results_path}")
             with open(results_path, "w", encoding="utf-8") as f:
                     f.write(json.dumps("tu będą wyniki, dane o symulacji itp.") + "\n")
+                    f.write(f"Czas trwania symulacji: {duration}\n")
 
             # Zwracamy format zgodny z gateway
             return {
@@ -149,15 +159,3 @@ class SimulationService:
                 "portfolio_values": [],
                 "timestamp": datetime.now().isoformat()
             }
-
-    @staticmethod
-    def extract_features(df):
-        df = df.copy()
-        df["return"] = df["close"].pct_change()
-        df["ma_5"] = df["close"].rolling(window=3).mean()
-        df["ma_15"] = df["close"].rolling(window=5).mean()
-        df = df.dropna()
-        if df.empty:
-            return None
-        features = ["close", "return", "ma_5", "ma_15"]
-        return df[features].iloc[[-1]]
