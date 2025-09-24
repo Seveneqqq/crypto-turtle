@@ -17,6 +17,7 @@ class DecisionEngine:
         self.threshold_buy = threshold_buy
         self.threshold_sell = threshold_sell
 
+
     def decide(self, prob_row):
 
         try:
