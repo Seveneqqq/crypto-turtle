@@ -2,9 +2,10 @@ from configuration.rabbitmq_queues import DATA_RESPONSE_QUEUE
 
 
 class RabbitMQRequestService:
-    def __init__(self, binance_service, rabbitmq_service):
+    def __init__(self, binance_service, rabbitmq_service, data_service):
         self.binance_service = binance_service
         self.rabbitmq_service = rabbitmq_service
+        self.data_service = data_service
 
     def handle_request(self, data):
         print(data)
@@ -25,6 +26,31 @@ class RabbitMQRequestService:
                 else:
                     print("Failed to retrieve historical data")
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
-                        "result": "error",
+                        "result": "Failed",
                         "message": "Failed to retrieve historical data"
+                    })
+            
+            case "process_data":
+                print("Processing data")
+                ds = self.data_service
+                ds.set_filename(data.get("filename"))
+                processed_info = ds.run_pipeline(
+                    steps=data.get("steps", []),
+                    preprocessing_methods=data.get("preprocessing_methods", ["RAW"])
+                )
+                
+                if processed_info:
+                    print("Successfully processed data")
+                    self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
+                        "rabbit_msg_id": data.get("rabbit_msg_id"),
+                        "result": "success",
+                        "processed_methods": list(processed_info.keys()),
+                        "files": processed_info  # zawiera filename i filepath dla każdej metody
+                    })
+                else:
+                    print("Failed to process data")
+                    self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
+                        "rabbit_msg_id": data.get("rabbit_msg_id"),
+                        "result": "Failed",
+                        "message": "Failed to process data"
                     })
