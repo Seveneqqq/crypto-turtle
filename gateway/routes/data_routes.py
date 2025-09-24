@@ -3,6 +3,7 @@ from fastapi.params import Depends
 from services import auth_service
 from services import rabbitmq_service
 from services import data_service
+from pydantic import BaseModel
 from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -41,3 +42,34 @@ def get_historical_data(
     )
     return {"msg": "Request added to queue."}
 
+
+
+
+class ProcessDataRequest(BaseModel):
+    filename: str
+    steps: list[str] = ["load_data", "make_features", "add_technical_indicators"]
+    preprocessing_methods: list[str] = ["RAW"]
+
+@router.post("/process-data")
+def process_data_route(request: ProcessDataRequest):
+    filename = request.filename
+    steps = request.steps
+    preprocessing_methods = request.preprocessing_methods
+
+    # Walidacja
+    if not filename.strip():
+        raise HTTPException(status_code=400, detail="Filename cannot be empty")
+
+    # Wywołanie serwisu, który publikuje do RabbitMQ
+    data_service.process_data(
+        filename=filename,
+        steps=steps,
+        preprocessing_methods=preprocessing_methods
+    )
+
+    return {
+        "msg": f"Processing request for '{filename}' added to queue.",
+        "filename": filename,
+        "steps": steps,
+        "preprocessing_methods": preprocessing_methods
+    }

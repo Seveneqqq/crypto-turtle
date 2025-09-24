@@ -38,3 +38,28 @@ class DataService:
             state="created",
             request=str(request_payload)
         )
+
+    def process_data(self, filename, steps=None, preprocessing_methods=None):
+        steps = steps or ["load_data", "make_features", "add_technical_indicators"]
+        preprocessing_methods = preprocessing_methods or ["RAW"]
+    
+        rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
+        
+        request_payload = {
+            "action": "process_data",
+            "rabbit_msg_id": rabbit_msg_id,
+            "filename": filename,
+            "steps": steps,
+            "preprocessing_methods": preprocessing_methods
+        }
+    
+        print("Sending process_data request to RabbitMQ:")
+        print(request_payload)
+    
+        self.rabbitmq_service.publish(queue=DATA_REQUEST_QUEUE, message=request_payload)
+    
+        self.sqlite_service.insert_message(
+            rabbit_msg_id=rabbit_msg_id,
+            state="created",
+            request=str(request_payload)
+        )
