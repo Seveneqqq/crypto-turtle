@@ -9,6 +9,7 @@ import time
 from datetime import timedelta
 from services.test.wallet import Wallet
 from services.test.decision import DecisionEngine
+from services.test.rating import Rating
 
 class SimulationService:
     def __init__(self):
@@ -16,11 +17,18 @@ class SimulationService:
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_files")
         self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "ml")
         self.SIM_DIR = os.path.join(base_dir, "shared", "simulation")
-        # dodatkowe wartości
+
+
+        # nie dodane wartości do gateway
 
         self.wallet_percentage_limit = 0.5  # procent (0.0-1.0) maksymalnej wartości transakcji dla portfela
         self.mincost = 1.0                  # minimalna wartość transakcji w USDT
+        self.stop_loss = 1.0               # stop_loss dla wartości posiadanej kryptowaluty
+        self.fee = 0.0                      # prowizja przy transakcji
 
+        self.rlagent = False                # symulacja z rlagentem lub bez --brak
+        self.slippage = 0                   # opóźnienie w kupnie w tickach --brak
+        self.max_wallet_percentage_crypto = 1.0  #dywesyfikacja portfela --brak
 
     def run_simulation(self, rabbitmq_msg_id=None, balance_start=1000.0, time_step=1,
                        data_files=None, models=None, threshold_buy=0.6, threshold_sell=0.6):
@@ -48,14 +56,22 @@ class SimulationService:
 
 # Inicjalizacja portfela i engine
 
-            wallet = Wallet(balance_start, symbols,threshold_buy=threshold_buy, threshold_sell=threshold_sell, wallet_percentage_limit=self.wallet_percentage_limit, mincost=self.mincost)
+            wallet = Wallet(balance_start, symbols,
+                            threshold_buy=threshold_buy,
+                            threshold_sell=threshold_sell,
+                            wallet_percentage_limit=self.wallet_percentage_limit,
+                            mincost=self.mincost,
+                            slippage=self.slippage,
+                            stop_loss=self.stop_loss,
+                            fee=self.fee,
+                            max_wallet_percentage_crypto=self.max_wallet_percentage_crypto)
             engines = {}
             predictions = {}
             for symbol in symbols:
                 model_path = os.path.join(self.MODEL_DIR, models[symbol])
                 engines[symbol] = DecisionEngine(model_path=model_path, threshold_buy=threshold_buy,threshold_sell=threshold_sell)
 
-                # Przewidywanie modelu dla wszystkich wartości
+# Przewidywanie modelu dla wszystkich wartości
 
                 history = data[symbol].copy()
                 features = engines[symbol].model.feature_names_in_
@@ -96,12 +112,14 @@ class SimulationService:
                     print(f"Progress = {(t / num_ticks) * 100:.2f}%")
                 portfolio_values.append(wallet.total_value(prices))
 
+            rating = Rating()
+            metrics = rating.rate(portfolio_values)
             # Wykres
             plt.figure(figsize=(12,6))
             plt.plot(timestamps, portfolio_values, label="Wartość portfela (USD)")
             plt.xlabel("Timestamp")
             plt.ylabel("Wartość portfela (USD)")
-            plt.title("Symulacja wartości portfela")
+            plt.title(f"Symulacja wartości portfela ({metrics["score"]})")
             plt.gca().set_xticklabels([])  # usuwa napisy
             plt.gca().set_xticks([])  # usuwa też kreski
             plt.legend()
@@ -127,13 +145,21 @@ class SimulationService:
                 for line in logs:
                     f.write(json.dumps(line) + "\n")
 
+
+
+
+            # zapis JSON
+            with open(results_path, "w", encoding="utf-8") as f:
+                json.dump(metrics, f, indent=2)
+
+
             # Zapis wyników
             end = time.time()
             duration = timedelta(seconds=end - start)
             print(f"Zapis wyników do: {results_path}")
-            with open(results_path, "w", encoding="utf-8") as f:
-                    f.write(json.dumps("tu będą wyniki, dane o symulacji itp.") + "\n")
-                    f.write(f"Czas trwania symulacji: {duration}\n")
+            # with open(results_path, "w", encoding="utf-8") as f:
+            #         f.write(json.dumps("tu będą wyniki, dane o symulacji itp.") + "\n")
+            #         f.write(f"Czas trwania symulacji: {duration}\n")
 
             # Zwracamy format zgodny z gateway
             return {
