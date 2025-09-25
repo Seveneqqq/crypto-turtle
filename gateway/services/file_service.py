@@ -31,7 +31,46 @@ class FileService:
             "filename": file.filename,
             "filepath": str(save_path)
         }
-    
+
+    def get_files_by_key(self, key: str):
+        """
+        Zwraca pliki na podstawie klucza, który jest mapowany na konkretną ścieżkę.
+        Działa zarówno w Dockerze, jak i lokalnie.
+        """
+
+        # mapa kluczy na foldery
+        key_to_path = {
+            "models": self.models_path,
+            "logs": self.logs_path,
+            "plots": self.plots_path,
+            "binance_raw": self.binance_raw_path,
+            "files": self.base_path,
+            "agents_scikit": self.shared_path / "files" / "agents" / "scikit",
+        }
+
+        if key not in key_to_path:
+            return {"message": f"Unknown key '{key}'"}
+
+        path = key_to_path[key]
+
+        if not path.exists() or not path.is_dir():
+            return {"message": f"Path for key '{key}' not found"}
+
+        files = []
+        for filename in os.listdir(path):
+            file_path = path / filename
+            if file_path.is_file():
+                files.append({
+                    "name": filename,
+                    "path": str(file_path)
+                })
+
+        return {
+            "key": key,
+            "directory": str(path),
+            "files": files
+        }
+
     def get_models(self):
         """Zwraca wszystkie modele"""
         models = []
