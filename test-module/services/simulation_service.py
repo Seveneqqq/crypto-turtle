@@ -23,11 +23,11 @@ class SimulationService:
 
         self.wallet_percentage_limit = 0.5  # procent (0.0-1.0) maksymalnej wartości transakcji dla portfela
         self.mincost = 1.0                  # minimalna wartość transakcji w USDT
-        self.stop_loss = 1.0               # stop_loss dla wartości posiadanej kryptowaluty
+        self.stop_loss = 0.0001               # stop_loss dla wartości posiadanej kryptowaluty
         self.fee = 0.0                      # prowizja przy transakcji
 
         self.rlagent = False                # symulacja z rlagentem lub bez --brak
-        self.slippage = 0                   # opóźnienie w kupnie w tickach --brak
+        self.slippage = 0                   # opóźnienie w kupnie/sprzedaży w tickach --brak
         self.max_wallet_percentage_crypto = 1.0  #dywesyfikacja portfela --brak
 
     def run_simulation(self, rabbitmq_msg_id=None, balance_start=1000.0, time_step=1,

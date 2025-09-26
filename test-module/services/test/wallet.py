@@ -1,5 +1,5 @@
 class Wallet:
-    def __init__(self, balance, symbols, threshold_buy, threshold_sell,wallet_percentage_limit, mincost, slippage, stop_loss, fee, max_wallet_percentage_crypto):
+    def __init__(self, balance, symbols, threshold_buy, threshold_sell, wallet_percentage_limit, mincost, slippage, stop_loss, fee, max_wallet_percentage_crypto):
         self.balance = balance
         self.holdings = {symbol: 0.0 for symbol in symbols}
         self.threshold_buy = threshold_buy
@@ -41,6 +41,10 @@ class Wallet:
                     self.holdings[symbol] -= amount
                     self.balance += (amount * price) * (1 - self.fee)
                     executed = amount
+                    sl_executed = self.stop_loss_check(symbol, price)
+                    if sl_executed > 0:
+                        executed = sl_executed
+                        action = "sell"
                 else:
                     action = "hold"
                     executed = 0.0
@@ -48,10 +52,7 @@ class Wallet:
                 action = "hold"
                 executed = 0.0
 
-        sl_executed = self.stop_loss_check(symbol, price)
-        if sl_executed > 0:
-            executed = sl_executed
-            action = "sell"
+
 
 
         return action, executed
