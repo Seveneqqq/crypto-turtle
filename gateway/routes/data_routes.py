@@ -4,6 +4,7 @@ from services import auth_service
 from services import rabbitmq_service
 from services import data_service
 from pydantic import BaseModel
+from typing import List, Literal
 from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
 
 router = APIRouter(prefix="/data", tags=["data"])
@@ -42,34 +43,40 @@ def get_historical_data(
     )
     return {"msg": "Request added to queue."}
 
-
-
+VALID_OUTPUT_FOLDERS = ["trainmodel", "testmodel", "rlagent", "simulation"]
 
 class ProcessDataRequest(BaseModel):
     filename: str
-    steps: list[str] = ["load_data", "make_features", "add_technical_indicators"]
-    preprocessing_methods: list[str] = ["RAW"]
+    steps: List[str] = ["load_data", "make_features", "add_technical_indicators"]
+    preprocessing_methods: List[str] = ["RAW"]
+    output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation"]] = ["trainmodel"]
+
 
 @router.post("/process-data")
 def process_data_route(request: ProcessDataRequest):
-    filename = request.filename
+    filename = request.filename.strip()
     steps = request.steps
     preprocessing_methods = request.preprocessing_methods
+    output_folders = request.output_folders or ["trainmodel"]
 
-    # Walidacja
-    if not filename.strip():
+    if not filename:
         raise HTTPException(status_code=400, detail="Filename cannot be empty")
 
-    # Wywołanie serwisu, który publikuje do RabbitMQ
+    invalid_folders = [f for f in output_folders if f not in VALID_OUTPUT_FOLDERS]
+    if invalid_folders:
+        raise HTTPException(status_code=400, detail=f"Invalid output folders: {invalid_folders}")
+
     data_service.process_data(
         filename=filename,
         steps=steps,
-        preprocessing_methods=preprocessing_methods
+        preprocessing_methods=preprocessing_methods,
+        output_folders=output_folders
     )
 
     return {
         "msg": f"Processing request for '{filename}' added to queue.",
         "filename": filename,
         "steps": steps,
-        "preprocessing_methods": preprocessing_methods
+        "preprocessing_methods": preprocessing_methods,
+        "output_folders": output_folders
     }

@@ -11,7 +11,7 @@ class BinanceService:
         self.api_url = api_url
         self.base_dir = os.getenv(
             "SHARED_DIR",
-            os.path.join("shared", "files", "binance_historical_raw_data")
+            os.path.join("shared", "files", "raw_data")
         )
         os.makedirs(self.base_dir, exist_ok=True)
 

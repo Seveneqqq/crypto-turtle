@@ -11,7 +11,7 @@ class FileService:
         self.base_path = Path(__file__).resolve().parent.parent / "shared" / "files"
         self.base_path.mkdir(parents=True, exist_ok=True)
 
-        self.binance_raw_path = self.base_path / "binance_historical_raw_data"
+        self.binance_raw_path = self.base_path / "raw_data"
         self.binance_raw_path.mkdir(parents=True, exist_ok=True)
 
         self.project_root = Path(__file__).resolve().parent.parent  
@@ -46,6 +46,7 @@ class FileService:
             "binance_raw": self.binance_raw_path,
             "files": self.base_path,
             "agents_scikit": self.shared_path / "files" / "agents" / "scikit",
+            "processed_data": self.shared_path / "files" / "processed_files",
         }
 
         if key not in key_to_path:
