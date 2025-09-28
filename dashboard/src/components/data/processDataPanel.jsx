@@ -5,6 +5,7 @@ import { Card, CardContent } from "../../components/ui/card"
 import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Trash, ChevronUp, ChevronDown } from "lucide-react"
+import { Checkbox } from "../../components/ui/checkbox" // ✅ shadcn checkbox
 
 function ListItem({ item, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
   return (
@@ -34,6 +35,9 @@ export default function ProcessDataPanel() {
   const availableMethods = ["RAW", "Z-SCORE", "ROBUST", "MINMAX", "ROLLING_Z"]
   const [preprocessingMethods, setPreprocessingMethods] = useState([...availableMethods])
 
+  const availableFolders = ["trainmodel", "testmodel", "rlagent", "simulation"]
+  const [outputFolders, setOutputFolders] = useState(["trainmodel"]) // ✅ default
+
   // KROKI
   const addStep = (step) => {
     if (!steps.includes(step)) setSteps([...steps, step])
@@ -60,9 +64,24 @@ export default function ProcessDataPanel() {
     setPreprocessingMethods(newMethods)
   }
 
+  // FOLDERY
+  const toggleFolder = (folder) => {
+    setOutputFolders((prev) =>
+      prev.includes(folder) ? prev.filter((f) => f !== folder) : [...prev, folder]
+    )
+  }
+
   const handleSubmit = () => {
     if (!filename) return alert("Select a file to process")
-    const body = { filename, steps, preprocessing_methods: preprocessingMethods }
+    if (outputFolders.length === 0) return alert("Select at least one output folder")
+
+    const body = {
+      filename,
+      steps,
+      preprocessing_methods: preprocessingMethods,
+      output_folders: outputFolders, // ✅ dodane
+    }
+
     fetch("http://localhost:8000/data/process-data", {
       method: "POST",
       credentials: "include",
@@ -106,7 +125,9 @@ export default function ProcessDataPanel() {
               </SelectTrigger>
               <SelectContent>
                 {availableSteps.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -136,10 +157,31 @@ export default function ProcessDataPanel() {
               </SelectTrigger>
               <SelectContent>
                 {availableMethods.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* FOLDERY */}
+        <div>
+          <Label>Output Folders</Label>
+          <div className="flex flex-col gap-2 mt-2">
+            {availableFolders.map((f) => (
+              <div key={f} className="flex items-center gap-2">
+                <Checkbox
+                  id={f}
+                  checked={outputFolders.includes(f)}
+                  onCheckedChange={() => toggleFolder(f)}
+                />
+                <label htmlFor={f} className="text-sm">
+                  {f}
+                </label>
+              </div>
+            ))}
           </div>
         </div>
 
