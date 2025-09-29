@@ -6,7 +6,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import time
-
+import numpy as np
+from stable_baselines3 import PPO
 from services.test.wallet import Wallet, WalletConfig
 from services.test.decision import DecisionEngine, DecisionConfig
 from services.test.rating import Rating
@@ -17,7 +18,7 @@ class SimulationService:
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_files")
         self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "ml")
         self.SIM_DIR = os.path.join(base_dir, "shared", "simulation")
-
+        self.AGENT_DIR = os.path.join(base_dir, "shared", "agents")
         # Domyślne wartości parametrów decyzyjnych (mogą być nadpisane w run_simulation)
         self.wallet_percentage_limit = 0.5
         self.mincost = 1.0
@@ -25,7 +26,7 @@ class SimulationService:
         self.fee = 0.0
         self.slippage = 0
         self.max_wallet_percentage_crypto = 1.0
-        self.rlagent = False  # czy RL steruje decyzjami (na razie False)
+        self.rlagent = True  # czy RL steruje decyzjami (na razie False)
 
     def run_simulation(
         self,
@@ -41,13 +42,20 @@ class SimulationService:
         stop_loss=None,
         fee=None,
         slippage=None,
-        max_wallet_percentage_crypto=None
+        max_wallet_percentage_crypto=None,
+        rlagent=False
     ):
         try:
             print("[Simulation] Start")
             start_time = time.time()
 
+
+            agent_path = os.path.join(self.AGENT_DIR, "ppo.zip")
+            rl_agent = PPO.load(agent_path, env=None)
+
+
             # Parametry decyzyjne nadpisane jeśli podano
+            rlagent = rlagent or self.rlagent
             wallet_percentage_limit = wallet_percentage_limit or self.wallet_percentage_limit
             mincost = mincost or self.mincost
             stop_loss = stop_loss or self.stop_loss
@@ -93,14 +101,21 @@ class SimulationService:
 
             engines = {}
             predictions = {}
+            model_outputs = {}
+            agent_classes = None
             for symbol in symbols:
                 model_path = os.path.join(self.MODEL_DIR, models[symbol])
-                engines[symbol] = DecisionEngine(model_path=model_path, config=config)
+                engine = DecisionEngine(model_path=model_path, config=config)
+                engines[symbol] = engine
+                print("asdnxjf")
+                df = data[symbol]
+                features = engine.model.feature_names_in_
+                x = df[features].values
+                probs = engine.model.predict_proba(x)
+                classes = [str(c) for c in engine.model.classes_]
+                agent_classes = classes  # zakładam, że wszystkie symbole mają te same klasy
+                model_outputs[symbol] = [dict(zip(classes, row)) for row in probs]
 
-                history = data[symbol].copy()
-                features = engines[symbol].model.feature_names_in_
-                x = history[features].values
-                probs = engines[symbol].model.predict_proba(x)
                 predictions[symbol] = probs
 
             num_ticks = min(len(df) for df in data.values())
@@ -118,9 +133,34 @@ class SimulationService:
                     prob_row = dict(zip(engines[symbol].model.classes_, prob_array))
 
                     # Decision
-                    decision = engines[symbol].decide(prob_row, wallet, symbol, prices[symbol])
-                    action = decision["action"]
-                    qty = decision["qty"]
+                    if rlagent:
+                        # RL agent: agent.predict(obs) -> akcja w [-1,1]^7
+                        obs = build_obs(symbol, t, data, wallet, model_outputs, agent_classes)
+                        action, _states = rl_agent.predict(obs, deterministic=True)
+                        # action jest w formie numpy array, mapujemy na parametry DecisionEngine
+                        scaled = (action + 1.0) / 2.0  # [-1,1] -> [0,1]
+
+                        # ustawienia portfela
+                        decision_config = DecisionConfig(
+                            threshold_buy=scaled[0],
+                            threshold_sell=scaled[1],
+                            tx_fraction=scaled[2],
+                            max_fraction_when_confident=scaled[3],
+                            mincost=scaled[4] * 100
+                        )
+                        wallet.config.stop_loss = scaled[5]
+                        wallet.config.max_wallet_percentage_crypto = scaled[6]
+
+                        # użyj DecisionEngine tylko do wykonania decyzji (nie do wyboru akcji)
+                        decision = engines[symbol].decide(prob_row, wallet, symbol, prices[symbol])
+                        action = decision["action"]
+                        qty = decision["qty"]
+                    else:
+                        # stary sposób
+                        decision = engines[symbol].decide(prob_row, wallet, symbol, prices[symbol])
+                        action = decision["action"]
+                        qty = decision["qty"]
+
 
                     # Execute
                     if action != "hold" and qty > 0:
@@ -130,6 +170,7 @@ class SimulationService:
                     else:
                         executed = 0.0
                         action_end = "hold"
+
 
                     # Log if something happened
                     if action_end != "hold" and executed > 0:
@@ -211,6 +252,16 @@ class SimulationService:
                 "portfolio_values": [],
                 "timestamp": datetime.now().isoformat()
             }
+def build_obs(symbol, t, data, rl_env_wallet, model_outputs, classes):
+    price = float(data[symbol].iloc[t]["close"])
+    prob_vec = model_outputs[symbol][t]  # np. dict {'buy':0.3,'sell':0.2,'hold':0.5}
+
+    # weź prawdopodobieństwa buy/sell lub 0 jeśli brak
+    buy_p = float(prob_vec.get("buy", 0.0))
+    sell_p = float(prob_vec.get("sell", 0.0))
+    balance = float(rl_env_wallet.balance)
+    obs = np.array([buy_p, sell_p, price, balance], dtype=np.float32)
+    return obs
 
 
 
