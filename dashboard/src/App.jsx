@@ -10,6 +10,7 @@ import HomePage from "./pages/HomePage.jsx"
 import SimulationPage from "./pages/tests/SimulationPage.jsx"
 import HistoricalDataPage from "./pages/data/HistoricalDataPage.jsx"
 import ProcessingDataPage from "./pages/data/ProcessingDataPage.jsx"
+import AccuracyPage from "./pages/data/AccuracyPage.jsx"
 
 const MotionButton = motion(Button)
 
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/historical-data" element={user ? <HistoricalDataPage /> : <Navigate to="/" replace />} />
         <Route path="/simulation" element={user ? <SimulationPage /> : <Navigate to="/" replace />} />
         <Route path="/process-data" element={user ? <ProcessingDataPage /> : <Navigate to="/" replace />} />
+        <Route path="/accuracy" element={user ? <AccuracyPage /> : <Navigate to="/" replace />} />
 
         {/* Strona główna */}
         <Route
