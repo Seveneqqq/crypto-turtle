@@ -46,7 +46,13 @@ class FileService:
             "binance_raw": self.binance_raw_path,
             "files": self.base_path,
             "agents_scikit": self.shared_path / "files" / "agents" / "scikit",
-            "processed_data": self.shared_path / "files" / "processed_files",
+            "raw_data": self.shared_path / "files" / "raw_data",
+            "processed_rlagent_data": self.shared_path / "files" / "processed_rlagent_data",
+            "processed_simulation_data": self.shared_path / "files" / "processed_simulation_data",
+            "processed_testmodel_data": self.shared_path / "files" / "processed_testmodel_data",
+            "processed_trainmodel_data": self.shared_path / "files" / "processed_trainmodel_data",
+            "models_ml": self.shared_path / "models" / "ml",
+            "models_sklearn": self.shared_path / "models" / "sklearn",
         }
 
         if key not in key_to_path:

@@ -51,6 +51,6 @@ class RabbitMQRequestService:
                     print("Failed to process data")
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
-                        "result": "Failed",
+                        "result": "failed",
                         "message": "Failed to process data"
                     })

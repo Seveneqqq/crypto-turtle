@@ -28,3 +28,20 @@ def simulate(req: SimulationRequest):
         threshold_sell=req.threshold_sell
     )
     return {"msg": "Request added to queue."}
+
+
+class AccuracyRequest(BaseModel):
+    data_dir: str
+    data_file: str
+    model_dir: str
+    model_file: str
+
+@router.post("/calculate_accuracy")
+def calculate_accuracy(req: AccuracyRequest):
+    tests_service.calculate_accuracy(
+        data_dir=req.data_dir,
+        data_file=req.data_file,
+        model_dir=req.model_dir,
+        model_file=req.model_file
+    )
+    return {"msg": "Request added to queue."}
