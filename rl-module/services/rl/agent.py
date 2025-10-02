@@ -1,90 +1,111 @@
-import gym
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
-from gym import spaces
-from services.rl.wallet import Wallet
-from services.rl.decision import DecisionEngine
+from services.rl.wallet import Wallet, WalletConfig
+from services.rl.decision import DecisionEngine, DecisionConfig
 
 class TradingEnv(gym.Env):
-    """
-    Środowisko RL dla handlu.
-    Agent uczy się optymalizować progi DecisionEngine (threshold_buy/sell)
-    korzystając z portfela Wallet.
-    """
-    metadata = {"render.modes": ["human"]}
-
-    def __init__(self, data, model_path, symbol, initial_balance=1000.0,
-                 wallet_percentage_limit=0.1, mincost=10.0):
-        super(TradingEnv, self).__init__()
-
+    def __init__(self, data, model, initial_balance=1000.0):
+        super().__init__()
         self.data = data
-        self.model_path = model_path
-        self.symbol = symbol
+        self.model = model
+        self.symbol = data.columns[0]
         self.initial_balance = initial_balance
-        self.current_step = 0
 
-        # --- komponenty ---
-        self.engine = DecisionEngine(model_path)
-        self.wallet = Wallet(initial_balance, symbols=[symbol],
-                             threshold_buy=0.6, threshold_sell=0.6,
-                             wallet_percentage_limit=wallet_percentage_limit,
-                             mincost=mincost)
+        # akcja = 7 parametrów uczonych przez agenta
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(7,), dtype=np.float32)
+        # obserwacja: sygnał + cena + holdings + balance
+        # Uwaga: price/balance mogą być >1, lepiej ustawić bounds na duże wartości:
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(4,), dtype=np.float32)
 
-        # feature names jak w modelu (jeśli będziesz chciał użyć danych raw zamiast prob_row)
-        self.FEATURE_COLUMNS = self.engine.model.feature_names_in_
+        # przelicz wyniki modelu raz
+        self.model_outputs = []
+        self.precompute_model_outputs()
 
-        # --- action space ---
-        # Agent steruje progami [buy, sell] -> wartości od 0.5 do 0.9
-        self.action_space = spaces.Box(low=np.array([0.5, 0.5]),
-                                       high=np.array([0.9, 0.9]),
-                                       dtype=np.float32)
+        self.reset()
 
-        # --- observation space ---
-        # probabilistyka (buy/sell/hold) + balans + holdings
-        obs_size = 3 + 2
-        self.observation_space = spaces.Box(low=0.0, high=1.0,
-                                            shape=(obs_size,), dtype=np.float32)
+    def precompute_model_outputs(self):
+        """Oblicz wyniki modelu dla wszystkich wierszy danych na starcie"""
+        history = self.data.copy()
 
-    def reset(self):
-        self.current_step = 0
-        self.wallet = Wallet(self.initial_balance, symbols=[self.symbol],
-                             threshold_buy=0.6, threshold_sell=0.6,
-                             wallet_percentage_limit=self.wallet.wallet_percentage_limit,
-                             mincost=self.wallet.mincost)
-        return self._get_observation()
+        # próbujemy pobrać cechy z modelu; jeśli nie ma, bierzemy wszystkie kolumny poza symbolową
+        features = getattr(self.model, "feature_names_in_", None)
+        if features is None:
+            # załóżmy że kolumna symbolu to np. 'close' lub nazwa pierwszej kolumny
+            # wybieramy kolumny numeryczne
+            features = history.select_dtypes(include=[np.number]).columns.tolist()
+            # jeśli symbol (np. kolumna z ceną) też jest w features nie usuwamy; model wybierze odpowiednie
+        # upewnij się, że features są listą (np. np.ndarray -> list)
+        features = list(features)
+
+        # przygotuj dane wejściowe i policz predykcje
+        x = history[features].values
+        probs = self.model.predict_proba(x)  # shape (n_rows, n_classes)
+
+        # etykiety klas (np. ['buy','hold','sell']) -> konwertujemy na string dla spójności
+        classes = [str(c) for c in getattr(self.model, "classes_", [])]
+
+        # zabezpieczenie: jeśli brak klas, zbuduj domyślne nazwy
+        if not classes:
+            classes = [f"class_{i}" for i in range(probs.shape[1])]
+
+        # Zamieniamy każdy wiersz prawdopodobieństw na dict {label: prob}
+        self.model_outputs = [dict(zip(classes, p.astype(float).tolist())) for p in probs]
+
+            # Debug: poinformuj, jeśli etykiety 'buy' lub 'sell' nie występują
+        if "buy" not in classes or "sell" not in classes:
+            print("[TradingEnv.precompute_model_outputs] Warning: model.classes_ doesn't contain 'buy' and/or 'sell'. Classes:", classes)
+
+        print("precomputing model outputs done, rows =", len(self.model_outputs))
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        self.t = 0
+        self.wallet = Wallet(self.initial_balance, [self.symbol], WalletConfig())
+        self.decision = DecisionEngine(DecisionConfig())
+        self.total_reward = 0.0
+        return self._get_obs(), {}
+
+    def _get_obs(self):
+        price = float(self.data.iloc[self.t][self.symbol])
+        prob = self.model_outputs[self.t]  # dict: {label: prob}
+        # bezpiecznie pobieramy prawdopodobieństwa (0 jeśli brak)
+        buy_p = float(prob.get("buy", 0.0))
+        sell_p = float(prob.get("sell", 0.0))
+        obs = np.array([buy_p, sell_p, price, float(self.wallet.balance)], dtype=np.float32)
+        return obs
 
     def step(self, action):
-        # ustalenie progów na podstawie akcji agenta
-        self.engine.threshold_buy = float(action[0])
-        self.engine.threshold_sell = float(action[1])
+        # ustaw parametry od agenta
+        scaled_action = (action + 1.0) / 2.0  # mapowanie z [-1,1] -> [0,1]
 
-        row = self.data.iloc[self.current_step]
+        self.decision.config.threshold_buy = scaled_action[0]
+        self.decision.config.threshold_sell = scaled_action[1]
+        self.decision.config.tx_fraction = scaled_action[2]
+        self.decision.config.max_fraction_when_confident = scaled_action[3]
+        self.decision.config.mincost = scaled_action[4] * 100
+        self.wallet.config.stop_loss = scaled_action[5]
+        self.wallet.config.max_wallet_percentage_crypto = scaled_action[6]
 
-        # zakładam, że row zawiera już kolumny ["buy","sell","hold"] z predict_proba
-        prob_row = row[["buy", "sell", "hold"]]
+        price = float(self.data.iloc[self.t][self.symbol])
+        prob_map = self.model_outputs[self.t]
 
-        model_value, decision = self.engine.decide(prob_row)
+        decision = self.decision.decide(prob_map, self.wallet, self.symbol, price)
+        if decision is None or decision.get("qty") is None:
+            decision = {"action": "hold", "qty": 0.0, "model_value": 0.0, "reason": "invalid decision"}
 
-        # wykonanie transakcji
-        executed_action, _ = self.wallet.execute(decision, self.symbol, row["close"], model_value)
+        self.wallet.execute_order(decision['action'], self.symbol, decision['qty'], price)
 
-        # nagroda = aktualna wartość portfela
-        reward = self.wallet.total_value({self.symbol: row["close"]})
+        # nagroda = zmiana wartości portfela
+        portfolio_value = self.wallet.total_value({self.symbol: price}) or 0.0
+        reward = portfolio_value - self.total_reward
+        self.total_reward = portfolio_value
 
-        self.current_step += 1
-        done = self.current_step >= len(self.data) - 1
-        obs = self._get_observation()
+        self.t += 1
+        terminated = self.t >= len(self.data) - 1
+        truncated = False  # albo warunek np. max_steps
 
-        return obs, reward, done, {}
+        obs = self._get_obs() if not terminated else np.zeros(self.observation_space.shape, dtype=np.float32)
 
-    def _get_observation(self):
-        row = self.data.iloc[self.current_step]
-        return np.array([
-            row["buy"],
-            row["sell"],
-            row["hold"],
-            self.wallet.balance,
-            self.wallet.holdings[self.symbol]
-        ], dtype=np.float32)
+        return obs, float(reward), terminated, truncated, {}
 
-    def render(self, mode="human"):
-        print(f"Step {self.current_step}, Balance={self.wallet.balance:.2f}, Holdings={self.wallet.holdings[self.symbol]:.6f}")
