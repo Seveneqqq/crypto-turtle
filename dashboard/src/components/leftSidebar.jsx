@@ -23,11 +23,11 @@ function LeftSidebar({ children }) {
   const toggleMenu = (title) => setOpenMenus(prev => ({ ...prev, [title]: !prev[title] }))
 
   const menuItems = [
-    { title: "Dashboard", icon: Home, submenu: ["Dashboard"] },
-    { title: "Data", icon: Inbox, submenu: ["Data", "Processing"] },
+    { title: "Dashboard", icon: Home, submenu: ["Home", "Dashboard"] },
+    { title: "Data", icon: Inbox, submenu: ["Historical data", "Process data"] },
     { title: "Machine learning", icon: Calendar, submenu: ["Training", "Models"] },
     { title: "Reinforcement learning", icon: Search, submenu: ["Learning", "Models"] },
-    { title: "Tests", icon: Settings, submenu: ["Tests", "Simulation", "History"] },
+    { title: "Tests", icon: Settings, submenu: ["Tests", "Simulation", "Accuracy"] },
     { title: "Explainable AI", icon: GraduationCap, submenu: ["Explain", "History"] },
   ]
 

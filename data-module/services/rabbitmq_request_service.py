@@ -36,7 +36,8 @@ class RabbitMQRequestService:
                 ds.set_filename(data.get("filename"))
                 processed_info = ds.run_pipeline(
                     steps=data.get("steps", []),
-                    preprocessing_methods=data.get("preprocessing_methods", ["RAW"])
+                    preprocessing_methods=data.get("preprocessing_methods", ["RAW"]),
+                    output_folders=data.get("output_folders", None)  # <-- NOWE
                 )
                 
                 if processed_info:
@@ -44,13 +45,12 @@ class RabbitMQRequestService:
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "result": "success",
-                        "processed_methods": list(processed_info.keys()),
-                        "files": processed_info  # zawiera filename i filepath dla każdej metody
+                        "files": processed_info
                     })
                 else:
                     print("Failed to process data")
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
-                        "result": "Failed",
+                        "result": "failed",
                         "message": "Failed to process data"
                     })

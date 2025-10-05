@@ -6,6 +6,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Slider } from "../ui/slider";
 import { Plus, Trash } from "lucide-react";
+import FileSelect from "../files/fileSelect"
 
 const symbols = [
   "BTCUSDT",
@@ -168,19 +169,7 @@ export default function SimulatePanel() {
                 </SelectContent>
               </Select>
 
-              <Select
-                value={pair.file}
-                onValueChange={val => handleChangePair(index, "file", val)}
-              >
-                <SelectTrigger className="w-[250px]">
-                  <SelectValue placeholder="Select file" />
-                </SelectTrigger>
-                <SelectContent>
-                  {files.map(f => (
-                    <SelectItem key={f.name} value={f.name}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FileSelect filesKey={"binance_raw"} /> 
 
               <Select
                 value={pair.model}

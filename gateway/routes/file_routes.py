@@ -17,6 +17,14 @@ def upload_file(
 ):
     return file_service.upload_file(file)
 
+@router.get("/files-by-key/{key}")
+def get_files_by_key(
+    key: str,
+    user=Depends(auth_service.require_auth)
+):
+    """Zwraca listę plików na podstawie klucza"""
+    return file_service.get_files_by_key(key)
+
 
 @router.get("")
 def get_files(user=Depends(auth_service.require_auth)):
