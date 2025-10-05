@@ -31,13 +31,26 @@ class DataService:
         self.filename = filename
         self.horizon = horizon
         self.base_dir = os.getcwd()
-        self.raw_dir = os.path.join(self.base_dir, "shared", "files", "binance_historical_raw_data")
-        self.proc_dir = os.path.join(self.base_dir, "shared", "files", "processed_files")
-        os.makedirs(self.proc_dir, exist_ok=True)
+        self.raw_dir = os.path.join(self.base_dir, "shared", "files", "raw_data")
+
+        # główny katalog
+        self.proc_base_dir = os.path.join(self.base_dir, "shared", "files")
+
+        # podkatalogi
+        self.proc_dirs = {
+            "trainmodel": os.path.join(self.proc_base_dir, "processed_trainmodel_data"),
+            "testmodel": os.path.join(self.proc_base_dir, "processed_testmodel_data"),
+            "rlagent": os.path.join(self.proc_base_dir, "processed_rlagent_data"),
+            "simulation": os.path.join(self.proc_base_dir, "processed_simulation_data"),
+        }
+
+        # utwórz wszystkie katalogi
+        for d in self.proc_dirs.values():
+            os.makedirs(d, exist_ok=True)
+
         self.df = None
 
     def set_filename(self, filename: str):
-        """Ustawia plik CSV, który ma zostać przetworzony."""
         self.filename = filename
 
     def load_data(self):
@@ -109,7 +122,7 @@ class DataService:
         
         return X_current, applied_methods
 
-    def run_pipeline(self, steps: list[str], preprocessing_methods: list[str] = ["RAW"]):
+    def run_pipeline(self, steps: list[str], preprocessing_methods: list[str] = ["RAW"], output_folders: list[str] = None):
         if not self.filename:
             raise ValueError("Filename is not set")
         
@@ -125,15 +138,30 @@ class DataService:
         X_processed, applied_methods = self.apply_preprocessing(preprocessing_methods)
 
         out_filename = f"processed_{'_'.join(applied_methods)}_{self.filename}"
-        out_path = os.path.join(self.proc_dir, out_filename)
-        
         df_out = self.df.copy()
         numeric_cols = df_out.select_dtypes(include=np.number).drop(columns=["target"], errors="ignore").columns
         df_out[numeric_cols] = X_processed
-        df_out.to_csv(out_path, index=False)
+        df_out[numeric_cols] = df_out[numeric_cols].round(5) # 5 miejsc po przecinku
 
-        return {
-            "filename": out_filename,
-            "filepath": out_path,
-            "applied_methods": applied_methods
-        }
+        results = {}
+        if output_folders:
+            for folder_key in output_folders:
+                if folder_key in self.proc_dirs:
+                    out_path = os.path.join(self.proc_dirs[folder_key], out_filename)
+                    df_out.to_csv(out_path, index=False)
+                    results[folder_key] = {
+                        "filename": out_filename,
+                        "filepath": out_path,
+                        "applied_methods": applied_methods
+                    }
+        else:
+            # domyślna ścieżka (jeśli nie podano folderów)
+            default_path = os.path.join(self.proc_dirs["trainmodel"], out_filename)
+            df_out.to_csv(default_path, index=False)
+            results["trainmodel"] = {
+                "filename": out_filename,
+                "filepath": default_path,
+                "applied_methods": applied_methods
+            }
+
+        return results
