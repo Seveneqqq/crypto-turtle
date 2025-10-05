@@ -1,60 +1,52 @@
-import joblib
-import numpy as np
-import pandas as pd
-import os
+from dataclasses import dataclass
+
+@dataclass
+class DecisionConfig:
+    threshold_buy: float = 0.6
+    threshold_sell: float = 0.6
+    tx_fraction: float = 0.1
+    max_fraction_when_confident: float = 0.5
+    mincost: float = 1.0
+    clamp_model_value: bool = True
 
 class DecisionEngine:
-    def __init__(self, model_path, threshold_buy=0.6, threshold_sell=0.6):
-        # Ładowanie modelu przy starcie
-        try:
-            print(f"[DecisionEngine.__init__] Ładuję model: {model_path}")
-            self.model = joblib.load(model_path)
-            print(f"[DecisionEngine.__init__] Model załadowany. Classes={getattr(self.model, 'classes_', None)}")
-        except Exception as e:
-            import traceback
-            print("[DecisionEngine.__init__][ERROR]", e)
-            traceback.print_exc()
-            raise
-        self.threshold_buy = threshold_buy
-        self.threshold_sell = threshold_sell
+    def __init__(self, config: DecisionConfig = DecisionConfig()):
+        self.config = config
 
-    def decide(self, features):
-        # Konwersja do numpy array
-        try:
-            if isinstance(features, dict):
-                x = np.array([list(features.values())])
-            elif isinstance(features, np.ndarray):
-                x = features.reshape(1, -1)
-            elif isinstance(features, pd.Series):
-                x = features.values.reshape(1, -1)
-            elif isinstance(features, pd.DataFrame):
-                x = features  # pojedynczy wiersz
-            else:
-                raise ValueError("Nieobsługiwany typ danych wejściowych dla DecisionEngine")
+    def _normalize_model_value(self, mv):
+        mv = float(mv)
+        if self.config.clamp_model_value:
+            mv = max(0.0, min(1.0, mv))
+        return mv
 
-            # Prawdopodobieństwa klas
-            probs = self.model.predict_proba(x)[0]
-            prob_map = dict(zip(self.model.classes_, probs))
+    def decide(self, prob_map, wallet, symbol, price):
+        buy_p = self._normalize_model_value(prob_map.get("buy", 0.0))
+        sell_p = self._normalize_model_value(prob_map.get("sell", 0.0))
 
-            # Decyzja na podstawie progów
-            if prob_map.get("buy", 0) >= self.threshold_buy:
-                a = prob_map.get("buy", 0)
-                return a, "buy"
-            elif prob_map.get("sell", 0) >= self.threshold_sell:
-                b = prob_map.get("sell", 0)
-                return b, "sell"
-            else:
-                return 0.0, "hold"
+        if buy_p >= self.config.threshold_buy:
+            action = "buy"
+            model_value = buy_p
+        elif sell_p >= self.config.threshold_sell:
+            action = "sell"
+            model_value = sell_p
+        else:
+            return {"action": "hold", "qty": 0.0, "model_value": 0.0}
 
+        if action == "buy":
+            available_cash = wallet.balance
+            denom = 1.0 - self.config.threshold_buy
+            frac = self.config.tx_fraction + ((model_value - self.config.threshold_buy) / denom) * (self.config.max_fraction_when_confident - self.config.tx_fraction)
+            frac = max(0.0, min(1.0, frac))
+            usd_amount = max(available_cash * frac, self.config.mincost)
+            qty = usd_amount / price if price > 0 else 0.0
+            return {"action": "buy", "qty": qty, "model_value": model_value}
 
-        except Exception as e:
-            import traceback
-            print("[DecisionEngine.decide][ERROR]", e)
-            print("[DecisionEngine.decide] features type=", type(features))
-            if isinstance(features, (pd.Series, pd.DataFrame)):
-                try:
-                    print("[DecisionEngine.decide] features columns=", getattr(features, 'columns', None))
-                except Exception:
-                    pass
-            traceback.print_exc()
-            raise
+        elif action == "sell":
+            holding = wallet.holdings.get(symbol, 0.0)
+            if holding <= 0:
+                return {"action": "hold", "qty": 0.0, "model_value": model_value}
+            denom = 1.0 - self.config.threshold_sell
+            frac = self.config.tx_fraction + ((model_value - self.config.threshold_sell) / denom) * (self.config.max_fraction_when_confident - self.config.tx_fraction)
+            frac = max(0.0, min(1.0, frac))
+            qty = holding * frac
+            return {"action": "sell", "qty": qty, "model_value": model_value}
