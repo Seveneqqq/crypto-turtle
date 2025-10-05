@@ -10,7 +10,7 @@ class TrainAgentPPOService:
     def __init__(self):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_rlagent_data")
-        self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "*")
+        self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "sklearn")
         self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
         os.makedirs(self.AGENT_DIR, exist_ok=True)
 
