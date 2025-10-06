@@ -36,10 +36,10 @@ class RabbitMQRequestService:
                 ds.set_filename(data.get("filename"))
                 processed_info = ds.run_pipeline(
                     steps=data.get("steps", []),
-                    preprocessing_methods=data.get("preprocessing_methods", ["RAW"]),
-                    output_folders=data.get("output_folders", None)  # <-- NOWE
+                    preprocessing_method=data.get("preprocessing_method", "RAW"),
+                    output_folders=data.get("output_folders", None)
                 )
-                
+
                 if processed_info:
                     print("Successfully processed data")
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
