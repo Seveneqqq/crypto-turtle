@@ -1,6 +1,6 @@
 # from services.binance_service import BinanceService
 from services.rabbitmq_service import RabbitMQService
-from services.simulation_service import SimulationService
+from services.train_agent_ppo_service import TrainAgentPPOService
 from services.rabbitmq_request_service import RabbitMQRequestService
 from configuration.rabbitmq_configuration import (
     RABBITMQ_HOST, RABBITMQ_PORT, RABBITMQ_USERNAME, RABBITMQ_PASSWORD
@@ -16,12 +16,12 @@ rabbitmq_service = RabbitMQService(
 )
 
 print("Initializing Simulation Service...")
-simulation_service = SimulationService()
+train_agent_ppo_service = TrainAgentPPOService()
 
 print("Initializing RabbitMQ Request Service...")
 rabbitmq_request_service = RabbitMQRequestService(
     rabbitmq_service=rabbitmq_service,
-    simulation_service=simulation_service
+    train_agent_ppo_service=train_agent_ppo_service
 )
 
 rabbitmq_service.request_service = rabbitmq_request_service
