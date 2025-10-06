@@ -5,7 +5,7 @@ import { Card, CardContent } from "../../components/ui/card"
 import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Trash, ChevronUp, ChevronDown } from "lucide-react"
-import { Checkbox } from "../../components/ui/checkbox" // ✅ shadcn checkbox
+import { Checkbox } from "../../components/ui/checkbox"
 
 function ListItem({ item, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
   return (
@@ -33,10 +33,10 @@ export default function ProcessDataPanel() {
   const [steps, setSteps] = useState(availableSteps.slice(0, 3))
 
   const availableMethods = ["RAW", "Z-SCORE", "ROBUST", "MINMAX", "ROLLING_Z"]
-  const [preprocessingMethods, setPreprocessingMethods] = useState([...availableMethods])
+  const [preprocessingMethod, setPreprocessingMethod] = useState("RAW")
 
   const availableFolders = ["trainmodel", "testmodel", "rlagent", "simulation"]
-  const [outputFolders, setOutputFolders] = useState(["trainmodel"]) // ✅ default
+  const [outputFolders, setOutputFolders] = useState(["trainmodel"])
 
   // KROKI
   const addStep = (step) => {
@@ -47,21 +47,8 @@ export default function ProcessDataPanel() {
     const newSteps = [...steps]
     const swapIndex = direction === "up" ? index - 1 : index + 1
     if (swapIndex < 0 || swapIndex >= newSteps.length) return
-    [newSteps[index], newSteps[swapIndex]] = [newSteps[swapIndex], newSteps[index]]
+    ;[newSteps[index], newSteps[swapIndex]] = [newSteps[swapIndex], newSteps[index]]
     setSteps(newSteps)
-  }
-
-  // METODY PREPROCESSING
-  const addMethod = (method) => {
-    if (!preprocessingMethods.includes(method)) setPreprocessingMethods([...preprocessingMethods, method])
-  }
-  const removeMethod = (index) => setPreprocessingMethods(preprocessingMethods.filter((_, i) => i !== index))
-  const moveMethod = (index, direction) => {
-    const newMethods = [...preprocessingMethods]
-    const swapIndex = direction === "up" ? index - 1 : index + 1
-    if (swapIndex < 0 || swapIndex >= newMethods.length) return
-    [newMethods[index], newMethods[swapIndex]] = [newMethods[swapIndex], newMethods[index]]
-    setPreprocessingMethods(newMethods)
   }
 
   // FOLDERY
@@ -78,8 +65,8 @@ export default function ProcessDataPanel() {
     const body = {
       filename,
       steps,
-      preprocessing_methods: preprocessingMethods,
-      output_folders: outputFolders, // ✅ dodane
+      preprocessing_method: preprocessingMethod, // ✅ backend spójny
+      output_folders: outputFolders,
     }
 
     fetch("http://localhost:8000/data/process-data", {
@@ -89,7 +76,13 @@ export default function ProcessDataPanel() {
       body: JSON.stringify(body),
     })
       .then((res) => res.json())
-      .then((data) => alert(`✅ ${data.msg}`))
+      .then((data) => {
+        if (data.detail) {
+          alert(`❌ Error: ${JSON.stringify(data.detail)}`)
+        } else {
+          alert(`✅ ${data.msg}`)
+        }
+      })
       .catch((err) => console.error("Error:", err))
   }
 
@@ -124,11 +117,13 @@ export default function ProcessDataPanel() {
                 <SelectValue placeholder="Add step..." />
               </SelectTrigger>
               <SelectContent>
-                {availableSteps.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
+                {availableSteps
+                  .filter((s) => !steps.includes(s)) // ✅ unikamy duplikatów
+                  .map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -136,24 +131,11 @@ export default function ProcessDataPanel() {
 
         {/* PREPROCESSING */}
         <div>
-          <Label>Preprocessing Methods</Label>
-          <div className="mt-2">
-            {preprocessingMethods.map((m, i) => (
-              <ListItem
-                key={m}
-                item={m}
-                onRemove={() => removeMethod(i)}
-                onMoveUp={() => moveMethod(i, "up")}
-                onMoveDown={() => moveMethod(i, "down")}
-                isFirst={i === 0}
-                isLast={i === preprocessingMethods.length - 1}
-              />
-            ))}
-          </div>
-          <div className="flex gap-2 mt-3">
-            <Select onValueChange={addMethod}>
+          <Label>Preprocessing Method</Label>
+          <div className="mt-2 w-64">
+            <Select value={preprocessingMethod} onValueChange={setPreprocessingMethod}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder="Add method..." />
+                <SelectValue placeholder="Select method..." />
               </SelectTrigger>
               <SelectContent>
                 {availableMethods.map((m) => (
@@ -172,11 +154,7 @@ export default function ProcessDataPanel() {
           <div className="flex flex-col gap-2 mt-2">
             {availableFolders.map((f) => (
               <div key={f} className="flex items-center gap-2">
-                <Checkbox
-                  id={f}
-                  checked={outputFolders.includes(f)}
-                  onCheckedChange={() => toggleFolder(f)}
-                />
+                <Checkbox id={f} checked={outputFolders.includes(f)} onCheckedChange={() => toggleFolder(f)} />
                 <label htmlFor={f} className="text-sm">
                   {f}
                 </label>
