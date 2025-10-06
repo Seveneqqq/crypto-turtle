@@ -48,15 +48,14 @@ VALID_OUTPUT_FOLDERS = ["trainmodel", "testmodel", "rlagent", "simulation"]
 class ProcessDataRequest(BaseModel):
     filename: str
     steps: List[str] = ["load_data", "make_features", "add_technical_indicators"]
-    preprocessing_methods: List[str] = ["RAW"]
+    preprocessing_method: str 
     output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation"]] = ["trainmodel"]
-
 
 @router.post("/process-data")
 def process_data_route(request: ProcessDataRequest):
     filename = request.filename.strip()
     steps = request.steps
-    preprocessing_methods = request.preprocessing_methods
+    preprocessing_method = request.preprocessing_method   # singular ✅
     output_folders = request.output_folders or ["trainmodel"]
 
     if not filename:
@@ -69,7 +68,7 @@ def process_data_route(request: ProcessDataRequest):
     data_service.process_data(
         filename=filename,
         steps=steps,
-        preprocessing_methods=preprocessing_methods,
+        preprocessing_method=preprocessing_method,   
         output_folders=output_folders
     )
 
@@ -77,6 +76,6 @@ def process_data_route(request: ProcessDataRequest):
         "msg": f"Processing request for '{filename}' added to queue.",
         "filename": filename,
         "steps": steps,
-        "preprocessing_methods": preprocessing_methods,
+        "preprocessing_method": preprocessing_method, 
         "output_folders": output_folders
     }
