@@ -33,7 +33,7 @@ class SklearnTestServiceSimple:
         try:
             # 🔹 Ścieżki
             model_path = os.path.join(self.SHARED_DIR, "models", "sklearn", model_filename)
-            test_path = os.path.join(self.SHARED_DIR, "files", "processed_files", test_filename)
+            test_path = os.path.join(self.SHARED_DIR, "files", "processed_testmodel_data", test_filename)
 
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Model {model_filename} nie istnieje w {model_path}")
