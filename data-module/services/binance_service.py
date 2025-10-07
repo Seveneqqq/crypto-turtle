@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import time
 import os
+import uuid
 from datetime import datetime
 
 class BinanceService:
@@ -16,7 +17,6 @@ class BinanceService:
         os.makedirs(self.base_dir, exist_ok=True)
 
     def get_klines_batch(self, symbol, interval, start_time, end_time, limit=1000):
-
         url = f"{self.api_url}/klines"
         params = {
             "symbol": symbol,
@@ -33,7 +33,6 @@ class BinanceService:
         return response.json()
 
     def get_historical_klines(self, rabbitmq_msg_id, symbol, interval, start_dt, end_dt, filename):
-
         start_ts = int(pd.to_datetime(start_dt).timestamp() * 1000)
         end_ts = int(pd.to_datetime(end_dt).timestamp() * 1000)
 
@@ -62,7 +61,12 @@ class BinanceService:
         df = pd.DataFrame(all_klines, columns=columns)
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
-        full_path = os.path.join(self.base_dir, filename)
+        # 🔹 Dodanie unikalnego GUID na końcu nazwy pliku
+        unique_id = str(uuid.uuid4())
+        name, ext = os.path.splitext(filename)
+        filename_with_guid = f"{name}_{unique_id}{ext}"
+
+        full_path = os.path.join(self.base_dir, filename_with_guid)
 
         df.to_csv(full_path, index=False)
 
@@ -70,7 +74,7 @@ class BinanceService:
             "rabbit_msg_id": rabbitmq_msg_id,
             "result": "success",
             "message": "Successfully retrieved historical data",
-            "filename": filename,
+            "filename": filename_with_guid,
             "path": full_path,
             "timestamp": datetime.now().isoformat()
         }
