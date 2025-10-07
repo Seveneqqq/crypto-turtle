@@ -27,7 +27,7 @@ class SimulationService:
 
     def run_simulation(
         self,
-        rabbitmq_msg_id=None,
+        rabbit_msg_id=None,
         balance_start=1000.0,
         add_fee=True,
         rlagent=True,
@@ -35,7 +35,7 @@ class SimulationService:
         slippage=0,
         wallet_percentage_limit=0.9,
         max_wallet_percentage_crypto=1.0,
-        stop_loss=0.0,
+        stop_loss=1.0,
         threshold_buy=0.5,
         threshold_sell=0.5,
         mincost=1.0,
@@ -209,7 +209,7 @@ class SimulationService:
             print(f"[Simulation] Zakończono w {timedelta(seconds=time.time() - start_time)}")
 
             return {
-                "rabbit_msg_id": rabbitmq_msg_id,
+                "rabbit_msg_id": rabbit_msg_id,
                 "result": "success",
                 "message": "Successfully retrieved simulation data",
                 "logs_file": log_path,
@@ -223,7 +223,7 @@ class SimulationService:
             print("[Simulation][ERROR]", e)
             traceback.print_exc()
             return {
-                "rabbit_msg_id": rabbitmq_msg_id,
+                "rabbit_msg_id": rabbit_msg_id,
                 "result": "failed",
                 "message": str(e),
                 "logs_file": None,
