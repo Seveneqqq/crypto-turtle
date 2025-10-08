@@ -30,14 +30,13 @@ def transform_rolling_no_leak(Xtr_raw, Xte_raw):
 
 
 class DataService:
-    # 🔑 stała lista kolumn do pominięcia przy normalizacji
     EXCLUDE_COLUMNS = [
         "open_time",
-        "open", 
+        "open",
         "high",
-        "low", 
+        "low",
         "close",
-        "close_time", 
+        "close_time",
         "target"
     ]
 
@@ -46,8 +45,6 @@ class DataService:
         self.horizon = horizon
         self.base_dir = os.getcwd()
         self.raw_dir = os.path.join(self.base_dir, "shared", "files", "raw_data")
-
-        # katalogi
         self.proc_base_dir = os.path.join(self.base_dir, "shared", "files")
         self.proc_dirs = {
             "trainmodel": os.path.join(self.proc_base_dir, "processed_trainmodel_data"),
@@ -59,6 +56,7 @@ class DataService:
             os.makedirs(d, exist_ok=True)
 
         self.df = None
+        self.technical_indicators_set = "set1"
 
     def set_filename(self, filename: str):
         self.filename = filename
@@ -67,15 +65,11 @@ class DataService:
         if not self.filename:
             raise ValueError("Filename is not set")
         path = os.path.join(self.raw_dir, self.filename)
-
-        # wczytaj z headerem
         self.df = pd.read_csv(path)
-        
-        # zmień nazwę kolumny timestamp -> open_time jeśli istnieje
+
         if "timestamp" in self.df.columns:
             self.df.rename(columns={"timestamp": "open_time"}, inplace=True)
-        
-        # konwertuj kolumny numeryczne na float
+
         numeric_cols = [
             "open", "high", "low", "close", "volume",
             "quote_asset_volume", "number_of_trades",
@@ -84,7 +78,7 @@ class DataService:
         for col in numeric_cols:
             if col in self.df.columns:
                 self.df[col] = pd.to_numeric(self.df[col], errors='coerce')
-        
+
         return self
 
     def make_features(self):
@@ -105,31 +99,63 @@ class DataService:
         self.df = d.dropna().reset_index(drop=True)
         return self
 
-    def add_technical_indicators(self):
+    def add_technical_indicators(self, set_name: str = "set1"):
         if self.df is None:
             raise ValueError("Data not loaded")
+
         close = self.df["close"].values
         volume = self.df["volume"].values
-        self.df["ma_5"] = pd.Series(close).rolling(5).mean()
-        self.df["ma_10"] = pd.Series(close).rolling(10).mean()
-        self.df["ma_20"] = pd.Series(close).rolling(20).mean()
-        self.df["sma_10"] = pd.Series(close).rolling(10).mean()
-        self.df["sma_30"] = pd.Series(close).rolling(30).mean()
-        self.df["cumvol"] = volume.cumsum()
-        self.df["volume_norm"] = (volume - volume.min()) / (volume.max() - volume.min())
-        self.df["std_20"] = pd.Series(close).rolling(20).std()
+
+        if set_name == "set1":
+            self.df["ma_5"] = pd.Series(close).rolling(5).mean()
+            self.df["ma_10"] = pd.Series(close).rolling(10).mean()
+            self.df["ma_20"] = pd.Series(close).rolling(20).mean()
+            self.df["sma_10"] = pd.Series(close).rolling(10).mean()
+            self.df["sma_30"] = pd.Series(close).rolling(30).mean()
+            self.df["cumvol"] = volume.cumsum()
+            self.df["volume_norm"] = (volume - volume.min()) / (volume.max() - volume.min())
+            self.df["std_20"] = pd.Series(close).rolling(20).std()
+
+        elif set_name == "set2":
+            delta = pd.Series(close).diff()
+            gain = np.where(delta > 0, delta, 0)
+            loss = np.where(delta < 0, -delta, 0)
+            avg_gain = pd.Series(gain).rolling(14).mean()
+            avg_loss = pd.Series(loss).rolling(14).mean()
+            rs = avg_gain / (avg_loss + 1e-9)
+            self.df["RSI_14"] = 100 - (100 / (1 + rs))
+            self.df["EMA_20"] = pd.Series(close).ewm(span=20, adjust=False).mean()
+            self.df["EMA_50"] = pd.Series(close).ewm(span=50, adjust=False).mean()
+
+        elif set_name == "set3":
+            ma20 = pd.Series(close).rolling(20).mean()
+            std20 = pd.Series(close).rolling(20).std()
+            self.df["BB_upper"] = ma20 + 2 * std20
+            self.df["BB_lower"] = ma20 - 2 * std20
+            self.df["Momentum_10"] = pd.Series(close).diff(10)
+            self.df["ROC_10"] = pd.Series(close).pct_change(10)
+
+        elif set_name == "set4":
+            high = self.df["high"].values
+            low = self.df["low"].values
+            close_s = self.df["close"].values
+            tr = np.maximum(high - low, np.maximum(abs(high - np.roll(close_s, 1)), abs(low - np.roll(close_s, 1))))
+            self.df["ATR_14"] = pd.Series(tr).rolling(14).mean()
+            self.df["VWAP"] = (self.df["close"] * self.df["volume"]).cumsum() / (self.df["volume"].cumsum() + 1e-9)
+            self.df["ROC_5"] = pd.Series(close).pct_change(5)
+
+        else:
+            raise ValueError(f"Unknown technical indicators set: {set_name}")
+
         return self
 
     def apply_preprocessing(self, method: str):
         if self.df is None:
             raise ValueError("Data not loaded")
 
-        # kolumny numeryczne do normalizacji
         numeric_cols = self.df.select_dtypes(include=np.number).columns
-        # usuń kolumny które NIE mają być normalizowane
         numeric_cols = [c for c in numeric_cols if c not in self.EXCLUDE_COLUMNS]
 
-        # zabezpieczenie - sprawdź czy są jakieś kolumny do normalizacji
         if len(numeric_cols) == 0:
             return np.array([]), method.upper(), []
 
@@ -155,22 +181,31 @@ class DataService:
 
         return X_current, method_upper, numeric_cols
 
-    def run_pipeline(self, steps: list[str], preprocessing_method: str = "RAW", output_folders: list[str] = None):
+    def run_pipeline(
+        self,
+        steps: list[str],
+        preprocessing_method: str = "RAW",
+        output_folders: list[str] = None,
+        technical_indicators_set: str = "set1"
+    ):
         if not self.filename:
             raise ValueError("Filename is not set")
+
+        self.technical_indicators_set = technical_indicators_set
 
         step_map = {
             "load_data": self.load_data,
             "make_features": self.make_features,
-            "add_technical_indicators": self.add_technical_indicators,
+            "add_technical_indicators": lambda: self.add_technical_indicators(self.technical_indicators_set),
         }
+
         for step in steps:
             if step in step_map:
                 step_map[step]()
 
         X_processed, applied_method, numeric_cols = self.apply_preprocessing(preprocessing_method)
 
-        out_filename = f"processed_{applied_method}_{self.filename}"
+        out_filename = f"processed_{applied_method}_{technical_indicators_set}_{self.filename}"
         df_out = self.df.copy()
         df_out[numeric_cols] = X_processed
         df_out[numeric_cols] = df_out[numeric_cols].round(5)
@@ -184,7 +219,8 @@ class DataService:
                     results[folder_key] = {
                         "filename": out_filename,
                         "filepath": out_path,
-                        "applied_method": applied_method
+                        "applied_method": applied_method,
+                        "technical_set": technical_indicators_set
                     }
         else:
             default_path = os.path.join(self.proc_dirs["trainmodel"], out_filename)
@@ -192,7 +228,8 @@ class DataService:
             results["trainmodel"] = {
                 "filename": out_filename,
                 "filepath": default_path,
-                "applied_method": applied_method
+                "applied_method": applied_method,
+                "technical_set": technical_indicators_set
             }
 
         return results

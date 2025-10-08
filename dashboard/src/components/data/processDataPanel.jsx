@@ -5,7 +5,6 @@ import { Card, CardContent } from "../../components/ui/card"
 import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Trash, ChevronUp, ChevronDown } from "lucide-react"
-import { Checkbox } from "../../components/ui/checkbox"
 
 function ListItem({ item, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
   return (
@@ -29,19 +28,19 @@ function ListItem({ item, onRemove, onMoveUp, onMoveDown, isFirst, isLast }) {
 export default function ProcessDataPanel() {
   const [filename, setFilename] = useState("")
 
-  const availableSteps = ["load_data", "make_features", "add_technical_indicators", "feature_engineering", "custom_step"]
-  const [steps, setSteps] = useState(availableSteps.slice(0, 3))
+  const availableSteps = ["load_data", "make_features", "add_technical_indicators"]
+  const [steps, setSteps] = useState(availableSteps) // zostają tylko te 3
 
   const availableMethods = ["RAW", "Z-SCORE", "ROBUST", "MINMAX", "ROLLING_Z"]
   const [preprocessingMethod, setPreprocessingMethod] = useState("RAW")
 
   const availableFolders = ["trainmodel", "testmodel", "rlagent", "simulation"]
-  const [outputFolders, setOutputFolders] = useState(["trainmodel"])
+  const [outputFolder, setOutputFolder] = useState("trainmodel")
+
+  const availableSets = ["set1", "set2", "set3", "set4"]
+  const [technicalIndicatorsSet, setTechnicalIndicatorsSet] = useState("set1")
 
   // KROKI
-  const addStep = (step) => {
-    if (!steps.includes(step)) setSteps([...steps, step])
-  }
   const removeStep = (index) => setSteps(steps.filter((_, i) => i !== index))
   const moveStep = (index, direction) => {
     const newSteps = [...steps]
@@ -51,22 +50,17 @@ export default function ProcessDataPanel() {
     setSteps(newSteps)
   }
 
-  // FOLDERY
-  const toggleFolder = (folder) => {
-    setOutputFolders((prev) =>
-      prev.includes(folder) ? prev.filter((f) => f !== folder) : [...prev, folder]
-    )
-  }
-
+  // SUBMIT
   const handleSubmit = () => {
     if (!filename) return alert("Select a file to process")
-    if (outputFolders.length === 0) return alert("Select at least one output folder")
+    if (!outputFolder) return alert("Select an output folder")
 
     const body = {
       filename,
       steps,
-      preprocessing_method: preprocessingMethod, // ✅ backend spójny
-      output_folders: outputFolders,
+      preprocessing_method: preprocessingMethod,
+      output_folders: [outputFolder],
+      technical_indicators_set: technicalIndicatorsSet, // ✅ nowy parametr
     }
 
     fetch("http://localhost:8000/data/process-data", {
@@ -111,19 +105,22 @@ export default function ProcessDataPanel() {
               />
             ))}
           </div>
-          <div className="flex gap-2 mt-3">
-            <Select onValueChange={addStep}>
+        </div>
+
+        {/* TECHNICAL INDICATORS SET */}
+        <div>
+          <Label>Technical Indicators Set</Label>
+          <div className="mt-2 w-64">
+            <Select value={technicalIndicatorsSet} onValueChange={setTechnicalIndicatorsSet}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder="Add step..." />
+                <SelectValue placeholder="Select set..." />
               </SelectTrigger>
               <SelectContent>
-                {availableSteps
-                  .filter((s) => !steps.includes(s)) // ✅ unikamy duplikatów
-                  .map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
+                {availableSets.map((set) => (
+                  <SelectItem key={set} value={set}>
+                    {set}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -148,14 +145,22 @@ export default function ProcessDataPanel() {
           </div>
         </div>
 
-        {/* FOLDERY */}
+        {/* FOLDERY (RADIO) */}
         <div>
-          <Label>Output Folders</Label>
+          <Label>Output Folder</Label>
           <div className="flex flex-col gap-2 mt-2">
             {availableFolders.map((f) => (
               <div key={f} className="flex items-center gap-2">
-                <Checkbox id={f} checked={outputFolders.includes(f)} onCheckedChange={() => toggleFolder(f)} />
-                <label htmlFor={f} className="text-sm">
+                <input
+                  type="radio"
+                  id={f}
+                  name="outputFolder"
+                  value={f}
+                  checked={outputFolder === f}
+                  onChange={() => setOutputFolder(f)}
+                  className="w-4 h-4 accent-blue-500"
+                />
+                <label htmlFor={f} className="text-sm cursor-pointer">
                   {f}
                 </label>
               </div>
