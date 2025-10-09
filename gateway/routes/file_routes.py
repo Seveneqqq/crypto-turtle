@@ -17,6 +17,7 @@ def upload_file(
 ):
     return file_service.upload_file(file)
 
+
 @router.get("/files-by-key/{key}")
 def get_files_by_key(
     key: str,
@@ -30,13 +31,16 @@ def get_files_by_key(
 def get_files(user=Depends(auth_service.require_auth)):
     return file_service.get_all_files()
 
+
 @router.get("/models")
 def get_models_files(user=Depends(auth_service.require_auth)):
     return file_service.get_models()
 
+
 @router.get("/simulation-results")
 def get_simulation_results(user=Depends(auth_service.require_auth)):
     return file_service.get_simulation_results()
+
 
 @router.delete("/{filename}")
 def delete_file(
@@ -44,6 +48,7 @@ def delete_file(
     filename: str = None
 ):
     return file_service.delete_file(filename)
+
 
 @router.get("/binance")
 def get_binance_files(user=Depends(auth_service.require_auth)):
@@ -58,3 +63,17 @@ def get_binance_file_preview(
 ):
     """Zwraca podgląd (pierwsze 100 wierszy) i liczbę wszystkich wierszy"""
     return file_service.read_file_preview(filename)
+
+
+# 🆕 NOWY ROUTE
+@router.get("/columns/{key}/{filename}")
+def get_columns_from_file(
+    key: str,
+    filename: str,
+    user=Depends(auth_service.require_auth)
+):
+    """
+    Zwraca listę kolumn z pliku na podstawie klucza i nazwy pliku.
+    Pobiera kolumny po 'ignore' i pomija 'target'.
+    """
+    return file_service.get_columns_from_file(key, filename)
