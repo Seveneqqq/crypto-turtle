@@ -4,7 +4,7 @@ import FileSelect from "../../components/files/fileSelect"
 
 function TrainingDqnPanel() {
   return (
-    <FileSelect key="processed_rlagent_data" />
+    <FileSelect filesKey="processed_rlagent_data" />
   )
 }
 
