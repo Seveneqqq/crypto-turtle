@@ -40,7 +40,7 @@ class SklearnDataPrepService:
         """
         try:
             project_root = self._find_project_root()
-            raw_dir = os.path.join(project_root, "shared", "files", "binance_historical_raw_data")
+            raw_dir = os.path.join(project_root, "shared", "files", "raw_data")
             processed_dir = self.PROCESSED_DIR
 
             # 🔹 Wczytaj pliki

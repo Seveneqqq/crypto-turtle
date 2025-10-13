@@ -42,7 +42,7 @@ class SklearnTrainServiceSimple:
 
         try:
             project_root = self._find_project_root()
-            processed_dir = os.path.join(project_root, "shared", "files", "processed_files")
+            processed_dir = os.path.join(project_root, "shared", "files", "processed_trainmodel_data")
             df_path = os.path.join(processed_dir, df_filename)
 
             if not os.path.exists(df_path):
@@ -68,7 +68,7 @@ class SklearnTrainServiceSimple:
 
             pipeline = Pipeline([
                 ("imputer", SimpleImputer(strategy="mean")),
-                ("scaler", StandardScaler()),
+                # ("scaler", StandardScaler()),
                 ("model", clf)
             ])
 

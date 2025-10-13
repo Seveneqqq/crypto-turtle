@@ -37,7 +37,8 @@ class RabbitMQRequestService:
                 processed_info = ds.run_pipeline(
                     steps=data.get("steps", []),
                     preprocessing_method=data.get("preprocessing_method", "RAW"),
-                    output_folders=data.get("output_folders", None)
+                    output_folders=data.get("output_folders", None),
+                    technical_indicators_set=data.get("technical_indicators_set")
                 )
 
                 if processed_info:

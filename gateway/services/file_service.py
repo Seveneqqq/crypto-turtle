@@ -4,6 +4,7 @@ import shutil
 import csv
 from fastapi import UploadFile
 from pathlib import Path
+import pandas as pd
 
 class FileService:
 
@@ -31,6 +32,55 @@ class FileService:
             "filename": file.filename,
             "filepath": str(save_path)
         }
+
+
+    def get_columns_from_file(self, key: str, filename: str):
+        """
+        Zwraca kolumny z pliku znajdującego się pod danym kluczem.
+        Pobiera tylko kolumny po 'ignore' i bez 'target'.
+        """
+        key_to_path = {
+            "models": self.models_path,
+            "logs": self.logs_path,
+            "plots": self.plots_path,
+            "binance_raw": self.binance_raw_path,
+            "files": self.base_path,
+            "agents_scikit": self.shared_path / "files" / "agents" / "scikit",
+            "raw_data": self.shared_path / "files" / "raw_data",
+            "processed_rlagent_data": self.shared_path / "files" / "processed_rlagent_data",
+            "processed_simulation_data": self.shared_path / "files" / "processed_simulation_data",
+            "processed_testmodel_data": self.shared_path / "files" / "processed_testmodel_data",
+            "processed_trainmodel_data": self.shared_path / "files" / "processed_trainmodel_data",
+            "models_ml": self.shared_path / "models" / "ml",
+            "models_sklearn": self.shared_path / "models" / "sklearn",
+        }
+        if key not in key_to_path:
+            return {"message": f"Unknown key '{key}'"}
+        path = key_to_path[key]
+        file_path = path / filename
+        if not file_path.exists():
+            return {"message": f"File '{filename}' not found in '{key}'"}
+        try:
+            # odczyt nagłówków
+            if filename.endswith(".csv"):
+                df = pd.read_csv(file_path, nrows=0)
+            elif filename.endswith(".xlsx"):
+                df = pd.read_excel(file_path, nrows=0)
+            else:
+                return {"message": f"Unsupported file type for '{filename}'"}
+            columns = list(df.columns)
+            # znajdź pozycję 'ignore' (jeśli występuje)
+            if "ignore" in [col.lower() for col in columns]:
+                idx = next(i for i, col in enumerate(columns) if col.lower() == "ignore")
+                columns = columns[idx + 1:]  # bierzemy tylko kolumny po ignore
+            # usuń target
+            columns = [col for col in columns if col.lower() != "target"]
+            return {
+                "filename": filename,
+                "columns": columns
+            }
+        except Exception as e:
+            return {"message": f"Error reading file '{filename}': {str(e)}"}
 
     def get_files_by_key(self, key: str):
         """
