@@ -86,6 +86,8 @@ class SimulationService:
             model_outputs = {}
             agent_classes = None
 
+
+
             for symbol in symbols:
                 # silnik decyzyjny
                 model_path = os.path.join(self.MODEL_DIR, models[symbol])
@@ -115,6 +117,10 @@ class SimulationService:
                         rl_agents[symbol] = PPO.load(agent_path, env=None)
                     else:
                         print(f"[Simulation][WARN] Brak agenta RL dla {symbol}: {agent_path}")
+
+            # --- Referencyjne wartości kryptowalut (HODL) i ceny początkowe ---
+            crypto_ref_values = {s: [] for s in symbols}
+            initial_prices = {s: float(data[s].iloc[0]["close"]) for s in symbols}
 
             # --- Symulacja ---
             num_ticks = min(len(df) for df in data.values())
@@ -169,6 +175,15 @@ class SimulationService:
                             "portfel": f"{wallet.total_value(prices):.2f}",
                             "reason": decision.get("reason", "")
                         })
+                    # === tutaj budujemy linię HODL (wartość, gdyby cały startowy balans był zainwestowany w 'symbol') ===
+                    price_t = prices.get(symbol, None)
+                    init_price = initial_prices.get(symbol, None)
+
+                    if price_t is None or pd.isna(price_t) or init_price is None or init_price == 0:
+                        crypto_ref_values[symbol].append(np.nan)
+                    else:
+                        hodl_value = balance_start * price_t / init_price
+                        crypto_ref_values[symbol].append(hodl_value)
 
                 portfolio_values.append(wallet.total_value(prices))
 
@@ -179,6 +194,9 @@ class SimulationService:
             # --- Wykres ---
             plt.figure(figsize=(12, 6))
             plt.plot(timestamps, portfolio_values, label="Wartość portfela (USD)")
+            if len(symbols) ==1:
+                for symbol in symbols:
+                    plt.plot(timestamps, crypto_ref_values[symbol], linestyle='--', label=f"HODL {symbol}")
             plt.xlabel("Timestamp")
             plt.ylabel("Wartość portfela (USD)")
             plt.title(f"Symulacja wartości portfela ({metrics['score']})")
