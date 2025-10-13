@@ -189,21 +189,78 @@ class SimulationService:
 
             # --- Ocena wyników ---
             rating = Rating()
-            metrics = rating.rate(portfolio_values)
+            metrics = rating.rate(portfolio_values,len(logs))
+
+            # --- Wykres + pole tekstowe ---
+            fig, (ax, ax_text) = plt.subplots(
+                2, 1,
+                gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
+                figsize=(12, 9)
+            )
 
             # --- Wykres ---
-            plt.figure(figsize=(12, 6))
-            plt.plot(timestamps, portfolio_values, label="Wartość portfela (USD)")
-            if len(symbols) ==1:
+            ax.plot(timestamps, portfolio_values, label="Wartość portfela (USD)")
+
+            if len(symbols) == 1:
                 for symbol in symbols:
-                    plt.plot(timestamps, crypto_ref_values[symbol], linestyle='--', label=f"HODL {symbol}")
-            plt.xlabel("Timestamp")
-            plt.ylabel("Wartość portfela (USD)")
-            plt.title(f"Symulacja wartości portfela ({metrics['score']})")
-            plt.gca().set_xticks([])
-            plt.gca().set_xticklabels([])
-            plt.legend()
+                    ax.plot(timestamps, crypto_ref_values[symbol], linestyle='--', label=f"HODL {symbol}")
+
+            ax.set_xlabel("Timestamp")
+            ax.set_ylabel("Wartość portfela (USD)")
+            ax.set_title(f"Symulacja wartości portfela (Wynik: {metrics['score']} pkt)")
+            ax.set_xticks([])
+            ax.set_xticklabels([])
+            ax.legend()
+
+            # --- Podział metryk na 3 bloki ---
+            block_left = [
+                f"Pliki z danymi: {data_files}",
+                f"Pliki z modelami: {models}",
+            ]
+            if rlagent:
+                block_left.append(f"Pliki z agentami: {agents}")
+            block_center = [
+                f"Łączny zwrot: {metrics['total_return']:.2f}%",
+                f"Maksymalny wzrost portfela: {metrics['max_portfolio_growth']:.2f}%",
+                f"Maksymalny spadek portfela: {metrics['max_portfolio_drop']:.2f}%",
+                f"Ilość transakcji: {metrics['transaction_count']}",
+                f"Śr. transakcji/dzień: {metrics['avg_transactions_per_day']:.2f}"
+            ]
+
+            block_right = [
+                f"CAGR: {metrics['cagr']:.2f}%",
+                f"Max Drawdown: {metrics['max_drawdown']:.2f}%",
+                f"Calmar ratio: {metrics['calmar_ratio']:.2f}",
+                f"Sharpe ratio: {metrics['sharpe_ratio']:.2f}",
+                f"Sortino ratio: {metrics['sortino_ratio']:.2f}"
+            ]
+
+            # --- Rysowanie bloków pod wykresem ---
+            ax_text.axis("off")
+
+            # Lewy blok (x=0.2)
+            ax_text.text(
+                0.2, 0.5, "\n".join(block_left),
+                ha="center", va="center", fontsize=10,
+                bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+            )
+
+            # Środkowy blok pusty (x=0.5)
+            ax_text.text(
+                0.6, 0.5, "\n".join(block_center),
+                ha="center", va="center", fontsize=10,
+                bbox = dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+            )
+
+            # Prawy blok (x=0.8)
+            ax_text.text(
+                0.9, 0.5, "\n".join(block_right),
+                ha="center", va="center", fontsize=10,
+                bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+            )
+
             plt.tight_layout()
+            plt.show()
 
             # --- Zapis wyników ---
             timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
