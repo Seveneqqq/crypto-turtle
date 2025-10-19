@@ -5,8 +5,8 @@ import FileSelect from "../../components/files/fileSelect"
 function PreparingFeaturesPanel() {
   return (
     <>
-      <FileSelect key="processed_testmodel_data" />
-      <FileSelect key="processed_trainmodel_data" />
+      <FileSelect filesKey="processed_testmodel_data" />
+      <FileSelect filesKey="processed_trainmodel_data" />
     </>
   )
 }

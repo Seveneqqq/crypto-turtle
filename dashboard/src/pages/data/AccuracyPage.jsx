@@ -12,7 +12,7 @@ function AccuracyPage() {
           <div className="flex gap-6">
             <AccuracyPanel />
           </div>
-            <TasksHistoryPanel action="calculate_accuracy" />
+            <TasksHistoryPanel action="calculate_quality" />
       </main>
     </LeftSidebar>
   )
