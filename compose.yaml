@@ -88,21 +88,21 @@ services:
   #   networks:
   #     - backend
 
-  # tests-module:
-  #   build:
-  #     context: ./test-module
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./shared:/app/shared
-  #   ports:
-  #     - "8004:8004"
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #     rl-module:
-  #       condition: service_started
-  #   networks:
-  #     - backend
+  tests-module:
+    build:
+      context: ./test-module
+      dockerfile: Dockerfile
+    volumes:
+      - ./shared:/app/shared
+    ports:
+      - "8004:8004"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      # rl-module:
+      #   condition: service_started
+    networks:
+      - backend
 
 
 networks:
