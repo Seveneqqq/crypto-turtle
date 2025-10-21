@@ -14,6 +14,7 @@ from stable_baselines3 import PPO
 from services.test.wallet import Wallet, WalletConfig
 from services.test.decision import DecisionEngine, DecisionConfig
 from services.test.rating import Rating
+from services.test.charts import Charts
 
 
 class SimulationService:
@@ -78,15 +79,11 @@ class SimulationService:
                 max_wallet_percentage_crypto=max_wallet_percentage_crypto,
             )
             wallet = Wallet(balance_start, symbols, wallet_config)
+            charts = Charts()
 
             # --- Inicjalizacja DecisionEngine i RL agentów ---
-            engines = {}
-            rl_agents = {}
-            predictions = {}
-            model_outputs = {}
-            agent_classes = None
 
-
+            engines, predictions, model_outputs = {}, {}, {}
 
             for symbol in symbols:
                 # silnik decyzyjny
@@ -109,9 +106,10 @@ class SimulationService:
                 agent_classes = classes
                 model_outputs[symbol] = [dict(zip(classes, row)) for row in probs]
                 predictions[symbol] = probs
-
+                agent_classes=None
                 # RL agent (jeśli włączony)
                 if rlagent and symbol in agents:
+                    rl_agents = {}
                     agent_path = os.path.join(self.AGENT_DIR, agents[symbol])
                     if os.path.exists(agent_path):
                         rl_agents[symbol] = PPO.load(agent_path, env=None)
@@ -175,6 +173,15 @@ class SimulationService:
             model_metrics = rating.rate(model_portfolio_values,len(model_logs))
 #---------------------------------------------------------------------------------------
             if rlagent:
+                wallet_config = WalletConfig(
+                    wallet_percentage_limit=wallet_percentage_limit,
+                    mincost=mincost,
+                    slippage=slippage,
+                    stop_loss=stop_loss,
+                    fee=fee,
+                    max_wallet_percentage_crypto=max_wallet_percentage_crypto,
+                )
+                wallet = Wallet(balance_start, symbols, wallet_config)
                 agent_portfolio_values, agent_timestamps, agent_logs = [], [], []
                 for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
                     agent_prices = {s: data[s].iloc[t]["close"] for s in symbols}
@@ -239,98 +246,6 @@ class SimulationService:
 
                 agent_metrics = rating.rate(agent_portfolio_values, len(agent_logs))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            # --- Wykres + pole tekstowe ---
-            fig, (ax, ax_text) = plt.subplots(
-                2, 1,
-                gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
-                figsize=(12, 9)
-            )
-
-            # --- Wykres ---
-            ax.plot(model_timestamps, model_portfolio_values, label="Wartość portfela (USD)")
-
-            if len(symbols) == 1:
-                for symbol in symbols:
-                    ax.plot(model_timestamps, model_crypto_ref_values[symbol], linestyle='--', label=f"HODL {symbol}")
-
-            ax.set_xlabel("Timestamp")
-            ax.set_ylabel("Wartość portfela (USD)")
-            ax.set_title(f"[Model] Symulacja wartości portfela (Wynik: {model_metrics['score']} pkt)")
-            ax.set_xticks([])
-            ax.set_xticklabels([])
-            ax.legend()
-
-            # --- Podział metryk na 3 bloki ---
-            block_left = [
-                f"Pliki z danymi: {data_files}",
-                f"Pliki z modelami: {models}",
-            ]
-            if rlagent:
-                block_left.append(f"Pliki z agentami: {agents}")
-            block_center = [
-                f"Łączny zwrot: {model_metrics['total_return']:.2f}%",
-                f"Maksymalny wzrost portfela: {model_metrics['max_portfolio_growth']:.2f}%",
-                f"Maksymalny spadek portfela: {model_metrics['max_portfolio_drop']:.2f}%",
-                f"Ilość transakcji: {model_metrics['transaction_count']}",
-                f"Śr. transakcji/dzień: {model_metrics['avg_transactions_per_day']:.2f}"
-            ]
-
-            block_right = [
-                f"CAGR: {model_metrics['cagr']:.2f}%",
-                f"Max Drawdown: {model_metrics['max_drawdown']:.2f}%",
-                f"Calmar ratio: {model_metrics['calmar_ratio']:.2f}",
-                f"Sharpe ratio: {model_metrics['sharpe_ratio']:.2f}",
-                f"Sortino ratio: {model_metrics['sortino_ratio']:.2f}"
-            ]
-
-            # --- Rysowanie bloków pod wykresem ---
-            ax_text.axis("off")
-
-            # Lewy blok (x=0.2)
-            ax_text.text(
-                0.2, 0.5, "\n".join(block_left),
-                ha="center", va="center", fontsize=10,
-                bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-            )
-
-            # Środkowy blok pusty (x=0.5)
-            ax_text.text(
-                0.6, 0.5, "\n".join(block_center),
-                ha="center", va="center", fontsize=10,
-                bbox = dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-            )
-
-            # Prawy blok (x=0.8)
-            ax_text.text(
-                0.9, 0.5, "\n".join(block_right),
-                ha="center", va="center", fontsize=10,
-                bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-            )
-
-            plt.tight_layout()
-            plt.show()
-
             # --- Zapis wyników ---
             timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             sim_path = os.path.join(self.SIM_DIR, f"{timestamp_str}")
@@ -343,153 +258,12 @@ class SimulationService:
             sim_plot_path = os.path.join(sim_path, "sim_plot.png")
             results_path = os.path.join(sim_path, "sim_results.txt")
 
-            plt.savefig(model_plot_path, format="png")
-            plt.close()
+            charts.draw_chart(model_portfolio_values, model_crypto_ref_values, model_timestamps, model_metrics, symbols,
+                              model_plot_path)
 
             if rlagent:
-                # --- Wykres + pole tekstowe ---
-                fig, (ax, ax_text) = plt.subplots(
-                    2, 1,
-                    gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
-                    figsize=(12, 9)
-                )
-
-                # --- Wykres ---
-                ax.plot(agent_timestamps, agent_portfolio_values, label="Wartość portfela (USD)")
-
-                if len(symbols) == 1:
-                    for symbol in symbols:
-                        ax.plot(agent_timestamps, agent_crypto_ref_values[symbol], linestyle='--',
-                                label=f"HODL {symbol}")
-
-                ax.set_xlabel("Timestamp")
-                ax.set_ylabel("Wartość portfela (USD)")
-                ax.set_title(f"[Agent RL] Symulacja wartości portfela (Wynik: {agent_metrics['score']} pkt)")
-                ax.set_xticks([])
-                ax.set_xticklabels([])
-                ax.legend()
-
-                # --- Podział metryk na 3 bloki ---
-                block_left = [
-                    f"Pliki z danymi: {data_files}",
-                    f"Pliki z modelami: {models}",
-                    f"Pliki z agentami: {agents}"
-                ]
-
-                block_center = [
-                    f"Łączny zwrot: {agent_metrics['total_return']:.2f}%",
-                    f"Maksymalny wzrost portfela: {agent_metrics['max_portfolio_growth']:.2f}%",
-                    f"Maksymalny spadek portfela: {agent_metrics['max_portfolio_drop']:.2f}%",
-                    f"Ilość transakcji: {agent_metrics['transaction_count']}",
-                    f"Śr. transakcji/dzień: {agent_metrics['avg_transactions_per_day']:.2f}"
-                ]
-
-                block_right = [
-                    f"CAGR: {agent_metrics['cagr']:.2f}%",
-                    f"Max Drawdown: {agent_metrics['max_drawdown']:.2f}%",
-                    f"Calmar ratio: {agent_metrics['calmar_ratio']:.2f}",
-                    f"Sharpe ratio: {agent_metrics['sharpe_ratio']:.2f}",
-                    f"Sortino ratio: {agent_metrics['sortino_ratio']:.2f}"
-                ]
-
-                # --- Rysowanie bloków pod wykresem ---
-                ax_text.axis("off")
-
-                # Lewy blok (x=0.2)
-                ax_text.text(
-                    0.2, 0.5, "\n".join(block_left),
-                    ha="center", va="center", fontsize=10,
-                    bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-                )
-
-                # Środkowy blok pusty (x=0.5)
-                ax_text.text(
-                    0.6, 0.5, "\n".join(block_center),
-                    ha="center", va="center", fontsize=10,
-                    bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-                )
-
-                # Prawy blok (x=0.8)
-                ax_text.text(
-                    0.9, 0.5, "\n".join(block_right),
-                    ha="center", va="center", fontsize=10,
-                    bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-                )
-
-                plt.tight_layout()
-                plt.show()
-                plt.savefig(agent_plot_path, format="png")
-                plt.close()
-
-                #3 wykres
-
-                # --- Wykres + pole tekstowe ---
-                fig, (ax, ax_text) = plt.subplots(
-                    2, 1,
-                    gridspec_kw={'height_ratios': [5, 1]},
-                    figsize=(12, 9)
-                )
-
-                # --- Wykres wartości portfela ---
-                ax.plot(model_timestamps, model_portfolio_values, label="Model DecisionEngine", color="blue")
-                ax.plot(agent_timestamps, agent_portfolio_values, label="Agent RL", color="red")
-
-                ax.set_xlabel("Timestamp")
-                ax.set_ylabel("Wartość portfela (USD)")
-                ax.set_title("Porównanie wartości portfela: Model vs Agent RL")
-                ax.set_xticks([])
-                ax.set_xticklabels([])
-                ax.legend()
-
-                # --- Tekst porównawczy bez LaTeX ---
-                ax_text.axis("off")
-
-                # Pozycje pionowe
-                y_start = 0.9
-                delta_y = 0.08
-
-                metrics_list = ["total_return", "max_portfolio_growth", "max_portfolio_drop",
-                                "transaction_count", "avg_transactions_per_day",
-                                "cagr", "max_drawdown", "sharpe_ratio", "sortino_ratio", "calmar_ratio", "score"]
-
-                metric_names = ["Łączny zwrot", "Maksymalny wzrost portfela", "Maksymalny spadek portfela",
-                                "Liczba transakcji", "Śr. transakcji/dzień",
-                                "CAGR", "Max Drawdown", "Sharpe ratio", "Sortino ratio", "Calmar ratio", "Score"]
-
-                for i, (key, name) in enumerate(zip(metrics_list, metric_names)):
-                    m_val = model_metrics.get(key, 0)
-                    a_val = agent_metrics.get(key, 0)
-
-                    if m_val > a_val:
-                        winner = "Model"
-                        diff = (m_val - a_val) / a_val * 100 if a_val != 0 else 0
-                    elif a_val > m_val:
-                        winner = "Agent RL"
-                        diff = (a_val - m_val) / m_val * 100 if m_val != 0 else 0
-                    else:
-                        winner = "Remis"
-                        diff = 0
-
-                    # Opis
-                    ax_text.text(0.2, y_start - i * delta_y, f"{name}:", ha="right", va="center", fontsize=10)
-                    # Model (niebieski)
-                    ax_text.text(0.25, y_start - i * delta_y, f"{m_val:.2f}", color="blue", ha="center", va="center",
-                                 fontsize=10)
-                    # Agent (czerwony)
-                    ax_text.text(0.4, y_start - i * delta_y, f"{a_val:.2f}", color="red", ha="center", va="center",
-                                 fontsize=10)
-                    # Zwycięzca
-                    if(winner == "Model"):
-                        ax_text.text(0.55, y_start - i * delta_y, f"{winner} (+{diff:.2f}%)", color="blue", ha="left", va="center",
-                                     fontsize=10)
-                    else:
-                        ax_text.text(0.55, y_start - i * delta_y, f"{winner} (+{diff:.2f}%)", color="red", ha="left",
-                                     va="center",
-                                     fontsize=10)
-                plt.tight_layout()
-                plt.show()
-                plt.savefig(sim_plot_path, format="png")
-                plt.close()
+                charts.draw_chart(agent_portfolio_values, agent_crypto_ref_values, agent_timestamps, agent_metrics, symbols, agent_plot_path)
+                charts.draw_common_chart(model_portfolio_values, agent_portfolio_values, model_timestamps, agent_timestamps, model_metrics, agent_metrics, sim_plot_path)
 
             with open(model_log_path, "w", encoding="utf-8") as f:
                 for line in model_logs:

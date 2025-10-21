@@ -1,0 +1,158 @@
+import empyrical as ep
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("Agg")
+
+class Charts:
+    def __init__(self):
+        self.portfolio_values = {}
+    @staticmethod
+    def draw_chart(portfolio_values, crypto_ref_values, timestamps, metrics, symbols, plot_path):
+
+        fig, (ax, ax_text) = plt.subplots(
+            2, 1,
+            gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
+            figsize=(12, 9)
+        )
+
+        # --- Wykres ---
+        ax.plot(timestamps, portfolio_values, label="Wartość portfela (USD)")
+
+        if len(symbols) == 1:
+            for symbol in symbols:
+                ax.plot(timestamps, crypto_ref_values[symbol], linestyle='--',
+                        label=f"HODL {symbol}")
+        title="Model ML"
+        if plot_path == "agent_plot.png": title = "Agent RL"
+
+        ax.set_xlabel("Timestamp")
+        ax.set_ylabel("Wartość portfela (USD)")
+        ax.set_title(f"[{title}] Symulacja wartości portfela (Wynik: {metrics['score']} pkt)")
+        ax.set_xticks([])
+        ax.set_xticklabels([])
+        ax.legend()
+
+        # --- Podział metryk na 3 bloki ---
+        block_left = [
+            # f"Pliki z danymi: {data_files}",
+            # f"Pliki z modelami: {models}",
+            # f"Pliki z agentami: {agents}",
+            f"Tu będą pliki jak wymyślę jak to zawijać"
+        ]
+
+        block_center = [
+            f"Łączny zwrot: {metrics['total_return']:.2f}%",
+            f"Maksymalny wzrost portfela: {metrics['max_portfolio_growth']:.2f}%",
+            f"Maksymalny spadek portfela: {metrics['max_portfolio_drop']:.2f}%",
+            f"Ilość transakcji: {metrics['transaction_count']}",
+            f"Śr. transakcji/dzień: {metrics['avg_transactions_per_day']:.2f}"
+        ]
+
+        block_right = [
+            f"CAGR: {metrics['cagr']:.2f}%",
+            f"Max Drawdown: {metrics['max_drawdown']:.2f}%",
+            f"Calmar ratio: {metrics['calmar_ratio']:.2f}",
+            f"Sharpe ratio: {metrics['sharpe_ratio']:.2f}",
+            f"Sortino ratio: {metrics['sortino_ratio']:.2f}"
+        ]
+
+        # --- Rysowanie bloków pod wykresem ---
+        ax_text.axis("off")
+
+        # Lewy blok (x=0.2)
+        ax_text.text(
+            0.2, 0.5, "\n".join(block_left),
+            ha="center", va="center", fontsize=10,
+            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+        )
+
+        # Środkowy blok pusty (x=0.5)
+        ax_text.text(
+            0.5, 0.5, "\n".join(block_center),
+            ha="center", va="center", fontsize=10,
+            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+        )
+
+        # Prawy blok (x=0.8)
+        ax_text.text(
+            0.8, 0.5, "\n".join(block_right),
+            ha="center", va="center", fontsize=10,
+            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+        )
+
+        plt.tight_layout()
+        plt.show()
+        plt.savefig(plot_path, format="png")
+        plt.close()
+        return metrics
+
+    @staticmethod
+    def draw_common_chart(model_portfolio_values, agent_portfolio_values, model_timestamps, agent_timestamps, model_metrics, agent_metrics, plot_path):
+        fig, (ax, ax_text) = plt.subplots(
+            2, 1,
+            gridspec_kw={'height_ratios': [5, 1]},
+            figsize=(12, 9)
+        )
+
+        # --- Wykres wartości portfela ---
+        ax.plot(model_timestamps, model_portfolio_values, label="Model DecisionEngine", color="blue")
+        ax.plot(agent_timestamps, agent_portfolio_values, label="Agent RL", color="red")
+
+        ax.set_xlabel("Timestamp")
+        ax.set_ylabel("Wartość portfela (USD)")
+        ax.set_title("Porównanie wartości portfela: Model vs Agent RL")
+        ax.set_xticks([])
+        ax.set_xticklabels([])
+        ax.legend()
+
+        # --- Tekst porównawczy bez LaTeX ---
+        ax_text.axis("off")
+
+        # Pozycje pionowe
+        y_start = 0.9
+        delta_y = 0.12
+
+        metrics_list = ["total_return", "max_portfolio_growth", "max_portfolio_drop",
+                        "transaction_count", "avg_transactions_per_day",
+                        "cagr", "max_drawdown", "sharpe_ratio", "sortino_ratio", "calmar_ratio", "score"]
+
+        metric_names = ["Łączny zwrot", "Maksymalny wzrost portfela", "Maksymalny spadek portfela",
+                        "Liczba transakcji", "Śr. transakcji/dzień",
+                        "CAGR", "Max Drawdown", "Sharpe ratio", "Sortino ratio", "Calmar ratio", "Score"]
+
+        for i, (key, name) in enumerate(zip(metrics_list, metric_names)):
+            m_val = model_metrics.get(key, 0)
+            a_val = agent_metrics.get(key, 0)
+
+            if m_val > a_val:
+                winner = "Model"
+                diff = (m_val - a_val) / a_val * 100 if a_val != 0 else 0
+            elif a_val > m_val:
+                winner = "Agent RL"
+                diff = (a_val - m_val) / m_val * 100 if m_val != 0 else 0
+            else:
+                winner = "Remis"
+                diff = 0
+
+            # Opis
+            ax_text.text(0.2, y_start - i * delta_y, f"{name}:", ha="right", va="center", fontsize=10)
+            # Model (niebieski)
+            ax_text.text(0.25, y_start - i * delta_y, f"{m_val:.2f}", color="blue", ha="center", va="center",
+                         fontsize=10)
+            # Agent (czerwony)
+            ax_text.text(0.4, y_start - i * delta_y, f"{a_val:.2f}", color="red", ha="center", va="center",
+                         fontsize=10)
+            # Zwycięzca
+            if winner == "Model":
+                ax_text.text(0.55, y_start - i * delta_y, f"{winner} (+{diff:.2f}%)", color="blue", ha="left",
+                             va="center",
+                             fontsize=10)
+            else:
+                ax_text.text(0.55, y_start - i * delta_y, f"{winner} (+{diff:.2f}%)", color="red", ha="left",
+                             va="center",
+                             fontsize=10)
+        plt.tight_layout()
+        plt.show()
+        plt.savefig(plot_path, format="png")
+        plt.close()
