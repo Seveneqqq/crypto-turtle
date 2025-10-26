@@ -17,11 +17,11 @@ class Charts:
         )
 
         # --- Wykres ---
-        ax.plot(timestamps, portfolio_values, label="Wartość portfela (USD)")
+        ax.plot(range(0,timestamps), portfolio_values, label="Wartość portfela (USD)")
 
         if len(symbols) == 1:
             for symbol in symbols:
-                ax.plot(timestamps, crypto_ref_values[symbol], linestyle='--',
+                ax.plot(range(0,timestamps), crypto_ref_values[symbol], linestyle='--',
                         label=f"HODL {symbol}")
         title="Model ML"
         if plot_path == "agent_plot.png": title = "Agent RL"
@@ -96,8 +96,8 @@ class Charts:
         )
 
         # --- Wykres wartości portfela ---
-        ax.plot(model_timestamps, model_portfolio_values, label="Model DecisionEngine", color="blue")
-        ax.plot(agent_timestamps, agent_portfolio_values, label="Agent RL", color="red")
+        ax.plot(range(0,model_timestamps), model_portfolio_values, label="Model DecisionEngine", color="blue")
+        ax.plot(range(0,agent_timestamps), agent_portfolio_values, label="Agent RL", color="red")
 
         ax.set_xlabel("Timestamp")
         ax.set_ylabel("Wartość portfela (USD)")
