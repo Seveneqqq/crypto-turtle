@@ -22,7 +22,7 @@ class TestsService:
         self,
         balance_start,
         add_fee,
-        rlagent,
+        sim_mode,
         rlagent_deterministic,
         slippage,
         wallet_percentage_limit,
@@ -36,6 +36,9 @@ class TestsService:
         data_files,
         models,
         agents,
+        plots,
+        logs,
+        results
     ):
         
         rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
@@ -44,7 +47,7 @@ class TestsService:
             "rabbit_msg_id": rabbit_msg_id,  # Poprawic pola na podstawie configa od Rafała
             "balance_start": balance_start,
             "add_fee": add_fee,
-            "rlagent": rlagent,
+            "sim_mode": sim_mode,
             "rlagent_deterministic": rlagent_deterministic,
             "slippage": slippage,
             "wallet_percentage_limit": wallet_percentage_limit,
@@ -58,6 +61,9 @@ class TestsService:
             "data_files": data_files,
             "models": models,
             "agents": agents,
+            "plots": plots,
+            "logs": logs,
+            "results": results
 
         }
         print(request_payload)
@@ -70,6 +76,27 @@ class TestsService:
             request=str(request_payload)
         )
 
+    def visualize(
+            self,
+            simulation_files
+    ):
+
+        rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
+        request_payload = {
+            "action": "visualize",
+            "rabbit_msg_id": rabbit_msg_id,  # Poprawic pola na podstawie configa od Rafała
+            "simulation_files": simulation_files
+
+        }
+        print(request_payload)
+        self.rabbitmq_service.publish(queue=TEST_REQUEST_QUEUE, message=request_payload)
+        print("Request for visualization data sent to RabbitMQ")
+        print(request_payload)
+        self.sqlite_service.insert_message(
+            rabbit_msg_id=rabbit_msg_id,
+            state="created",
+            request=str(request_payload)
+        )
 
     def calculate_accuracy(
         self, 
