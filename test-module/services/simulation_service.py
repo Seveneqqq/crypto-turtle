@@ -3,6 +3,8 @@ import json
 import gzip
 import time
 from datetime import datetime, timedelta
+from sys import exception
+
 from tqdm import tqdm
 import sys
 import pandas as pd
@@ -59,6 +61,9 @@ class SimulationService:
         results=True
     ):
         try:
+            if sim_mode not in ("ml","mlrl", "rl"):
+                return print("[SIMULATION ERROR] Invalid simulation mode")
+
             print("[Simulation] Start")
             start_time = time.time()
 
@@ -187,10 +192,7 @@ class SimulationService:
             version_numbers = []
             for f in existing_files:
                 try:
-                    # usuń rozszerzenia .json.gz
                     base = os.path.splitext(os.path.splitext(f)[0])[0]
-                    # przykład: sim_26_10_v3_ml
-                    # wyciągamy "3" z "_v3_"
                     v_part = base.split("_v")[-1].split("_")[0]
                     version_numbers.append(int(v_part))
                 except ValueError:

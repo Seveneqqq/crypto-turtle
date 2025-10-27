@@ -1,5 +1,3 @@
-import empyrical as ep
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
@@ -86,6 +84,64 @@ class Charts:
         plt.savefig(plot_path, format="png")
         plt.close()
         return metrics
+    @staticmethod
+    def draw_universal_chart(data, pdf_title):
+        """
+        Tworzy uniwersalny wykres dla trybów ML, RL lub MLRL,
+        bez błędów gdy brakuje agent/model/crypto_ref_values
+        """
+        # Bezpieczne pobranie metryk
+        agent_metrics = data.get("agent", {}).get("metrics", {})
+        model_metrics = data.get("model", {}).get("metrics", {})
+
+        agent_rate = agent_metrics.get("score", 0)
+        model_rate = model_metrics.get("score", 0)
+
+        sim_mode = data.get("config", {}).get("sim_mode", "")
+        symbols = data.get("config", {}).get("symbols", [])
+        crypto_ref_values = data.get("hodl", {}).get("crypto_ref_values", {})
+
+        fig, (ax_title, ax, ax_footer) = plt.subplots(
+            2, 1,
+            gridspec_kw={'height_ratios': [0.05, 0.90]},  # 10% na tytuł, 90% na wykres
+            figsize=(12, 7)
+        )
+        ax_title.axis("off")  # wyłącz osie
+        ax_title.text(0.5, 0.5, pdf_title, ha='center', va='center', fontsize=12, fontweight='bold')
+
+        # --- Wartości portfeli ---
+        if sim_mode in ("ml", "mlrl") and "model" in data:
+            model_portfolio = data["model"].get("portfolio_values", [])
+            if model_portfolio:
+                ax.plot(range(len(model_portfolio)), model_portfolio, label="Model (ML)", color="blue")
+
+        if sim_mode in ("rl", "mlrl") and "agent" in data:
+            agent_portfolio = data["agent"].get("portfolio_values", [])
+            if agent_portfolio:
+                ax.plot(range(len(agent_portfolio)), agent_portfolio, label="Agent (RL)", color="red")
+
+        # --- HODL (tylko jeśli jedna kryptowaluta i istnieją dane) ---
+        if len(symbols) == 1 and symbols[0] in crypto_ref_values:
+            hodl_values = crypto_ref_values.get(symbols[0], [])
+            if hodl_values:
+                ax.plot(range(len(hodl_values)), hodl_values, linestyle="--", color="gray", label=f"HODL {symbols[0]}")
+
+        # --- Ustawienia wykresu ---
+        ax.set_xlabel("Timestamp")
+        ax.set_ylabel("Wartość portfela (USD)")
+
+        title_map = {
+            "ml": f"Model ML [{model_rate}] – Symulacja wartości portfela",
+            "rl": f"Agent RL [{agent_rate}] – Symulacja wartości portfela",
+            "mlrl": f"Porównanie: Model ML [{model_rate}] vs Agent RL [{agent_rate}]"
+        }
+        ax.set_title(title_map.get(sim_mode, "Symulacja portfela"))
+
+        ax.legend()
+        ax.grid(True, linestyle="--", alpha=0.6)
+
+        plt.tight_layout()
+        return fig
 
     @staticmethod
     def draw_common_chart(model_portfolio_values, agent_portfolio_values, model_timestamps, agent_timestamps, model_metrics, agent_metrics, plot_path):

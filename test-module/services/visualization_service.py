@@ -2,6 +2,8 @@ import os
 import gzip
 import json
 from services.test.charts import Charts
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib import pyplot as plt
 
 class VisualizationService:
     def __init__(self):
@@ -10,7 +12,7 @@ class VisualizationService:
         self.VIS_DIR = os.path.join(base_dir, "shared", "simulation", "visualizations")
         os.makedirs(self.VIS_DIR, exist_ok=True)
         self.simulations_data = None
-
+        self.files_to_load = None
         self.charts = Charts()
 
     def visualize(self,
@@ -18,11 +20,11 @@ class VisualizationService:
                   simulation_files=None,
                   sim_path=None):
         """Wczytuje dane z plików gzip tylko z SIM_FILE_DIR."""
-        files_to_load = self._collect_gzip_files(simulation_files)
+        self.files_to_load = self._collect_gzip_files(simulation_files)
 
         self.simulations_data = []
 
-        for path in files_to_load:
+        for path in self.files_to_load:
             try:
                 sim_data = self._load_gzip_file(path)
                 self.simulations_data.append(sim_data)
@@ -35,6 +37,9 @@ class VisualizationService:
         if len(self.simulations_data)==1 and sim_path is not None:
             sim_data = self.simulations_data[0]
             self.sim_visualization(sim_data,sim_path)
+        chart_path = os.path.join(self.VIS_DIR, "chart.png")
+        self.vis_loop(self.simulations_data,"symulacja.pdf")
+
 
     def sim_visualization(self,data,sim_path):
         model_plot_path = os.path.join(sim_path, "model_plot.png")
@@ -65,6 +70,28 @@ class VisualizationService:
                                      data["agent"]["metrics"],
                                      sim_plot_path)
 
+    def vis_loop(self, data, output_pdf):
+        chart_path = os.path.join(self.VIS_DIR, output_pdf)
+
+        with PdfPages(chart_path) as pdf:
+            for i, item in enumerate(data):
+                try:
+                    file_name = os.path.basename(self.files_to_load[i])
+                    # wygeneruj wykres
+                    fig = self.charts.draw_universal_chart(item, pdf_title=f"Symulacja [{i + 1}/{len(data)}], plik: {file_name}")
+
+
+
+                    # dodaj stronę do PDF
+                    pdf.savefig(fig)
+                    plt.close(fig)
+
+                    print(f"[{i + 1}/{len(data)}] Dodano stronę dla: {file_name}")
+                except Exception as e:
+                    print(f"Błąd przy wizualizacji {i + 1}: {e}")
+
+        print(f"✅ Zapisano wszystkie wizualizacje do pliku: {chart_path}")
+
     def _load_gzip_file(self, path: str):
         """Wczytuje jeden plik gzip i zwraca dane JSON."""
         with gzip.open(path, "rt", encoding="utf-8") as f:
@@ -75,27 +102,28 @@ class VisualizationService:
         if simulation_files is None:
             return []
 
-        # Zamień na absolutną ścieżkę w folderze self.SIM_FILE_DIR
         if isinstance(simulation_files, str):
             full_path = os.path.join(self.SIM_FILE_DIR, simulation_files)
+
             if os.path.isdir(full_path):
                 # folder → wszystkie .gz w środku
                 return sorted([
-                    os.path.join(self.SIM_FILE_DIR, f)
+                    os.path.join(full_path, f)
                     for f in os.listdir(full_path)
-                    if f.endswith("gz")
+                    if f.endswith(".json.gz")
                 ])
-            elif full_path.endswith(".gz") and os.path.exists(full_path):
+
+            elif full_path.endswith(".json.gz") and os.path.exists(full_path):
                 return [full_path]
+
             else:
                 raise ValueError(f"Nieprawidłowa ścieżka lub plik nie istnieje: {simulation_files}")
 
         elif isinstance(simulation_files, list):
-            # lista plików → wszystkie muszą być w SIM_FILE_DIR
             paths = []
             for f in simulation_files:
                 full_path = os.path.join(self.SIM_FILE_DIR, f)
-                if full_path.endswith(".gz") and os.path.exists(full_path):
+                if full_path.endswith(".json.gz") and os.path.exists(full_path):
                     paths.append(full_path)
                 else:
                     print(f"⚠️ Ignorowany niepoprawny plik: {f}")
