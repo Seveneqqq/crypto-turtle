@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union, List
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.params import Depends
 from services import tests_service
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/tests", tags=["tests"])
 class SimulationRequest(BaseModel):
     balance_start: float
     add_fee: bool
-    rlagent: bool
+    sim_mode: str
     rlagent_deterministic: bool
     slippage: int
     wallet_percentage_limit: float
@@ -25,6 +25,9 @@ class SimulationRequest(BaseModel):
     data_files: Dict[str, str]
     models: Dict[str, str]
     agents: Dict[str, str]
+    plots: bool
+    logs: bool
+    results: bool
 
 
 @router.post("/simulate")
@@ -32,7 +35,7 @@ def simulate(req: SimulationRequest):
     tests_service.simulate(
         balance_start=req.balance_start,
         add_fee=req.add_fee,
-        rlagent=req.rlagent,
+        sim_mode=req.sim_mode,
         rlagent_deterministic=req.rlagent_deterministic,
         slippage=req.slippage,
         wallet_percentage_limit=req.wallet_percentage_limit,
@@ -46,9 +49,21 @@ def simulate(req: SimulationRequest):
         data_files=req.data_files,
         models=req.models,
         agents=req.agents,
+        plots=req.plots,
+        logs=req.logs,
+        results=req.results
     )
     return {"msg": "Request added to queue."}
 
+class VisualizationRequest(BaseModel):
+     simulation_files: Union[str, List[str]]
+
+@router.post("/visualize")
+def visualize(req: VisualizationRequest):
+    tests_service.visualize(
+        simulation_files=req.simulation_files,
+    )
+    return {"msg": "Request added to queue."}
 
 class DataQualityRequest(BaseModel):
     data_dir: str

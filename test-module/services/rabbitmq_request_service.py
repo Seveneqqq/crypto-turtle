@@ -2,6 +2,12 @@ from configuration.rabbitmq_queues import TEST_RESPONSE_QUEUE
 
 
 class RabbitMQRequestService:
+    def __init__(self, rabbitmq_service, simulation_service, visualization_service, accuracy_service):
+
+        self.rabbitmq_service = rabbitmq_service
+        self.simulation_service = simulation_service
+        self.visualization_service = visualization_service
+        self.accuracy_service = accuracy_service
     def __init__(self, rabbitmq_service, simulation_service, data_quality_service):
 
         self.rabbitmq_service = rabbitmq_service
@@ -17,7 +23,7 @@ class RabbitMQRequestService:
                     rabbit_msg_id=data.get("rabbit_msg_id"),
                     balance_start=data.get("balance_start"),
                     add_fee=data.get("add_fee"),
-                    rlagent=data.get("rlagent"),
+                    sim_mode=data.get("sim_mode"),
                     rlagent_deterministic=data.get("rlagent_deterministic"),
                     slippage=data.get("slippage"),
                     wallet_percentage_limit=data.get("wallet_percentage_limit"),
@@ -31,6 +37,9 @@ class RabbitMQRequestService:
                     data_files=data.get("data_files"),
                     models=data.get("models"),
                     agents=data.get("agents"),
+                    plots=data.get("plots"),
+                    logs=data.get("logs"),
+                    results=data.get("results")
 
                 )
                 if result.get("result") == "success":
@@ -42,7 +51,25 @@ class RabbitMQRequestService:
                         "result": "failed",
                         "message": "Failed to retrieve simulation data"
                     })
+            case "visualize":
+                print("Getting visualize data")
+                result = self.visualization_service.visualize(
+                    rabbit_msg_id=data.get("rabbit_msg_id"),
+                    simulation_files=data.get("simulation_files")
 
+                )
+                if result.get("result") == "success":
+                    print("Successfully retrieved visualize data")
+                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
+                else:
+                    print("Failed to retrieve visualize data")
+                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
+                        "result": "failed",
+                        "message": "Failed to retrieve visualize data"
+                    })
+            case "calculate_accuracy":
+                print("Calculating accuracy")
+                result = self.accuracy_service.calculate_accuracy(
             case "calculate_quality":
                 print("Calculating data quality")
                 result = self.data_quality_service.calculate_quality(
