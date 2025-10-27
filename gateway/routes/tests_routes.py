@@ -65,19 +65,14 @@ def visualize(req: VisualizationRequest):
     )
     return {"msg": "Request added to queue."}
 
-class AccuracyRequest(BaseModel):
+class DataQualityRequest(BaseModel):
     data_dir: str
     data_file: str
-    model_dir: str
-    model_file: str
 
-@router.post("/calculate_accuracy")
-def calculate_accuracy(req: AccuracyRequest):
-    tests_service.calculate_accuracy(
+@router.post("/calculate_quality")
+def calculate_quality(req: DataQualityRequest):
+    result = tests_service.calculate_quality(
         data_dir=req.data_dir,
-        data_file=req.data_file,
-        model_dir=req.model_dir,
-        model_file=req.model_file
+        data_file=req.data_file
     )
-    return {"msg": "Request added to queue."}
-    return {"msg": "Simulation Request added to queue."}
+    return {"msg": "Request processed.", "result": result}

@@ -5,23 +5,20 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 
 function AccuracyPanel() {
   const [data, setData] = useState({ dir: '', file: '' });
-  const [model, setModel] = useState({ dir: '', file: '' });
 
   const handleSubmit = async () => {
-    if (!data.file || !model.file) {
-      alert('Please select both data and model files!');
+    if (!data.file) {
+      alert('Please select a data file!');
       return;
     }
 
     const payload = {
       data_dir: data.dir,
-      data_file: data.file,
-      model_dir: model.dir,
-      model_file: model.file
+      data_file: data.file
     };
 
     try {
-      const response = await fetch('http://localhost:8000/tests/calculate_accuracy', {
+      const response = await fetch('http://localhost:8000/tests/calculate_quality', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -43,7 +40,6 @@ function AccuracyPanel() {
       </CardHeader>
       <CardContent className="space-y-6">
 
-        {/* Processed Data Block */}
         <div>
           <h3 className="text-xl font-semibold mb-2">Processed Data</h3>
           <Tabs defaultValue="processed">
@@ -102,36 +98,6 @@ function AccuracyPanel() {
           </Tabs>
         </div>
 
-        {/* Models Block */}
-        <div>
-          <h3 className="text-xl font-semibold mb-2">Models</h3>
-          <Tabs defaultValue="ml">
-            <TabsList className="mb-4">
-              <TabsTrigger value="ml">ML</TabsTrigger>
-              <TabsTrigger value="sklearn">Sklearn</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="ml" className="space-y-4">
-              <FileSelect
-                placeholder="models_ml"
-                filesKey="models_ml"
-                value={model.file}
-                onChange={(file) => setModel({ dir: 'ml', file })}
-              />
-            </TabsContent>
-
-            <TabsContent value="sklearn" className="space-y-4">
-              <FileSelect
-                placeholder="models_sklearn"
-                filesKey="models_sklearn"
-                value={model.file}
-                onChange={(file) => setModel({ dir: 'sklearn', file })}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Przycisk wysyłający do API */}
         <button
           onClick={handleSubmit}
           className="px-4 py-2 bg-blue-500 text-white rounded"
