@@ -165,7 +165,7 @@ class SimulationService:
                     if os.path.exists(agent_path):
                         rl_agents[symbol] = PPO.load(agent_path, env=None)
                     else:
-                        print(f"[Simulation][WARN] Brak agenta RL dla {symbol}: {agent_path}")
+                        print(f"[Simulation][WARN] Brak sagenta RL dla {symbol}: {agent_path}")
                 self.rl_agents = rl_agents
 
             # --- Symulacja ---
