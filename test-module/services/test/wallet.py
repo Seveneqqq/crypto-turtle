@@ -81,6 +81,15 @@ class Wallet:
             total += self.holdings.get(s, 0.0) * p
         return total
 
+    def total_holdings(self, prices: dict):
+        per_symbol_values = []  # lista wartości poszczególnych kryptowalut
+
+        for s, p in prices.items():
+            value = self.holdings.get(s, 0.0) * p
+            per_symbol_values.append(round(value, 4))
+
+        return per_symbol_values
+
     def check_stop_loss(self, symbol, market_price):
         """
         If price <= last_buy_price * (1 - stop_loss) -> sell all
