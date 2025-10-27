@@ -8,6 +8,11 @@ class RabbitMQRequestService:
         self.simulation_service = simulation_service
         self.visualization_service = visualization_service
         self.accuracy_service = accuracy_service
+    def __init__(self, rabbitmq_service, simulation_service, data_quality_service):
+
+        self.rabbitmq_service = rabbitmq_service
+        self.simulation_service = simulation_service
+        self.data_quality_service = data_quality_service
 
     def handle_request(self, data):
         print(data)
@@ -65,17 +70,18 @@ class RabbitMQRequestService:
             case "calculate_accuracy":
                 print("Calculating accuracy")
                 result = self.accuracy_service.calculate_accuracy(
+            case "calculate_quality":
+                print("Calculating data quality")
+                result = self.data_quality_service.calculate_quality(
                     rabbit_msg_id=data.get("rabbit_msg_id"),
                     data_dir=data.get("data_dir"),
                     data_file=data.get("data_file"),
-                    model_dir=data.get("model_dir"),
-                    model_file=data.get("model_file"),
                 )
                 if result.get("result") == "success":
-                    print("Successfully calculated accuracy")
+                    print("Successfully calculated data quality")
                     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
                 else:
-                    print("Failed to calculate accuracy")
+                    print("Failed to calculate data quality")
                     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
 
                     
