@@ -1,0 +1,6 @@
+[20251019_171752] Data Quality calculation log
+Data file: processed_Z-SCORE_set3_BTCUSDT-model_1m_6m_2025-10-11_97f5b9c9-a08e-4a75-a0b6-efca2b5f3192.csv
+Set: set3
+Score: 74.33
+Metrics: {'missing_ratio': np.float64(1e-05), 'duplicate_ratio': np.float64(0.0), 'avg_corr': np.float64(0.21662), 'std_mean': np.float64(160963102.89926)}
+Status: success

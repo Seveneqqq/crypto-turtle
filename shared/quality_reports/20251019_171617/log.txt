@@ -1,0 +1,6 @@
+[20251019_171617] Data Quality calculation log
+Data file: processed_MINMAX_set3_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv
+Set: set3
+Score: 73.53
+Metrics: {'missing_ratio': np.float64(1e-05), 'duplicate_ratio': np.float64(0.0), 'avg_corr': np.float64(0.17629), 'std_mean': np.float64(68753687.33809)}
+Status: success
