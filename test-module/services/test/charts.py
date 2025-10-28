@@ -5,85 +5,7 @@ matplotlib.use("Agg")
 class Charts:
     def __init__(self):
         self.portfolio_values = {}
-    @staticmethod
-    def draw_chart(portfolio_values, crypto_ref_values, timestamps, metrics, symbols, plot_path):
 
-        fig, (ax, ax_text) = plt.subplots(
-            2, 1,
-            gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
-            figsize=(12, 9)
-        )
-
-        # --- Wykres ---
-        ax.plot(range(0,timestamps), portfolio_values, label="Wartość portfela (USD)")
-
-        if len(symbols) == 1:
-            for symbol in symbols:
-                ax.plot(range(0,timestamps), crypto_ref_values[symbol], linestyle='--',
-                        label=f"HODL {symbol}")
-        title="Model ML"
-        if plot_path == "agent_plot.png": title = "Agent RL"
-
-        ax.set_xlabel("Timestamp")
-        ax.set_ylabel("Wartość portfela (USD)")
-        ax.set_title(f"[{title}] Symulacja wartości portfela (Wynik: {metrics['score']} pkt)")
-        ax.set_xticks([])
-        ax.set_xticklabels([])
-        ax.legend()
-
-        # --- Podział metryk na 3 bloki ---
-        block_left = [
-            # f"Pliki z danymi: {data_files}",
-            # f"Pliki z modelami: {models}",
-            # f"Pliki z agentami: {agents}",
-            f"Tu będą pliki jak wymyślę jak to zawijać"
-        ]
-
-        block_center = [
-            f"Łączny zwrot: {metrics['total_return']:.2f}%",
-            f"Maksymalny wzrost portfela: {metrics['max_portfolio_growth']:.2f}%",
-            f"Maksymalny spadek portfela: {metrics['max_portfolio_drop']:.2f}%",
-            f"Ilość transakcji: {metrics['transaction_count']}",
-            f"Śr. transakcji/dzień: {metrics['avg_transactions_per_day']:.2f}"
-        ]
-
-        block_right = [
-            f"CAGR: {metrics['cagr']:.2f}%",
-            f"Max Drawdown: {metrics['max_drawdown']:.2f}%",
-            f"Calmar ratio: {metrics['calmar_ratio']:.2f}",
-            f"Sharpe ratio: {metrics['sharpe_ratio']:.2f}",
-            f"Sortino ratio: {metrics['sortino_ratio']:.2f}"
-        ]
-
-        # --- Rysowanie bloków pod wykresem ---
-        ax_text.axis("off")
-
-        # Lewy blok (x=0.2)
-        ax_text.text(
-            0.2, 0.5, "\n".join(block_left),
-            ha="center", va="center", fontsize=10,
-            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-        )
-
-        # Środkowy blok pusty (x=0.5)
-        ax_text.text(
-            0.5, 0.5, "\n".join(block_center),
-            ha="center", va="center", fontsize=10,
-            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-        )
-
-        # Prawy blok (x=0.8)
-        ax_text.text(
-            0.8, 0.5, "\n".join(block_right),
-            ha="center", va="center", fontsize=10,
-            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-        )
-
-        plt.tight_layout()
-        plt.show()
-        plt.savefig(plot_path, format="png")
-        plt.close()
-        return metrics
     @staticmethod
     def draw_universal_chart(data, pdf_title):
         """
@@ -101,9 +23,9 @@ class Charts:
         symbols = data.get("config", {}).get("symbols", [])
         crypto_ref_values = data.get("hodl", {}).get("crypto_ref_values", {})
 
-        fig, (ax_title, ax, ax_footer) = plt.subplots(
+        fig, (ax_title, ax) = plt.subplots(
             2, 1,
-            gridspec_kw={'height_ratios': [0.05, 0.90]},  # 10% na tytuł, 90% na wykres
+            gridspec_kw={'height_ratios': [0.05, 0.95]},  # 10% na tytuł, 90% na wykres
             figsize=(12, 7)
         )
         ax_title.axis("off")  # wyłącz osie
@@ -142,6 +64,55 @@ class Charts:
 
         plt.tight_layout()
         return fig
+
+    @staticmethod
+    def draw_crypto_percentage_chart(data, rlagent: bool = False):
+        """
+        Rysuje wykres wartości portfela, gotówki (USD) i poszczególnych kryptowalut.
+        Zakłada strukturę:
+          data["config"]["symbols"] -> ["BTC", "ETH", ...]
+          data["model" lub "agent"]["holdings"] -> [[btc_t0, eth_t0, ...], [btc_t1, eth_t1, ...], ...]
+        """
+        key = "agent" if rlagent else "model"
+        section = data[key]
+
+        portfolio_values = section["portfolio_values"]
+        holdings = section["holdings"]
+        symbols = data["config"]["symbols"]
+
+        # transpozycja holdings: [ [btc_t0, eth_t0], [btc_t1, eth_t1] ] -> {BTC: [..], ETH: [..]}
+        holdings_by_symbol = {sym: [row[i] for row in holdings] for i, sym in enumerate(symbols)}
+
+        # Oblicz USD (gotówka)
+        usd_values = []
+        for i in range(len(portfolio_values)):
+            total_crypto = sum(holdings[i])  # suma wartości kryptowalut w danym kroku
+            usd = portfolio_values[i] - total_crypto
+            usd_values.append(usd)
+
+        # Rysowanie wykresu
+        fig, ax = plt.subplots(figsize=(12, 7))
+        x = range(len(portfolio_values))
+
+        # linie
+        ax.plot(x, portfolio_values, color="black", linewidth=2, label="Portfolio total")
+        ax.plot(x, usd_values, color="gray", linestyle="--", label="USD (cash)")
+
+        for sym, vals in holdings_by_symbol.items():
+            ax.plot(x, vals, label=sym)
+
+        # opis i legenda
+        mode_name = "Agent RL" if rlagent else "Model ML"
+        ax.set_title(f"Skład portfela — {mode_name}", fontsize=14, fontweight="bold")
+        ax.set_xlabel("Kroki / Timestamp")
+        ax.set_ylabel("Wartość (USD)")
+        ax.legend()
+        ax.grid(True, linestyle="--", alpha=0.6)
+        plt.tight_layout()
+
+        return fig
+
+    # metody dla simulation_service (na razie zostają)
 
     @staticmethod
     def draw_common_chart(model_portfolio_values, agent_portfolio_values, model_timestamps, agent_timestamps, model_metrics, agent_metrics, plot_path):
@@ -212,3 +183,84 @@ class Charts:
         plt.show()
         plt.savefig(plot_path, format="png")
         plt.close()
+
+
+    @staticmethod
+    def draw_chart(portfolio_values, crypto_ref_values, timestamps, metrics, symbols, plot_path):
+
+        fig, (ax, ax_text) = plt.subplots(
+            2, 1,
+            gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
+            figsize=(12, 9)
+        )
+
+        # --- Wykres ---
+        ax.plot(range(0, timestamps), portfolio_values, label="Wartość portfela (USD)")
+
+        if len(symbols) == 1:
+            for symbol in symbols:
+                ax.plot(range(0, timestamps), crypto_ref_values[symbol], linestyle='--',
+                        label=f"HODL {symbol}")
+        title = "Model ML"
+        if plot_path == "agent_plot.png": title = "Agent RL"
+
+        ax.set_xlabel("Timestamp")
+        ax.set_ylabel("Wartość portfela (USD)")
+        ax.set_title(f"[{title}] Symulacja wartości portfela (Wynik: {metrics['score']} pkt)")
+        ax.set_xticks([])
+        ax.set_xticklabels([])
+        ax.legend()
+
+        # --- Podział metryk na 3 bloki ---
+        block_left = [
+            # f"Pliki z danymi: {data_files}",
+            # f"Pliki z modelami: {models}",
+            # f"Pliki z agentami: {agents}",
+            f"Tu będą pliki jak wymyślę jak to zawijać"
+        ]
+
+        block_center = [
+            f"Łączny zwrot: {metrics['total_return']:.2f}%",
+            f"Maksymalny wzrost portfela: {metrics['max_portfolio_growth']:.2f}%",
+            f"Maksymalny spadek portfela: {metrics['max_portfolio_drop']:.2f}%",
+            f"Ilość transakcji: {metrics['transaction_count']}",
+            f"Śr. transakcji/dzień: {metrics['avg_transactions_per_day']:.2f}"
+        ]
+
+        block_right = [
+            f"CAGR: {metrics['cagr']:.2f}%",
+            f"Max Drawdown: {metrics['max_drawdown']:.2f}%",
+            f"Calmar ratio: {metrics['calmar_ratio']:.2f}",
+            f"Sharpe ratio: {metrics['sharpe_ratio']:.2f}",
+            f"Sortino ratio: {metrics['sortino_ratio']:.2f}"
+        ]
+
+        # --- Rysowanie bloków pod wykresem ---
+        ax_text.axis("off")
+
+        # Lewy blok (x=0.2)
+        ax_text.text(
+            0.2, 0.5, "\n".join(block_left),
+            ha="center", va="center", fontsize=10,
+            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+        )
+
+        # Środkowy blok pusty (x=0.5)
+        ax_text.text(
+            0.5, 0.5, "\n".join(block_center),
+            ha="center", va="center", fontsize=10,
+            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+        )
+
+        # Prawy blok (x=0.8)
+        ax_text.text(
+            0.8, 0.5, "\n".join(block_right),
+            ha="center", va="center", fontsize=10,
+            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
+        )
+
+        plt.tight_layout()
+        plt.show()
+        plt.savefig(plot_path, format="png")
+        plt.close()
+        return metrics
