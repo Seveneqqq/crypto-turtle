@@ -39,7 +39,7 @@
         "agents": {
             "BTC": "ppo.zip"
         },
-        "plots": true,
+        "plots": false,
         "logs": false,
         "results": false
     }

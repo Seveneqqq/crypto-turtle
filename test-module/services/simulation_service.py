@@ -29,6 +29,7 @@ class SimulationService:
         self.OUTPUT_DIR = os.path.join(base_dir, "shared", "simulation", "outputs")
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
 
+        self.sim_mode = "ml"
         self.balance_start = 0.0
         self.rating = Rating()
         self.rl_agents = None
@@ -85,7 +86,7 @@ class SimulationService:
             if sim_mode in ("mlrl", "rl"):
                 rlagent=True
             else: rlagent=False
-
+            self.sim_mode = sim_mode
             if rlagent:
                 self.output["config"].update({
                     "rlagent": rlagent,
@@ -123,6 +124,7 @@ class SimulationService:
 
             symbols = list(data.keys())
             self.output["config"].update({"symbols": symbols})
+
             # --- Inicjalizacja portfela ---
             wallet_config = WalletConfig(
                 wallet_percentage_limit=wallet_percentage_limit,
@@ -158,6 +160,8 @@ class SimulationService:
                 self.classes = [str(c) for c in engine.model.classes_]
                 predictions[symbol] = probs
 
+                # inicjalizacja agentów
+
                 rl_agents = {}
 
                 if rlagent and symbol in agents:
@@ -183,32 +187,12 @@ class SimulationService:
 
             # --- Zapis wyników ---
 
-            date_str = datetime.now().strftime("%d_%m")
-            existing_files = [
-                f for f in os.listdir(self.OUTPUT_DIR)
-                if f.startswith("sim_") and f"_{date_str}_" in f and f.endswith(".gz")
-            ]
 
-            version_numbers = []
-            for f in existing_files:
-                try:
-                    base = os.path.splitext(os.path.splitext(f)[0])[0]
-                    v_part = base.split("_v")[-1].split("_")[0]
-                    version_numbers.append(int(v_part))
-                except ValueError:
-                    continue
+            g_n, sim_path, gzip_path = self.build_filename()
 
-            next_version = max(version_numbers, default=0) + 1
-
-            # generujemy nową nazwę
-            s_p = f"sim_{date_str}_v{next_version}_{sim_mode}"
-            g_n = f"{s_p}.json.gz"
-            sim_path = os.path.join(self.SIM_DIR, s_p)
-            gzip_path = os.path.join(self.OUTPUT_DIR, g_n)
-            if not logs and not plots and not results:
-                pass
-            else:
+            if logs or plots or results:
                 os.makedirs(sim_path, exist_ok=True)
+
 
             model_log_path = os.path.join(sim_path, "model_transaction_logs.txt")
             agent_log_path = os.path.join(sim_path, "agent_transaction_logs.txt")
@@ -235,6 +219,7 @@ class SimulationService:
 
             with gzip.open(gzip_path, "wt", encoding="utf-8") as f:
                 json.dump(self.output, f, indent=2)
+
 
             if plots:
                 VisualizationService().visualize(simulation_files=g_n, sim_path=sim_path)
@@ -353,6 +338,30 @@ class SimulationService:
                     "holdings": holdings
                 }
         return logs
+    def build_filename(self):
+        date_str = datetime.now().strftime("%d_%m")
+        existing_files = [
+            f for f in os.listdir(self.OUTPUT_DIR)
+            if f.startswith("sim_") and f"_{date_str}_" in f and f.endswith(".gz")
+        ]
+
+        version_numbers = []
+        for f in existing_files:
+            try:
+                base = os.path.splitext(os.path.splitext(f)[0])[0]
+                v_part = base.split("_v")[-1].split("_")[0]
+                version_numbers.append(int(v_part))
+            except ValueError:
+                continue
+
+        next_version = max(version_numbers, default=0) + 1
+
+        # generujemy nową nazwę
+        s_p = f"sim_{date_str}_v{next_version}_{self.sim_mode}"
+        g_n = f"{s_p}.json.gz"
+        sim_path = os.path.join(self.SIM_DIR, s_p)
+        gzip_path = os.path.join(self.OUTPUT_DIR, g_n)
+        return g_n, sim_path, gzip_path
 
 def build_obs(symbol, t, data, rl_env_wallet, prob_array, classes):
     price = float(data[symbol].iloc[t]["close"])

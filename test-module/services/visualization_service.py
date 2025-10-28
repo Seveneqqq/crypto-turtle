@@ -1,6 +1,7 @@
 import os
 import gzip
 import json
+from datetime import datetime, timedelta
 from services.test.charts import Charts
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot as plt
@@ -37,8 +38,8 @@ class VisualizationService:
         if len(self.simulations_data)==1 and sim_path is not None:
             sim_data = self.simulations_data[0]
             self.sim_visualization(sim_data,sim_path)
-        chart_path = os.path.join(self.VIS_DIR, "chart.png")
-        self.vis_loop(self.simulations_data,"symulacja.pdf")
+        vis_path = self.build_filename()
+        self.vis_loop(self.simulations_data,vis_path)
 
 
     def sim_visualization(self,data,sim_path):
@@ -71,26 +72,52 @@ class VisualizationService:
                                      sim_plot_path)
 
     def vis_loop(self, data, output_pdf):
-        chart_path = os.path.join(self.VIS_DIR, output_pdf)
 
-        with PdfPages(chart_path) as pdf:
+
+        with PdfPages(output_pdf) as pdf:
             for i, item in enumerate(data):
                 try:
                     file_name = os.path.basename(self.files_to_load[i])
                     # wygeneruj wykres
                     fig = self.charts.draw_universal_chart(item, pdf_title=f"Symulacja [{i + 1}/{len(data)}], plik: {file_name}")
 
-
-
                     # dodaj stronę do PDF
                     pdf.savefig(fig)
                     plt.close(fig)
+
+                    # fig = self.charts.draw_crypto_percentage_chart(item,False)
+                    #
+                    #
+                    # # dodaj stronę do PDF
+                    # pdf.savefig(fig)
+                    # plt.close(fig)
 
                     print(f"[{i + 1}/{len(data)}] Dodano stronę dla: {file_name}")
                 except Exception as e:
                     print(f"Błąd przy wizualizacji {i + 1}: {e}")
 
-        print(f"✅ Zapisano wszystkie wizualizacje do pliku: {chart_path}")
+        print(f"✅ Zapisano wszystkie wizualizacje do pliku pdf")
+
+    def build_filename(self):
+        date_str = datetime.now().strftime("%d_%m")
+        existing_files = [
+            f for f in os.listdir(self.VIS_DIR)
+            if f.startswith("vis_") and f"_{date_str}_" in f and f.endswith(".pdf")
+        ]
+
+        versions = []
+        for f in existing_files:
+            try:
+                base = os.path.splitext(os.path.splitext(f)[0])[0]
+                v_part = base.split("_v")[-1].split("_")[0]
+                versions.append(int(v_part))
+            except ValueError:
+                continue
+        next_version = max(versions, default=0) + 1
+        v_p = f"vis_{date_str}_v{next_version}.pdf"
+        vis_path = os.path.join(self.VIS_DIR, v_p)
+
+        return vis_path
 
     def _load_gzip_file(self, path: str):
         """Wczytuje jeden plik gzip i zwraca dane JSON."""
