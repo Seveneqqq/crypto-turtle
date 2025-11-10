@@ -1,0 +1,9 @@
+{
+    "rabbit_msg_id": "abb3ef09-841b-4a8d-ae31-b49ba2e6fbce",
+    "result": "failed",
+    "message": "Model btc_model_cls.pkl nie istnieje w /app/shared/models/sklearn/btc_model_cls.pkl",
+    "model": "btc_model_cls.pkl",
+    "test_file": "ed2 - Arkusz1.csv",
+    "metrics": null,
+    "timestamp": "2025-11-02T19:43:54.836024"
+}
