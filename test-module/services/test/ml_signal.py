@@ -30,8 +30,7 @@ class ModelSignal:
         return probs, classes
 
     def lstm_price_predictor(self):
-        predictor = ModelPredictor(self.model)
-        preds = predictor.predict_batch(self.data)
+        preds = self.model.predict_batch(self.data)
         # Przekształcamy w „probabilities” zgodne z decision engine
         signals = []
         for p in preds:
