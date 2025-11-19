@@ -21,7 +21,7 @@ class SimulationService:
     def __init__(self):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_simulation_data")
-        self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "sklearn")
+
         self.SIM_DIR = os.path.join(base_dir, "shared", "simulation","simulations")
         os.makedirs(self.SIM_DIR, exist_ok=True)
         self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
@@ -109,7 +109,6 @@ class SimulationService:
 
             self.balance_start = balance_start
             self.rlagent_deterministic = rlagent_deterministic
-            model_type= "sklearn"
             data_files = data_files or {}
             model_paths = model_paths or {}
             agents = agents or {}
@@ -143,7 +142,6 @@ class SimulationService:
 
             for symbol in symbols:
                 # silnik decyzyjny
-                model_path = os.path.join(self.MODEL_DIR, model_paths[symbol])
                 engines[symbol] = DecisionEngine(
                     DecisionConfig(
                         threshold_buy=threshold_buy,
@@ -154,11 +152,9 @@ class SimulationService:
                 ))
 
                 # predykcje
-                models[symbol] = ModelSignal(model_path=model_path, data=data[symbol], model_type=model_type)
+                models[symbol] = ModelSignal(model_path=model_paths[symbol], data=data[symbol])
                 predictions[symbol] = models[symbol].predictions
                 self.classes = models[symbol].classes
-                print(self.classes)
-
 
                 # inicjalizacja agentów
 
@@ -364,6 +360,10 @@ class SimulationService:
         sim_path = os.path.join(self.SIM_DIR, s_p)
         gzip_path = os.path.join(self.OUTPUT_DIR, g_n)
         return g_n, sim_path, gzip_path
+    def check_model_type(self):
+        pass
+
+
 
 def build_obs(symbol, t, data, rl_env_wallet, prob_array, classes):
     price = float(data[symbol].iloc[t]["close"])
@@ -390,3 +390,5 @@ def build_obs(symbol, t, data, rl_env_wallet, prob_array, classes):
         ret1, ret1_lag1, roll_mean_10, roll_std_10, macd, macd_sig, atr, vol
     ], dtype=np.float32)
     return obs
+
+
