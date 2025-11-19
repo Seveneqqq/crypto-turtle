@@ -1,11 +1,16 @@
 import joblib
 import numpy as np
+import os
 from services.test.standalone_model import ModelPredictor
 
 class ModelSignal:
-    def __init__(self, model_path, data, model_type):
+    def __init__(self, model_path, data):
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "sklearn")
         self.data = data
-        match model_type:
+        self.model_path = model_path
+
+        match self.check_model_type():
             case "sklearn":
                 self.model = joblib.load(model_path)
                 self.predictions, self.classes = self.sklearn()
@@ -13,8 +18,6 @@ class ModelSignal:
             case "lstm":
                 self.model = ModelPredictor(model_path)
                 self.predictions, self.classes = self.lstm_price_predictor()
-
-
 
     def sklearn(self):
         features = self.model.feature_names_in_
@@ -41,3 +44,23 @@ class ModelSignal:
                 signals.append([0.0, 1.0, 0.0])
         classes = ["buy", "hold", "sell"]
         return np.array(signals), classes
+
+
+
+
+    def check_model_type(self):
+        full_path = os.path.join(self.MODEL_DIR, self.model_path)
+
+        if not os.path.exists(full_path):
+            raise ValueError(f"Ścieżka nie istnieje: {full_path}")
+
+        if os.path.isdir(full_path):
+            return "lstm"
+
+        filename = os.path.basename(full_path)
+        if "." in filename:
+            return "sklearn"
+
+        raise ValueError(
+            f"Nie udało się określić typu modelu (brak rozszerzenia i nie jest to folder): {self.model_path}"
+        )
