@@ -152,7 +152,7 @@ class SimulationService:
                 ))
 
                 # predykcje
-                models[symbol] = ModelSignal(model_path=model_paths[symbol], data=data[symbol])
+                models[symbol] = ModelSignal(model_name=model_paths[symbol], data=data[symbol])
                 predictions[symbol] = models[symbol].predictions
                 self.classes = models[symbol].classes
 
