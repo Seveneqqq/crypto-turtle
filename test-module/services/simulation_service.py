@@ -21,20 +21,15 @@ class SimulationService:
     def __init__(self):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_simulation_data")
-
         self.SIM_DIR = os.path.join(base_dir, "shared", "simulation","simulations")
         os.makedirs(self.SIM_DIR, exist_ok=True)
         self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
         self.OUTPUT_DIR = os.path.join(base_dir, "shared", "simulation", "outputs")
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
-
-        self.LSTM_DIR = os.path.join(base_dir,"shared", "models", "lstm2")
-
         self.sim_mode = "ml"
         self.balance_start = 0.0
         self.rating = Rating()
         self.rl_agents = None
-        self.classes = None
         self.rlagent_deterministic = None
 
         self.output = {}
@@ -63,9 +58,11 @@ class SimulationService:
         results=True
     ):
         try:
+            self.output = {}
             if sim_mode not in ("ml","mlrl", "rl"):
-                return print("[SIMULATION ERROR] Invalid simulation mode")
-
+                raise ValueError ("[SIMULATION ERROR] Invalid simulation mode")
+            if sim_mode in ("mlrl", "rl"):
+                raise ValueError ("[SIMULATION ERROR] mlrl and rl are disabled for now")
             print("[Simulation] Start")
             start_time = time.time()
 
@@ -154,7 +151,7 @@ class SimulationService:
                 # predykcje
                 models[symbol] = ModelSignal(model_name=model_paths[symbol], data=data[symbol])
                 predictions[symbol] = models[symbol].predictions
-                self.classes = models[symbol].classes
+
 
                 # inicjalizacja agentów
 
@@ -171,13 +168,13 @@ class SimulationService:
             # --- Symulacja ---
             match sim_mode:
                 case "ml":
-                    model_logs = self.simulation(data, symbols, predictions, engines, wallet)
+                    model_logs = self.simulation(data, symbols, predictions, engines, wallet, models)
                 case "rl":
-                    agent_logs = self.simulation(data, symbols, predictions, engines, wallet, True)
+                    agent_logs = self.simulation(data, symbols, predictions, engines, wallet, models, True)
                 case "mlrl":
-                    model_logs = self.simulation(data, symbols, predictions, engines, wallet)
+                    model_logs = self.simulation(data, symbols, predictions, engines, wallet, models)
                     wallet2 = Wallet(balance_start, symbols, wallet_config)
-                    agent_logs = self.simulation(data, symbols, predictions, engines, wallet2, False)
+                    agent_logs = self.simulation(data, symbols, predictions, engines, wallet2,models, False)
 
 
 
@@ -247,10 +244,8 @@ class SimulationService:
             }
 
 
-    def simulation(self, data, symbols, predictions, engines, wallet, rlagent = False):
-        crypto_ref_values = {s: [] for s in symbols}
+    def simulation(self, data, symbols, predictions, engines, wallet, models, rlagent = False):
 
-        symbola = "BTC"
         # --- Symulacja ---
         num_ticks = min(
             min(len(df) for df in data.values()),  # ile mamy wierszy w danych
@@ -260,6 +255,8 @@ class SimulationService:
             df = data[symbol]
             if len(df) > num_ticks:
                 data[symbol] = df.iloc[-num_ticks:].reset_index(drop=True)
+
+        crypto_ref_values = {s: [] for s in symbols}
         initial_prices = {s: float(data[s].iloc[0]["close"]) for s in symbols}
 
         print("[Simulation][INFO] num_ticks", num_ticks)
@@ -271,10 +268,10 @@ class SimulationService:
             timestamps.append(data[symbols[0]].iloc[t]["open_time"])
             for symbol in symbols:
                 prob_array = predictions[symbol][t]
-                prob_row = dict(zip(self.classes, prob_array))
+                prob_row = dict(zip(models[symbol].classes, prob_array))
 
                 if rlagent:
-                    obs = build_obs(symbol, t, data, wallet, prob_array, self.classes)
+                    obs = build_obs(symbol, t, data, wallet, prob_array, models[symbol].classes)
                     action, _ = self.rl_agents[symbol].predict(obs, deterministic=self.rlagent_deterministic)
                     scaled = (action + 1.0) / 2.0  # [-1,1] -> [0,1]
                     # decision_config = DecisionConfig(
@@ -327,8 +324,9 @@ class SimulationService:
 
         # --- Ocena wyników ---
         metrics = self.rating.rate(portfolio_values, len(logs))
-        if "hodl" not in self.output:
-            self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
+
+
+        self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
 
         match rlagent:
             case False:

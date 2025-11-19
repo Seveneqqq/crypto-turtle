@@ -37,7 +37,7 @@
             "BTC": "btc_model_simple_c_v1_2209_1.pkl"
         },
         "agents": {
-            "BTC": "ppo.zip"
+            "BTC": "ppo.zip" <------------ jeśli nie używasz agenta pozostaw puste agents
         },
         "plots": false,
         "logs": false,

@@ -47,7 +47,6 @@ class VisualizationService:
         model_plot_path = os.path.join(sim_path, "model_plot.png")
         agent_plot_path = os.path.join(sim_path, "agent_plot.png")
         sim_plot_path = os.path.join(sim_path, "sim_plot.png")
-
         if data["config"]["sim_mode"] in ("ml", "mlrl"):
             self.charts.draw_chart(data["model"]["portfolio_values"],
                               data["hodl"]["crypto_ref_values"],
