@@ -3,20 +3,23 @@ import numpy as np
 import os
 from services.test.standalone_model import ModelPredictor
 
+
 class ModelSignal:
-    def __init__(self, model_path, data):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "sklearn")
+    def __init__(self, model_name, data):
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "models")
+
         self.data = data
-        self.model_path = model_path
+        self.model_name = model_name
+        self.model_path = None
 
         match self.check_model_type():
             case "sklearn":
-                self.model = joblib.load(model_path)
+                self.model = joblib.load(self.model_path)
                 self.predictions, self.classes = self.sklearn()
 
             case "lstm":
-                self.model = ModelPredictor(model_path)
+                self.model = ModelPredictor(self.model_path)
                 self.predictions, self.classes = self.lstm_price_predictor()
 
     def sklearn(self):
@@ -49,18 +52,14 @@ class ModelSignal:
 
 
     def check_model_type(self):
-        full_path = os.path.join(self.MODEL_DIR, self.model_path)
+        for subfolder in os.listdir(self.BASE_MODEL_DIR):
+            subfolder_path = os.path.join(self.BASE_MODEL_DIR, subfolder)
+            if not os.path.isdir(subfolder_path):
+                continue
 
-        if not os.path.exists(full_path):
-            raise ValueError(f"Ścieżka nie istnieje: {full_path}")
+            candidate_path = os.path.join(subfolder_path, self.model_name)
+            if os.path.exists(candidate_path):
+                self.model_path = candidate_path
+                return subfolder.lower()  # 'sklearn' lub 'lstm'
 
-        if os.path.isdir(full_path):
-            return "lstm"
-
-        filename = os.path.basename(full_path)
-        if "." in filename:
-            return "sklearn"
-
-        raise ValueError(
-            f"Nie udało się określić typu modelu (brak rozszerzenia i nie jest to folder): {self.model_path}"
-        )
+        raise ValueError(f"Nie znaleziono modelu '{self.model_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")
