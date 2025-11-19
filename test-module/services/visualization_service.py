@@ -38,8 +38,9 @@ class VisualizationService:
         if len(self.simulations_data)==1 and sim_path is not None:
             sim_data = self.simulations_data[0]
             self.sim_visualization(sim_data,sim_path)
-        vis_path = self.build_filename()
-        self.vis_loop(self.simulations_data,vis_path)
+        if sim_path is None:
+            vis_path = self.build_filename()
+            self.vis_loop(self.simulations_data,vis_path)
 
 
     def sim_visualization(self,data,sim_path):
@@ -78,16 +79,12 @@ class VisualizationService:
             for i, item in enumerate(data):
                 try:
                     file_name = os.path.basename(self.files_to_load[i])
-                    # wygeneruj wykres
                     fig = self.charts.draw_universal_chart(item, pdf_title=f"Symulacja [{i + 1}/{len(data)}], plik: {file_name}")
 
-                    # dodaj stronę do PDF
                     pdf.savefig(fig)
                     plt.close(fig)
 
                     # fig = self.charts.draw_crypto_percentage_chart(item,False)
-                    #
-                    #
                     # # dodaj stronę do PDF
                     # pdf.savefig(fig)
                     # plt.close(fig)
