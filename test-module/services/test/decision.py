@@ -1,5 +1,4 @@
 # decision.py
-import joblib
 from dataclasses import dataclass
 
 @dataclass
@@ -13,12 +12,8 @@ class DecisionConfig:
     clamp_model_value: bool = True
 
 class DecisionEngine:
-    def __init__(self, model_path=None, config: DecisionConfig = DecisionConfig()):
+    def __init__(self,  config: DecisionConfig = DecisionConfig()):
         self.config = config
-        if model_path:
-            self.model = joblib.load(model_path)
-        else:
-            self.model = None
 
     def _normalize_model_value(self, mv):
         if mv is None:

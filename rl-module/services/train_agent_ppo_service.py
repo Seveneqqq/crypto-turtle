@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import joblib
 from datetime import datetime
+import torch
 
 
 class TrainAgentPPOService:
@@ -53,8 +54,15 @@ class TrainAgentPPOService:
                 raise FileNotFoundError(f"Brak pliku: {model_file}")
             model_ml = joblib.load(model_path)
             env = TradingEnv(data, model_ml)
+
+            progress_callback = ProgressBarCallback(total_timesteps=total_timesteps)
+            torch.set_num_threads(16)
             agent = PPO("MlpPolicy", env, verbose=1, **train_params)
-            agent.learn(total_timesteps=total_timesteps)
+            agent.learn(
+                total_timesteps=total_timesteps,
+                callback=progress_callback,
+                log_interval=100000
+            )
 
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             filename = f"agent_ppo_{timestamp}.zip"
@@ -80,3 +88,31 @@ class TrainAgentPPOService:
                 "agent_file": None,
                 "timestamp": datetime.now().isoformat()
             }
+
+import sys
+from stable_baselines3.common.callbacks import BaseCallback
+
+class ProgressBarCallback(BaseCallback):
+    def __init__(self, total_timesteps):
+        super().__init__()
+        self.total_timesteps = total_timesteps
+        self.progress_bar_length = 40  # ile znaków w pasku
+        self.last_progress = -1
+
+    def _on_step(self) -> bool:
+        progress = int((self.num_timesteps / self.total_timesteps) * 100)
+
+        # aktualizuj tylko jeśli się zmienił
+        if progress != self.last_progress:
+            bar_filled = int(self.progress_bar_length * progress / 100)
+            bar = '#' * bar_filled + '-' * (self.progress_bar_length - bar_filled)
+            sys.stdout.write(f"\rTraining PPO agent: [{bar}] {progress}%")
+
+            sys.stdout.flush()
+            self.last_progress = progress
+
+        # zakończenie
+        if self.num_timesteps >= self.total_timesteps:
+            print("\n✅ Training complete.")
+
+        return True
