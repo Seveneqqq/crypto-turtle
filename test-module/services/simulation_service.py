@@ -249,11 +249,21 @@ class SimulationService:
 
     def simulation(self, data, symbols, predictions, engines, wallet, rlagent = False):
         crypto_ref_values = {s: [] for s in symbols}
-        initial_prices = {s: float(data[s].iloc[0]["close"]) for s in symbols}
+
         symbola = "BTC"
         # --- Symulacja ---
-        num_ticks = min(len(df) for df in data.values())
-        print("[Simulation][INFO]", num_ticks)
+        num_ticks = min(
+            min(len(df) for df in data.values()),  # ile mamy wierszy w danych
+            min(len(preds) for preds in predictions.values())  # ile mamy predykcji z modeli
+        )
+        for symbol in symbols:
+            df = data[symbol]
+            if len(df) > num_ticks:
+                data[symbol] = df.iloc[-num_ticks:].reset_index(drop=True)
+        initial_prices = {s: float(data[s].iloc[0]["close"]) for s in symbols}
+
+        print("[Simulation][INFO] num_ticks", num_ticks)
+
         portfolio_values, timestamps, logs, holdings = [], [], [],[]
 
         for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
