@@ -2,19 +2,16 @@ import os
 import json
 import gzip
 import time
-from datetime import datetime, timedelta
-from tqdm import tqdm
 import sys
 import pandas as pd
 import numpy as np
-
-
-from services.test.wallet import Wallet, WalletConfig
-from services.test.ml_signal import ModelSignal
-from services.test.decision import DecisionEngine, DecisionConfig
-from services.test.rating import Rating
-from services.test.charts import Charts
-from services.visualization_service import VisualizationService
+from datetime import datetime, timedelta
+from tqdm import tqdm
+from .test.wallet import Wallet, WalletConfig
+from .test.ml_signal import ModelSignal
+from .test.decision import DecisionEngine, DecisionConfig
+from .test.rating import Rating
+from .visualization_service import VisualizationService
 
 
 class SimulationService:
@@ -53,7 +50,7 @@ class SimulationService:
         max_fraction_when_confident=0.5,
         data_files=None,
         model_paths=None,
-        agents=None,
+        agent_rl=None,
         plots=True,
         logs=True,
         results=True
@@ -74,7 +71,7 @@ class SimulationService:
 
             self.output["files"] = {
                 "models": model_paths,
-                "agents": agents,
+                "agents": agent_rl,
                 "data": data_files
             }
 
@@ -110,7 +107,6 @@ class SimulationService:
             self.rlagent_deterministic = rlagent_deterministic
             data_files = data_files or {}
             model_paths = model_paths or {}
-            agents = agents or {}
             models, symbols  = {}, []
             # --- Ładowanie danych ---
 
@@ -140,7 +136,7 @@ class SimulationService:
 
             # silnik decyzyjny
             self.engine = DecisionEngine(
-                agent_name=agents,
+                agent_name=agent_rl,
                 wallet=self.wallet,
                 config= DecisionConfig(
                     threshold_buy=threshold_buy,

@@ -35,7 +35,7 @@ class TestsService:
         max_fraction_when_confident,
         data_files,
         model_paths,
-        agents,
+        agent_rl,
         plots,
         logs,
         results
@@ -60,7 +60,7 @@ class TestsService:
             "max_fraction_when_confident": max_fraction_when_confident,
             "data_files": data_files,
             "model_paths": model_paths,
-            "agents": agents,
+            "agent_rl": agent_rl,
             "plots": plots,
             "logs": logs,
             "results": results
