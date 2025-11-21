@@ -12,7 +12,7 @@ class DecisionConfig:
     clamp_model_value: bool = True
 
 class DecisionEngine:
-    def __init__(self, agent_name,wallet, config: DecisionConfig = DecisionConfig()):
+    def __init__(self, agent_name, rlagent_deterministic, wallet, config: DecisionConfig = DecisionConfig()):
 
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "agents")
@@ -135,3 +135,47 @@ class DecisionEngine:
                 return subfolder.lower()  # 'sklearn' lub 'lstm'
 
         raise ValueError(f"Nie znaleziono modelu '{self.agent_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")
+# for symbol in symbols:
+            #     timestamps.append(models[symbol].data.iloc[t]["open_time"])
+            #     prob_array = models[symbol].predictions[t]
+            #     prob_row = dict(zip(models[symbol].classes, prob_array))
+
+                # if rlagent:
+                #     obs = build_obs(symbol, t, models[symbol].data, self.wallet, prob_array, models[symbol].classes)
+                #     action, _ = self.rl_agents[symbol].predict(obs, deterministic=self.rlagent_deterministic)
+                #     scaled = (action + 1.0) / 2.0  # [-1,1] -> [0,1]
+                #     # decision_config = DecisionConfig(
+                #     #     threshold_buy=scaled[0],
+                #     #     threshold_sell=scaled[1],
+                #     #     tx_fraction=scaled[2],
+                #     #     max_fraction_when_confident=scaled[3],
+                #     #     mincost=scaled[4] * 100
+                #     # )
+                #     # self.engine.config = decision_config
+                #     # wallet.config.stop_loss = scaled[5]
+                #     # wallet.config.max_wallet_percentage_crypto = scaled[6]
+                #     self.engine.config.threshold_buy = scaled[0]
+                #     self.engine.config.threshold_sell = scaled[1]
+                #     self.engine.config.tx_fraction = scaled[2]
+
+                # decision = self.engine.decide(prob_row, self.wallet, symbol, prices[symbol])
+                #
+                # action, qty = decision["action"], decision["qty"]
+
+                # Wykonanie
+                # if action != "hold" and qty > 0:
+                #     res = self.wallet.execute_order(action, symbol, qty, prices[symbol])
+                #     executed = res["executed"]
+                #     action_end = res["status"] if res["status"] != "filled" else action
+                # else:
+                #     executed, action_end = 0.0, "hold"
+
+                # if action_end != "hold" and executed > 0:
+                #     logs.append({
+                #         "symbol": symbol,
+                #         "action": action_end,
+                #         "timestamp": models[symbol].data.iloc[t]["open_time"],
+                #         "usd_balance": f"{self.wallet.balance:.2f}",
+                #         "portfel": f"{self.wallet.total_value(prices):.2f}",
+                #         "reason": decision.get("reason", "")
+                #     })
