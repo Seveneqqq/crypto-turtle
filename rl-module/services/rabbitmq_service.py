@@ -58,25 +58,40 @@ class RabbitMQService:
                     channel = connection.channel()
                     channel.queue_declare(queue=queue, durable=True)
 
+                    # def wrapped_callback(ch, method, properties, body):
+                    #     try:
+                    #         if not body:
+                    #             print("Received empty message body, skipping...")
+                    #             return
+                    #
+                    #         message_str = body.decode("utf-8") if isinstance(body, bytes) else body
+                    #         data = json.loads(message_str)
+                    #         callback(data)
+                    #
+                    #     except json.JSONDecodeError as e:
+                    #         print(f"JSON decode error: {e} | Raw body: {body}")
+                    #     except Exception as e:
+                    #         print(f"Unexpected error in consumer: {e}")
+                    #     finally:
+                    #         try:
+                    #             ch.basic_ack(delivery_tag=method.delivery_tag)
+                    #         except pika.exceptions.StreamLostError:
+                    #             print("[ERROR] Connection lost while acknowledging message")
                     def wrapped_callback(ch, method, properties, body):
-                        try:
-                            if not body:
-                                print("Received empty message body, skipping...")
-                                return
-
-                            message_str = body.decode("utf-8") if isinstance(body, bytes) else body
-                            data = json.loads(message_str)
-                            callback(data)
-
-                        except json.JSONDecodeError as e:
-                            print(f"JSON decode error: {e} | Raw body: {body}")
-                        except Exception as e:
-                            print(f"Unexpected error in consumer: {e}")
-                        finally:
+                        def process_message():
                             try:
-                                ch.basic_ack(delivery_tag=method.delivery_tag)
-                            except pika.exceptions.StreamLostError:
-                                print("[ERROR] Connection lost while acknowledging message")
+                                message_str = body.decode("utf-8") if isinstance(body, bytes) else body
+                                data = json.loads(message_str)
+                                callback(data)
+                            except Exception as e:
+                                print(f"Processing error: {e}")
+                            finally:
+                                try:
+                                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                                except Exception as e:
+                                    print(f"Ack error: {e}")
+
+                        threading.Thread(target=process_message, daemon=True).start()
 
                     channel.basic_consume(
                         queue=queue,
