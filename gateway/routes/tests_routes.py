@@ -23,7 +23,7 @@ class SimulationRequest(BaseModel):
     tx_fraction: float
     max_fraction_when_confident: float
     data_files: Dict[str, str]
-    models: Dict[str, str]
+    model_paths: Dict[str, str]
     agents: Dict[str, str]
     plots: bool
     logs: bool
@@ -47,7 +47,7 @@ def simulate(req: SimulationRequest):
         tx_fraction=req.tx_fraction,
         max_fraction_when_confident=req.max_fraction_when_confident,
         data_files=req.data_files,
-        models=req.models,
+        model_paths=req.model_paths,
         agents=req.agents,
         plots=req.plots,
         logs=req.logs,

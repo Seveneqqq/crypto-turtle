@@ -30,7 +30,7 @@ class RabbitMQRequestService:
                     tx_fraction=data.get("tx_fraction"),
                     max_fraction_when_confident=data.get("max_fraction_when_confident"),
                     data_files=data.get("data_files"),
-                    models=data.get("models"),
+                    model_paths=data.get("model_paths"),
                     agents=data.get("agents"),
                     plots=data.get("plots"),
                     logs=data.get("logs"),
