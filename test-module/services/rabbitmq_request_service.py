@@ -62,7 +62,7 @@ class RabbitMQRequestService:
                         "result": "failed",
                         "message": "Failed to retrieve visualize data"
                     })
-
+            
             case "calculate_quality":
                 print("Calculating data quality")
                 result = self.data_quality_service.calculate_quality(
