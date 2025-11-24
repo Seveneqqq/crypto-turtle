@@ -2,7 +2,7 @@ import os
 import gzip
 import json
 from datetime import datetime, timedelta
-from services.test.charts import Charts
+from .test.charts import Charts
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot as plt
 

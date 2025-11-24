@@ -234,17 +234,22 @@ class SimulationService:
         print("[Simulation][INFO] num_ticks", num_ticks)
 
         for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
-            prob_vec, prices = {}, {}
+            prob_vec, prices, data_rows = {}, {}, {}
             timestamps.append(self.models[symbols[0]].data.iloc[t]["open_time"])
 
             for symbol in symbols:
                 prices[symbol] = self.models[symbol].data.iloc[t]["close"]
+                data_rows[symbol] = self.models[symbol].data.iloc[t]
                 prob_array = self.models[symbol].predictions[t]
                 prob_row = dict(zip(self.models[symbol].classes, prob_array))
                 prob_vec[symbol] = prob_row
                 crypto_ref_values[symbol].append(self.balance_start * prices[symbol] / initial_prices[symbol])
 
-            self.engine.ml_generate_decisions(prob_vec, symbols, prices, t)
+            if rlagent:
+                self.engine.generate_decisions(prob_vec, symbols, prices, t)
+            else:
+                self.engine.generate_decisions(prob_vec, symbols, prices, t, data_rows)
+
             holdings.append(self.wallet.total_holdings(prices))
             portfolio_values.append(self.wallet.total_value(prices))
 
