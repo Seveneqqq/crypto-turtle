@@ -1,7 +1,7 @@
 import joblib
 import numpy as np
 import os
-from services.test.standalone_model import ModelPredictor
+from .standalone_model import ModelPredictor
 
 
 class ModelSignal:
