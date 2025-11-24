@@ -61,8 +61,8 @@ class SimulationService:
 
             if sim_mode not in ("ml","mlrl", "rl"):
                 raise ValueError ("[SIMULATION ERROR] Invalid simulation mode")
-            if sim_mode in ("mlrl", "rl"):
-                raise ValueError ("[SIMULATION ERROR] mlrl and rl are disabled for now")
+            if sim_mode == "mlrl":
+                raise ValueError ("[SIMULATION ERROR] mlrl is disabled for now")
             print("[Simulation] Start")
             start_time = time.time()
 
@@ -185,8 +185,6 @@ class SimulationService:
 
             with gzip.open(gzip_path, "wt", encoding="utf-8") as f:
                 json.dump(self.output, f, indent=2)
-
-
             if plots: VisualizationService().visualize(simulation_files=g_n, sim_path=sim_path)
 
             print(f"[Simulation] Zakończono w {timedelta(seconds=time.time() - start_time)}")
@@ -218,18 +216,20 @@ class SimulationService:
 
     def simulation(self, symbols, rlagent = False):
 
-        crypto_ref_values, initial_prices, portfolio_values, timestamps, logs, holdings = {}, [], [], [], [], []
+        crypto_ref_values, initial_prices, portfolio_values, timestamps, logs, holdings = {}, {}, [], [], [], []
         num_ticks = min(
             min(len(self.models[symbol].data) for symbol in symbols),  # długość danych
             min(len(self.models[symbol].predictions) for symbol in symbols)  # długość predykcji modeli
         )
-
+        numeric_cols = {}
         for symbol in symbols:
             df = self.models[symbol].data
             if len(df) > num_ticks:
                 self.models[symbol].data = df.iloc[-num_ticks:].reset_index(drop=True)
             initial_prices[symbol] = self.models[symbol].data.iloc[0]["close"]
+            numeric_cols[symbol] = df.select_dtypes(include=[np.number]).columns.tolist()
             crypto_ref_values[symbol] = []
+
 
         print("[Simulation][INFO] num_ticks", num_ticks)
 
@@ -239,16 +239,17 @@ class SimulationService:
 
             for symbol in symbols:
                 prices[symbol] = self.models[symbol].data.iloc[t]["close"]
-                data_rows[symbol] = self.models[symbol].data.iloc[t]
+                row = self.models[symbol].data.iloc[t]
+                data_rows[symbol] = row[numeric_cols[symbol]].astype(float).values
                 prob_array = self.models[symbol].predictions[t]
                 prob_row = dict(zip(self.models[symbol].classes, prob_array))
                 prob_vec[symbol] = prob_row
                 crypto_ref_values[symbol].append(self.balance_start * prices[symbol] / initial_prices[symbol])
 
             if rlagent:
-                self.engine.generate_decisions(prob_vec, symbols, prices, t)
-            else:
                 self.engine.generate_decisions(prob_vec, symbols, prices, t, data_rows)
+            else:
+                self.engine.generate_decisions(prob_vec, symbols, prices, t)
 
             holdings.append(self.wallet.total_holdings(prices))
             portfolio_values.append(self.wallet.total_value(prices))
@@ -259,7 +260,8 @@ class SimulationService:
         self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
 
         if rlagent: a="agent"
-        else:a="model"
+        else: a="model"
+
 
         self.output[a] = {
             "timestamps": len(timestamps),

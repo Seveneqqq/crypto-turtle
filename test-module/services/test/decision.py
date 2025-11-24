@@ -1,4 +1,3 @@
-# decision.py
 import os
 import numpy as np
 from dataclasses import dataclass
@@ -7,8 +6,8 @@ from stable_baselines3 import PPO
 class DecisionConfig:
     threshold_buy: float = 0.6
     threshold_sell: float = 0.6
-    tx_fraction: float = 0.1  # fraction of cash to use for buy when signal strong
-    max_fraction_when_confident: float = 0.5  # if model gives 0.99 use up to 50% cash
+    tx_fraction: float = 0.1
+    max_fraction_when_confident: float = 0.5
     clamp_model_value: bool = True
 
 class DecisionEngine:
@@ -40,6 +39,7 @@ class DecisionEngine:
         if self.config.clamp_model_value:
             mv = max(0.0, min(1.0, mv))
         return mv
+
     def check_agent_type(self):
         for subfolder in os.listdir(self.BASE_MODEL_DIR):
             subfolder_path = os.path.join(self.BASE_MODEL_DIR, subfolder)
@@ -49,42 +49,45 @@ class DecisionEngine:
             candidate_path = os.path.join(subfolder_path, self.agent_name)
             if os.path.exists(candidate_path):
                 self.agent_path = candidate_path
-                return subfolder.lower()  # 'ppo' or other agent types
+                return subfolder.lower()
 
         raise ValueError(f"Nie znaleziono agenta '{self.agent_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")
 
-    def rl_config(self, symbol, prob_vec, data_row):
+    def rl_config(self, scaled):
+
+        self.config.threshold_buy = float(scaled[0])
+        self.config.threshold_sell = float(scaled[1])
+        self.config.tx_fraction = float(scaled[2])
+        self.config.max_fraction_when_confident = float(scaled[3])
 
 
-        obs = self.build_obs(symbol, data_row, prob_vec)
-
+    def get_obs(self, symbols,data_rows, prob_vec, prices):
+        scaled_dict = {}
+        obs = self.build_obs(symbols, data_rows, prob_vec, prices)
         action, _ = self.agent.predict(obs, deterministic=self.rlagent_deterministic)
         action = np.asarray(action, dtype=np.float32).flatten()
+        scaled = (action + 1.0) / 2.0
+        n_params_per_symbol = 6
+        for i, symbol in enumerate(symbols):
+            start = i * n_params_per_symbol
+            end = start + n_params_per_symbol
+            scaled_dict[symbol] = scaled[start:end]
+        return scaled_dict
 
-        self.config.threshold_buy = float(action[0])
-        self.config.threshold_sell = float(action[1])
-        self.config.tx_fraction = float(action[2])
-        self.config.max_fraction_when_confident = float(action[3])
-        self.wallet.mincost = float(action[4])
-        self.wallet.max_wallet_percentage_crypto = float(action[5])
-        #self.wallet.stop_loss = float(action[6])
 
     def generate_decisions(self, prob_vec, symbols, prices, t, data_rows=None):
         use_rl = data_rows is not None and self.agent_name is not None
         
-        orders = []
+        orders, scaled_dict= [],{}
+        if use_rl:
+            scaled_dict = self.get_obs(symbols, data_rows, prob_vec, prices)
+
 
         for symbol in symbols:
             prob_map = prob_vec[symbol]
             best_action = max(prob_map, key=lambda k: prob_map[k])
             best_value = round(prob_map[best_action], 4)
             best_value = self._normalize_model_value(best_value)
-
-            if use_rl:
-                self.rl_config(symbol, prob_vec, data_rows[symbol])
-                reason = "rl_adjusted"
-            else:
-                reason = "max_for_symbol"
             
             orders.append({
                 "symbol": symbol,
@@ -92,12 +95,17 @@ class DecisionEngine:
                 "value": best_value,
                 "price": prices[symbol],
                 "timestamp": t,
-                "reason": reason
+                "reason": "max_for_symbol"
             })
 
         for order in orders:
             action = order["action"]
             value = order["value"]
+            symbol = order["symbol"]
+
+            if use_rl:
+                order["rl_config"] = scaled_dict[symbol]
+                self.rl_config(scaled_dict[symbol])
 
             match action:
                 case "buy":
@@ -121,7 +129,7 @@ class DecisionEngine:
         orders.sort(key=lambda o: o["value"], reverse=True)
 
         self.wallet.orders.extend(orders)
-        self.wallet.execute_orders(t, prices)
+        self.wallet.execute_orders(t, prices, use_rl)
 
     def calculate_fraction(self, model_value, threshold):
         denom = max(1.0 - threshold, 1e-12)
@@ -135,21 +143,29 @@ class DecisionEngine:
         # frac mincost, qty
         return round(frac,4)
 
-    def build_obs(self, symbol, data_rows, prob_vec):
+    def build_obs(self, symbols, data_rows, prob_vec, prices):
 
-        numeric_cols = data_rows.select_dtypes(include=[np.number]).columns
-        data_values = data_rows[numeric_cols].values.astype(np.float32)
+        obs_parts = [np.array([float(self.wallet.balance)], dtype=np.float32)]
 
-        buy_p = float(prob_vec[symbol]["buy"])
-        hold_p = float(prob_vec[symbol]["hold"])
-        sell_p = float(prob_vec[symbol]["sell"])
-        balance = float(self.wallet.balance)
-        holdings = float(self.wallet.holdings.get(symbol, 0.0))
+        for symbol in symbols:
+            buy_p = float(prob_vec[symbol].get("buy", 0.0))
+            sell_p = float(prob_vec[symbol].get("sell", 0.0))
+            hold_p = float(prob_vec[symbol].get("hold", 0.0))
 
-        obs = np.concatenate([
-            np.array([buy_p, sell_p, hold_p], dtype=np.float32),
-            data_values,
-            np.array([balance, holdings], dtype=np.float32)
-        ])
-        
+            holding_amount = float(self.wallet.holdings.get(symbol, 0.0))
+            holding_value = holding_amount * float(prices[symbol])
+
+            numeric_values = np.asarray(data_rows[symbol], dtype=np.float32)
+
+            symbol_obs = np.concatenate([
+                np.array([buy_p, sell_p, hold_p], dtype=np.float32),
+                np.array([holding_amount, holding_value], dtype=np.float32),
+                numeric_values
+            ])
+
+            obs_parts.append(symbol_obs)
+
+        obs = np.concatenate(obs_parts)
+        obs = np.nan_to_num(obs, nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
         return obs
+
