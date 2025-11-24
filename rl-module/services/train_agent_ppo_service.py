@@ -1,11 +1,8 @@
 from stable_baselines3 import PPO
 from .rl.agent import TradingEnv
-from .rl.rl_wallet import Wallet
-from .rl.rl_decision import DecisionEngine
 from .rl.rl_ml_signal import ModelSignal
 import os
 import pandas as pd
-import joblib
 from datetime import datetime
 import torch
 
@@ -39,7 +36,10 @@ class TrainAgentPPOService:
                 "n_steps": n_steps,
                 "batch_size": batch_size,
                 "gamma": gamma,
-                "ent_coef": ent_coef
+                "ent_coef": ent_coef,
+                "n_epochs": 8,
+                "gae_lambda": 0.95,
+                "clip_range": 0.2
             }
             print("train_params:", train_params)
 
@@ -47,7 +47,6 @@ class TrainAgentPPOService:
                 train_params = {}
             total_timesteps = train_params.pop("total_timesteps", 10000)
 
-#//////////////////////////////////////////////////////
             models = {}
             symbols = []
             for symbol, filename in data_files.items():
@@ -59,8 +58,6 @@ class TrainAgentPPOService:
                 models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy())
                 symbols.append(symbol)
 
-
-
             env = TradingEnv(models, symbols)
 
             progress_callback = ProgressBarCallback(total_timesteps=total_timesteps)
@@ -69,7 +66,7 @@ class TrainAgentPPOService:
             agent.learn(
                 total_timesteps=total_timesteps,
                 callback=progress_callback,
-                log_interval=100000
+                log_interval=10000
             )
 
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

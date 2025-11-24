@@ -27,12 +27,9 @@ class TradingEnv(gym.Env):
         self.initial_balance = float(initial_balance)
         self.prev_value = self.initial_balance
         self.wallet = Wallet(balance=initial_balance, symbols=symbols, config=WalletConfig())
-        self.engine = DecisionEngine(agent_name=None, rlagent_deterministic=False, wallet=self.wallet, config=DecisionConfig())
+        self.engine = DecisionEngine(wallet=self.wallet, config=DecisionConfig())
 
-        # akcje: threshold_buy, threshold_sell, tx_fraction
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(6 * len(symbols),), dtype=np.float32)
-
-        # Obserwacja: [balance] + per symbol ([buy, sell, hold, holding_amt, holding_value] + wszystkie kolumny numeryczne)
         obs_len = 1
         for symbol in self.symbols:
             obs_len += 3 + 2 + len(self.numeric_columns[symbol])
@@ -47,7 +44,7 @@ class TradingEnv(gym.Env):
         super().reset(seed=seed)
         self.t = 0
         self.wallet = Wallet(balance=self.initial_balance, symbols=self.symbols, config=WalletConfig())
-        self.engine = DecisionEngine(agent_name=None, rlagent_deterministic=False, wallet=self.wallet, config=DecisionConfig())
+        self.engine = DecisionEngine(wallet=self.wallet, config=DecisionConfig())
         self.prev_value = self.initial_balance
         return self._get_obs(), {}
 
@@ -81,33 +78,8 @@ class TradingEnv(gym.Env):
         obs = np.nan_to_num(obs, nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
         return obs
 
-    # row = self.data.iloc[self.t]
-    # price = float(self.data.iloc[self.t][self.symbol])
-    # prob = self.model_outputs[self.t]
-    # buy_p = float(prob.get("buy", 0.0))
-    # sell_p = float(prob.get("sell", 0.0))
-    #
-    # ret1 = float(row.get("ret1", 0.0))
-    # ret1_lag1 = float(row.get("ret1_lag1", 0.0))
-    # roll_mean_10 = float(row.get("roll_mean_10", 0.0))
-    # roll_std_10 = float(row.get("roll_std_10", 0.0))
-    # macd = float(row.get("macd", 0.0))
-    # macd_sig = float(row.get("macd_sig", 0.0))
-    # atr = float(row.get("ATR_14", 0.0))
-    # vol = float(row.get("volume", 0.0))
-    #
-    # # normalizacja względem początkowej ceny i początkowego salda
-    # price_norm = price / (self.initial_price + 1e-12)
-    # balance_norm = (float(self.wallet.balance) / (self.initial_balance + 1e-12))
-    #
-    # obs = np.array([
-    #     buy_p, sell_p, price_norm, balance_norm,
-    #     ret1, ret1_lag1, roll_mean_10, roll_std_10, macd, macd_sig, atr, vol
-    # ], dtype=np.float32)
     def step(self, action):
-        # sanity: action shape
         action = np.asarray(action, dtype=np.float32).flatten()
-
 
         # skalowanie [-1,1] -> [0,1]
         scaled = (action + 1.0) / 2.0
@@ -158,5 +130,4 @@ class TradingEnv(gym.Env):
             info[f"{symbol}_mincost"] = float(scaled_dict[symbol][4])
             info[f"{symbol}_max_wallet_percentage_crypto"] = float(scaled_dict[symbol][5])
 
-        #info = np.concatenate(info_parts)
         return obs, reward, terminated, truncated, info

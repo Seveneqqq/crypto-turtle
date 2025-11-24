@@ -58,8 +58,6 @@ class Wallet:
             order["status"] = "accepted"
             return
 
-
-
     def hold(self, order):
         order["status"] = "accepted"
         return
@@ -92,11 +90,8 @@ class Wallet:
             action = order["action"]
             scaled_dict = order["rl_config"]
 
-            # mincost w zakresie [1.0, 50.0]
             mincost_min, mincost_max = 1.0, 50.0
             mincost = mincost_min + scaled_dict[4] * (mincost_max - mincost_min)
-
-            # max_wallet_percentage_crypto w zakresie [0.4, 0.9]
 
             mwpc_min, mwpc_max = 0.4, 0.9
             max_wallet_percentage_crypto = mwpc_min + scaled_dict[5] * (mwpc_max - mwpc_min)
@@ -117,7 +112,6 @@ class Wallet:
                         order["value"] = 1.0
                         order["reason"] = "no_holdings"
         return
-
 
     def calculate_quantity_buy(self, order, prices):
         frac = order["fraction"]
@@ -140,7 +134,6 @@ class Wallet:
 
         portfolio_value = self.total_value(prices)
 
-        # Limit procentowy portfela
         if portfolio_value > 0:
             new_holding_value = current_holding_value + qty * price
             current_crypto_percentage = new_holding_value / portfolio_value
@@ -169,7 +162,6 @@ class Wallet:
         symbol = order["symbol"]
         price = order["price"]
 
-
         crypto_qty = self.holdings.get(symbol, 0.0)
         qty = crypto_qty * frac
 
@@ -189,27 +181,13 @@ class Wallet:
             total += self.holdings.get(s, 0.0) * p
         return total
 
-    def total_holding_value(self, symbol, prices):
-        price = prices.get(symbol, 0.0)
-        crypto_qty = self.holdings[symbol]
-        return round(crypto_qty * price,4)
-
-
-    def total_holdings(self, prices: dict):
-        per_symbol_values = []
-
-        for s, p in prices.items():
-            value = self.holdings.get(s, 0.0) * p
-            per_symbol_values.append(round(value, 4))
-
-        return per_symbol_values
-
     def check_stop_loss(self, symbol, market_price):
-
-        last = self.last_buy_price.get(symbol, 0.0)
-        if last <= 0:
-            return {"executed": 0.0, "value": 0.0, "status": "noop", "msg": "no last buy"}
-        if market_price <= last * (1 - self.config.stop_loss):
-            qty = self.holdings.get(symbol, 0.0)
-            return self.execute_order("sell", symbol, qty, market_price)
-        return {"executed": 0.0, "value": 0.0, "status": "noop", "msg": "no sl hit"}
+        # TODO: NOT IMPLEMENTED
+        pass
+        # last = self.last_buy_price.get(symbol, 0.0)
+        # if last <= 0:
+        #     return {"executed": 0.0, "value": 0.0, "status": "noop", "msg": "no last buy"}
+        # if market_price <= last * (1 - self.config.stop_loss):
+        #     qty = self.holdings.get(symbol, 0.0)
+        #     return self.execute_order("sell", symbol, qty, market_price)
+        # return {"executed": 0.0, "value": 0.0, "status": "noop", "msg": "no sl hit"}
