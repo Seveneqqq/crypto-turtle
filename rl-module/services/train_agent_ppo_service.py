@@ -1,5 +1,8 @@
 from stable_baselines3 import PPO
-from services.rl.agent import TradingEnv
+from .rl.agent import TradingEnv
+from .rl.rl_wallet import Wallet
+from .rl.rl_decision import DecisionEngine
+from .rl.rl_ml_signal import ModelSignal
 import os
 import pandas as pd
 import joblib
@@ -19,8 +22,8 @@ class TrainAgentPPOService:
     def train_agent_ppo(
             self,
             rabbitmq_msg_id=None,
-            model_file=None,
-            data_file=None,
+            model_files=None,
+            data_files=None,
             total_timesteps= 10000,
             learning_rate= 0.0003,
             n_steps= 2048,
@@ -44,16 +47,21 @@ class TrainAgentPPOService:
                 train_params = {}
             total_timesteps = train_params.pop("total_timesteps", 10000)
 
-            data_path = os.path.join(self.DATA_DIR, data_file)
-            if not os.path.exists(data_path):
-                raise FileNotFoundError(f"Brak pliku: {data_file}")
+#//////////////////////////////////////////////////////
+            models = {}
+            symbols = []
+            for symbol, filename in data_files.items():
+                filepath = os.path.join(self.DATA_DIR, filename)
+                if not os.path.exists(filepath):
+                    raise FileNotFoundError(f"Brak pliku: {filepath}")
+                df = pd.read_csv(filepath)
+                # --- Inicjalizacja modeli ---
+                models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy())
+                symbols.append(symbol)
 
-            data = pd.read_csv(data_path)
-            model_path = os.path.join(self.MODEL_DIR, model_file)
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(f"Brak pliku: {model_file}")
-            model_ml = joblib.load(model_path)
-            env = TradingEnv(data, model_ml)
+
+
+            env = TradingEnv(models, symbols)
 
             progress_callback = ProgressBarCallback(total_timesteps=total_timesteps)
             torch.set_num_threads(16)
