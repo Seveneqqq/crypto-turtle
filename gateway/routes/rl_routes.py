@@ -51,6 +51,7 @@ def train_agent_dqn(req: TrainAgentDQNRequest):
         ent_coef=req.ent_coef,
     )
     return {"msg": "TrainAgentDQNRequest added to queue."}
+
 @router.post("/anything")
 async def just_send_data_to_module(req: Dict[str, Any] = Body(...)):
     rl_service.just_send_data_to_module(data=req)
