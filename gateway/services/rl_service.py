@@ -20,8 +20,8 @@ class RlService:
 
     def train_agent_ppo(
             self,
-            model_file,
-            data_file,
+            model_files,
+            data_files,
             total_timesteps,
             learning_rate,
             n_steps,
@@ -33,8 +33,8 @@ class RlService:
         request_payload = {
             "action": "train_agent_ppo",
             "rabbit_msg_id": rabbit_msg_id,  # Poprawic pola na podstawie configa od Rafała
-            "model_file": model_file,
-            "data_file": data_file,
+            "model_files": model_files,
+            "data_files": data_files,
             "total_timesteps": total_timesteps,
             "learning_rate": learning_rate,
             "n_steps": n_steps,

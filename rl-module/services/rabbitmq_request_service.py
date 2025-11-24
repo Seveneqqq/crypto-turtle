@@ -14,8 +14,8 @@ class RabbitMQRequestService:
                 print("Getting simulate data")
                 result = self.train_agent_ppo_service.train_agent_ppo(
                     rabbitmq_msg_id=data.get("rabbit_msg_id"),
-                    data_file= data.get("data_file"),
-                    model_file=data.get("model_file"),
+                    data_files= data.get("data_files"),
+                    model_files=data.get("model_files"),
                     total_timesteps = data.get("total_timesteps"),
                     learning_rate = data.get("learning_rate"),
                     n_steps = data.get("n_steps"),
