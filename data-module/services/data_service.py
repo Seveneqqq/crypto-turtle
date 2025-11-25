@@ -106,6 +106,51 @@ class DataService:
         close = self.df["close"].values
         volume = self.df["volume"].values
 
+<<<<<<< HEAD
+=======
+
+        # 1) SET ALL = set1 + set2 + set3 + set4
+        if set_name == "set_all":
+            self.add_technical_indicators("set1")
+            self.add_technical_indicators("set2")
+            self.add_technical_indicators("set3")
+            self.add_technical_indicators("set4")
+            return self
+
+        # 2) Pojedynczy feature: set_<nazwa>
+        if set_name.startswith("set_") and set_name not in ["set1", "set2", "set3", "set4"]:
+            feat = set_name.replace("set_", "")
+
+            all_feats = {
+                # set1
+                "ma_5", "ma_10", "ma_20", "sma_10", "sma_30",
+                "cumvol", "volume_norm", "std_20",
+                # set2
+                "RSI_14", "EMA_20", "EMA_50",
+                # set3
+                "BB_upper", "BB_lower", "Momentum_10", "ROC_10",
+                # set4
+                "ATR_14", "VWAP", "ROC_5",
+            }
+
+            if feat not in all_feats:
+                raise ValueError(f"Feature '{feat}' nie istnieje")
+
+            # Dodajemy wszystkie sety
+            self.add_technical_indicators("set1")
+            self.add_technical_indicators("set2")
+            self.add_technical_indicators("set3")
+            self.add_technical_indicators("set4")
+
+            # Usuwamy wszystko poza jednym
+            for col in list(self.df.columns):
+                if col in all_feats and col != feat:
+                    del self.df[col]
+
+            return self
+
+
+>>>>>>> dashboard-navigation
         if set_name == "set1":
             self.df["ma_5"] = pd.Series(close).rolling(5).mean()
             self.df["ma_10"] = pd.Series(close).rolling(10).mean()

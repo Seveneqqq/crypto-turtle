@@ -9,6 +9,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+shared/files/processed_simulation_data/*.csv
 
 # Virtual environments
 venv/
@@ -230,3 +231,4 @@ shared/files/raw_data/ETHUSDT_1h_1m_2025-09-28.csv
 shared/files/raw_data/ETHUSDT-agent_1m_5m_2025-10-11_1a539d7e-844e-4176-97d8-e5b7ebbd1160.csv
 shared/files/raw_data/ETHUSDT-model_1m_6m_2025-10-11_9e5dc3c6-f2b8-470b-b414-47cb60049846.csv
 shared/files/raw_data/ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv
+shared/files/processed_simulation_data/*.csv 
