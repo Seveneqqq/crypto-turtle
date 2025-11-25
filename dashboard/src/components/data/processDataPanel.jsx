@@ -37,10 +37,38 @@ export default function ProcessDataPanel() {
   const availableFolders = ["trainmodel", "testmodel", "rlagent", "simulation"]
   const [outputFolder, setOutputFolder] = useState("trainmodel")
 
-  const availableSets = ["set1", "set2", "set3", "set4"]
+  const availableSets = [
+  "set1",
+  "set2",
+  "set3",
+  "set4",
+  "set_all",
+
+  "set_ma_5",
+  "set_ma_10",
+  "set_ma_20",
+  "set_sma_10",
+  "set_sma_30",
+  "set_cumvol",
+  "set_volume_norm",
+  "set_std_20",
+
+  "set_RSI_14",
+  "set_EMA_20",
+  "set_EMA_50",
+
+  "set_BB_upper",
+  "set_BB_lower",
+  "set_Momentum_10",
+  "set_ROC_10",
+
+  "set_ATR_14",
+  "set_VWAP",
+  "set_ROC_5",
+]
+
   const [technicalIndicatorsSet, setTechnicalIndicatorsSet] = useState("set1")
 
-  // KROKI
   const removeStep = (index) => setSteps(steps.filter((_, i) => i !== index))
   const moveStep = (index, direction) => {
     const newSteps = [...steps]
@@ -50,7 +78,6 @@ export default function ProcessDataPanel() {
     setSteps(newSteps)
   }
 
-  // SUBMIT
   const handleSubmit = () => {
     if (!filename) return alert("Select a file to process")
     if (!outputFolder) return alert("Select an output folder")
@@ -60,7 +87,7 @@ export default function ProcessDataPanel() {
       steps,
       preprocessing_method: preprocessingMethod,
       output_folders: [outputFolder],
-      technical_indicators_set: technicalIndicatorsSet, // ✅ nowy parametr
+      technical_indicators_set: technicalIndicatorsSet, 
     }
 
     fetch("http://localhost:8000/data/process-data", {
