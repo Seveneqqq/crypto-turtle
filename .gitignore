@@ -9,6 +9,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+shared/files/processed_simulation_data/*.csv
 
 # Virtual environments
 venv/
