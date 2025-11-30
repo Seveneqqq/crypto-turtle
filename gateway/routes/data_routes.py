@@ -52,6 +52,27 @@ class ProcessDataRequest(BaseModel):
     output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation"]] = ["trainmodel"]
     technical_indicators_set: str
 
+class TuneDataRequest(BaseModel):
+    filename_candidates: List[str]
+    steps: List[str]
+    n_trials: int = 20
+    technical_sets: List[str]
+    preprocessing_methods: List[str]
+    output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation"]]
+    metrics: List[str]
+
+@router.post("/tune-data")
+def tune_data_route(request: TuneDataRequest):
+    data_service.request_tune_data(
+        filename_candidates=request.filename_candidates,
+        steps=request.steps,
+        n_trials=request.n_trials,
+        technical_sets=request.technical_sets,
+        preprocessing_methods=request.preprocessing_methods,
+        output_folders=request.output_folders,
+        metrics=request.metrics
+    )
+    return {"msg": "Request added to queue."}
 
 @router.post("/process-data")
 def process_data_route(request: ProcessDataRequest):

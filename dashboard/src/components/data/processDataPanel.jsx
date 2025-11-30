@@ -37,12 +37,6 @@ export default function ProcessDataPanel() {
   const availableFolders = ["trainmodel", "testmodel", "rlagent", "simulation"]
   const [outputFolder, setOutputFolder] = useState("trainmodel")
 
-<<<<<<< HEAD
-  const availableSets = ["set1", "set2", "set3", "set4"]
-  const [technicalIndicatorsSet, setTechnicalIndicatorsSet] = useState("set1")
-
-  // KROKI
-=======
   const availableSets = [
   "set1",
   "set2",
@@ -75,7 +69,6 @@ export default function ProcessDataPanel() {
 
   const [technicalIndicatorsSet, setTechnicalIndicatorsSet] = useState("set1")
 
->>>>>>> dashboard-navigation
   const removeStep = (index) => setSteps(steps.filter((_, i) => i !== index))
   const moveStep = (index, direction) => {
     const newSteps = [...steps]
@@ -85,10 +78,6 @@ export default function ProcessDataPanel() {
     setSteps(newSteps)
   }
 
-<<<<<<< HEAD
-  // SUBMIT
-=======
->>>>>>> dashboard-navigation
   const handleSubmit = () => {
     if (!filename) return alert("Select a file to process")
     if (!outputFolder) return alert("Select an output folder")
@@ -98,15 +87,9 @@ export default function ProcessDataPanel() {
       steps,
       preprocessing_method: preprocessingMethod,
       output_folders: [outputFolder],
-<<<<<<< HEAD
-      technical_indicators_set: technicalIndicatorsSet, // ✅ nowy parametr
-=======
       technical_indicators_set: technicalIndicatorsSet, 
->>>>>>> dashboard-navigation
     }
-
     fetch("http://localhost:8000/data/process-data", {
-      method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

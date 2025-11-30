@@ -2,14 +2,29 @@ from configuration.rabbitmq_queues import DATA_RESPONSE_QUEUE
 
 
 class RabbitMQRequestService:
-    def __init__(self, binance_service, rabbitmq_service, data_service):
+    def __init__(self, binance_service, rabbitmq_service, data_service, optuna_service):
         self.binance_service = binance_service
         self.rabbitmq_service = rabbitmq_service
         self.data_service = data_service
+        self.optuna_service = optuna_service
 
     def handle_request(self, data):
         print(data)
         match data.get("action"):
+
+            case "tune_data":
+                print("Tuning data")
+                result = self.optuna_service.run_optimization(data)
+                if result.get("result") == "success":
+                    print("Successfully tuned data")
+                    self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, result)
+                else:
+                    print("Failed to tune data")
+                    self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
+                        "result": "failed",
+                        "message": "Failed to tune data"
+                    })
+
             case "get_historical_data":
                 print("Getting historical data")
                 result = self.binance_service.get_historical_klines(
