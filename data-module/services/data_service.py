@@ -106,8 +106,6 @@ class DataService:
         close = self.df["close"].values
         volume = self.df["volume"].values
 
-<<<<<<< HEAD
-=======
 
         # 1) SET ALL = set1 + set2 + set3 + set4
         if set_name == "set_all":
@@ -150,7 +148,6 @@ class DataService:
             return self
 
 
->>>>>>> dashboard-navigation
         if set_name == "set1":
             self.df["ma_5"] = pd.Series(close).rolling(5).mean()
             self.df["ma_10"] = pd.Series(close).rolling(10).mean()

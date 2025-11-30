@@ -1,5 +1,6 @@
 from services.binance_service import BinanceService
 from services.data_service import DataService
+from services.optuna_service import OptunaService
 from services.rabbitmq_service import RabbitMQService
 from services.rabbitmq_request_service import RabbitMQRequestService
 from configuration.rabbitmq_configuration import (
@@ -21,11 +22,15 @@ binance_service = BinanceService(api_key=BINANCE_API_KEY, api_url=BINANCE_API_UR
 print("Initializing Data Service...")
 data_service = DataService()
 
+print("Initializing Optuna Service...")
+optuna_service = OptunaService()
+
 print("Initializing RabbitMQ Request Service...")
 rabbitmq_request_service = RabbitMQRequestService(
     rabbitmq_service=rabbitmq_service,
     binance_service=binance_service,
-    data_service=data_service
+    data_service=data_service,
+    optuna_service=optuna_service
 )
 
 rabbitmq_service.request_service = rabbitmq_request_service

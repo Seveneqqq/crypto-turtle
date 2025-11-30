@@ -18,6 +18,28 @@ class DataService:
         )
         print("Response updated in SQLite")
 
+    def request_tune_data(self, filename_candidates, steps, n_trials, technical_sets, preprocessing_methods, output_folders, metrics):
+        rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
+        request_payload = {
+            "action": "tune_data",
+            "rabbit_msg_id": rabbit_msg_id,
+            "filename_candidates": filename_candidates,
+            "steps": steps,
+            "n_trials": n_trials,
+            "technical_sets": technical_sets,
+            "preprocessing_methods": preprocessing_methods,
+            "output_folders": output_folders,
+            "metrics": metrics,
+        }
+        print(request_payload)
+        self.rabbitmq_service.publish(queue=DATA_REQUEST_QUEUE, message=request_payload)
+        print("Request for tune data sent to RabbitMQ")
+        self.sqlite_service.insert_message(
+            rabbit_msg_id=rabbit_msg_id,
+            state="created",
+            request=str(request_payload)
+        )
+
     def request_historical_data(self, symbol, interval, start_dt, end_dt, filename):
         rabbit_msg_id = self.sqlite_service.generate_unique_rabbit_msg_id()
         request_payload = {
