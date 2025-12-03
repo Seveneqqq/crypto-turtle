@@ -2,11 +2,12 @@ from configuration.rabbitmq_queues import DATA_RESPONSE_QUEUE
 
 
 class RabbitMQRequestService:
-    def __init__(self, binance_service, rabbitmq_service, data_service, optuna_service):
+    def __init__(self, binance_service, rabbitmq_service, data_service, optuna_service, data_lstm_prepare_service):
         self.binance_service = binance_service
         self.rabbitmq_service = rabbitmq_service
         self.data_service = data_service
         self.optuna_service = optuna_service
+        self.data_lstm_prepare_service = data_lstm_prepare_service
 
     def handle_request(self, data):
         print(data)
@@ -70,3 +71,38 @@ class RabbitMQRequestService:
                         "result": "failed",
                         "message": "Failed to process data"
                     })
+
+            case "process_data_lstm":
+                print("Processing data")
+                ds = self.data_lstm_prepare_service
+                ds.set_filename(data.get("filename"))
+            
+                try:
+                    processed_info = ds.run_pipeline(
+                        steps=data.get("steps", []),
+                        preprocessing_method=data.get("preprocessing_method", "RAW"),
+                        output_folders=data.get("output_folders", None),
+                        technical_indicators_set=data.get("technical_indicators_set")
+                    )
+            
+                    print("Successfully processed data")
+                    self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
+                        "rabbit_msg_id": data.get("rabbit_msg_id"),
+                        "result": "success",
+                        "files": processed_info
+                    })
+            
+                except Exception as e:
+                    import traceback
+                    error_text = traceback.format_exc()
+                    print("\n=== ERROR DURING LSTM PROCESSING ===")
+                    print(error_text)
+                    print("===================================\n")
+            
+                    self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
+                        "rabbit_msg_id": data.get("rabbit_msg_id"),
+                        "result": "failed",
+                        "message": str(e),
+                        "trace": error_text
+                    })
+
