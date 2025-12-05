@@ -31,16 +31,16 @@ services:
     networks:
       - backend
 
-  # dashboard:
-  #   build:
-  #     context: ./dashboard
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "5173:5173"
-  #   depends_on:
-  #     - rabbitmq
-  #   networks:
-  #     - backend
+  dashboard:
+     build:
+       context: ./dashboard
+       dockerfile: Dockerfile
+     ports:
+       - "5173:5173"
+     depends_on:
+       - rabbitmq
+     networks:
+       - backend
 
   data-module:
     build:
@@ -56,53 +56,54 @@ services:
     networks:
       - backend
 
-  # ml-module:
-  #   build:
-  #     context: ./ml-module
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./shared:/app/shared
-  #   ports:
-  #     - "8002:8002"
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #     data-module:
-  #       condition: service_started
-  #   networks:
-  #     - backend
+  ml-module:
+     build:
+       context: ./ml-module
+       dockerfile: Dockerfile
+     volumes:
+       - ./shared:/app/shared
+       - ./ml-module:/app/ml-module
+     ports:
+       - "8002:8002"
+     depends_on:
+       rabbitmq:
+         condition: service_healthy
+       data-module:
+         condition: service_started
+     networks:
+       - backend
 
-  # rl-module:
-  #   build:
-  #     context: ./rl-module
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./shared:/app/shared
-  #   ports:
-  #     - "8003:8003"
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #     ml-module:
-  #       condition: service_started
-  #   networks:
-  #     - backend
+  rl-module:
+     build:
+       context: ./rl-module
+       dockerfile: Dockerfile
+     volumes:
+       - ./shared:/app/shared
+     ports:
+       - "8003:8003"
+     depends_on:
+       rabbitmq:
+         condition: service_healthy
+       ml-module:
+         condition: service_started
+     networks:
+       - backend
 
-  # tests-module:
-  #   build:
-  #     context: ./test-module
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./shared:/app/shared
-  #   ports:
-  #     - "8004:8004"
-  #   depends_on:
-  #     rabbitmq:
-  #       condition: service_healthy
-  #     # rl-module:
-  #     #   condition: service_started
-  #   networks:
-  #     - backend
+#  tests-module:
+#     build:
+#       context: ./test-module
+#       dockerfile: Dockerfile
+#     volumes:
+#       - ./shared:/app/shared
+#     ports:
+#       - "8004:8004"
+#     depends_on:
+#       rabbitmq:
+#         condition: service_healthy
+#       # rl-module:
+#       #   condition: service_started
+#     networks:
+#       - backend
 
 
 networks:
