@@ -6,6 +6,7 @@ from services import data_service
 from pydantic import BaseModel
 from typing import List, Literal
 from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
+from fastapi import HTTPException
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -43,13 +44,13 @@ def get_historical_data(
     )
     return {"msg": "Request added to queue."}
 
-VALID_OUTPUT_FOLDERS = ["trainmodel", "testmodel", "rlagent", "simulation"]
+VALID_OUTPUT_FOLDERS = ["trainmodel", "testmodel", "rlagent", "simulation","trainmodel_lstm", "testmodel_lstm", "rlagent_lstm", "simulation_lstm"]
 
 class ProcessDataRequest(BaseModel):
     filename: str
     steps: List[str] = ["load_data", "make_features", "add_technical_indicators"]
     preprocessing_method: str 
-    output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation"]] = ["trainmodel"]
+    output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation","trainmodel_lstm", "testmodel_lstm", "rlagent_lstm", "simulation_lstm"]] = ["trainmodel"]
     technical_indicators_set: str
 
 class TuneDataRequest(BaseModel):
@@ -58,7 +59,7 @@ class TuneDataRequest(BaseModel):
     n_trials: int = 20
     technical_sets: List[str]
     preprocessing_methods: List[str]
-    output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation"]]
+    output_folders: List[Literal["trainmodel", "testmodel", "rlagent", "simulation","trainmodel_lstm", "testmodel_lstm", "rlagent_lstm", "simulation_lstm"]]
     metrics: List[str]
 
 @router.post("/tune-data")
@@ -90,6 +91,38 @@ def process_data_route(request: ProcessDataRequest):
         raise HTTPException(status_code=400, detail=f"Invalid output folders: {invalid_folders}")
 
     data_service.process_data(
+        filename=filename,
+        steps=steps,
+        preprocessing_method=preprocessing_method,   
+        output_folders=output_folders,
+        technical_indicators_set=technical_indicators_set
+    )
+
+    return {
+        "msg": f"Processing request for '{filename}' added to queue.",
+        "filename": filename,
+        "steps": steps,
+        "preprocessing_method": preprocessing_method,
+        "output_folders": output_folders,
+        "technical_indicators_set": technical_indicators_set
+    }
+
+@router.post("/process-data-lstm")
+def process_data_route(request: ProcessDataRequest):
+    filename = request.filename.strip()
+    steps = request.steps
+    preprocessing_method = request.preprocessing_method   # singular ✅
+    technical_indicators_set = request.technical_indicators_set
+    output_folders = request.output_folders or ["trainmodel"]
+
+    if not filename:
+        raise HTTPException(status_code=400, detail="Filename cannot be empty")
+
+    invalid_folders = [f for f in output_folders if f not in VALID_OUTPUT_FOLDERS]
+    if invalid_folders:
+        raise HTTPException(status_code=400, detail=f"Invalid output folders: {invalid_folders}")
+
+    data_service.process_data_lstm(
         filename=filename,
         steps=steps,
         preprocessing_method=preprocessing_method,   
