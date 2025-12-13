@@ -20,6 +20,9 @@ venv/
 */simulation/plots/*.*
 */simulation/logs/*.*
 */models/ml/*.pkl
+*/models/sklearn*.*
+shared/models/sklearn/*
+shared/files/*
 # ============================
 # Logs
 # ============================
