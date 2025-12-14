@@ -9,20 +9,6 @@ import joblib
 
 
 class DataLSTMPrepareService:
-    """
-    Przygotowanie danych pod LSTM:
-
-    - load_data() z raw_data
-    - dodanie wskaźników technicznych (set1–set4)
-    - preprocessing: RAW / DIFF / LOG (na całym df)
-    - usunięcie EXCLUDE_COLUMNS + nienumerycznych
-    - target = kolumna 'close'
-      sekwencje tworzymy tak, że y = close[i + seq_len]
-    - split train/test (80/20, bez shuffle – dane czasowe)
-    - dopasowanie skalerów TYLKO na train
-    - stworzenie sekwencji 3D (samples, seq_len, features)
-    - zapis .npy + scalerów .pkl
-    """
 
     EXCLUDE_COLUMNS = [
         "open_time",
@@ -38,7 +24,7 @@ class DataLSTMPrepareService:
         seq_len: int = 64,
         scaler_type: str = "standard",
     ):
-        print("[LSTM] Initializing DataLSTMPrepareService...")
+        print("[LSTM] Initializing DataLSTMPrepareService")
         self.filename = filename
         self.seq_len = seq_len
         self.scaler_type = scaler_type
@@ -71,17 +57,14 @@ class DataLSTMPrepareService:
         self.df: pd.DataFrame | None = None
         self.scaler_features = None
         self.scaler_price = None
-        print("[LSTM] Initialization complete.")
+        print("[LSTM] Initialization complete")
 
-    # ------------------------------------------------------------------
-    # Ustawianie pliku i ładowanie danych
-    # ------------------------------------------------------------------
     def set_filename(self, filename: str):
         print(f"[LSTM] Setting filename to: {filename}")
         self.filename = filename
 
     def load_data(self):
-        print("[LSTM] Loading data...")
+        print("[LSTM] Loading data")
         if not self.filename:
             raise ValueError("Filename is not set")
 
@@ -93,7 +76,7 @@ class DataLSTMPrepareService:
             self.filename,
         )
         if not os.path.exists(path):
-            raise FileNotFoundError(f"File '{path}' not found!")
+            raise FileNotFoundError(f"File '{path}' not found")
 
         self.df = pd.read_csv(path)
         print(
@@ -101,9 +84,6 @@ class DataLSTMPrepareService:
         )
         return self
 
-    # ------------------------------------------------------------------
-    # Wskaźniki techniczne – modyfikują self.df
-    # ------------------------------------------------------------------
     def add_technical_indicators(self, set_name: str = "set1"):
         if self.df is None:
             raise ValueError("Data not loaded")
@@ -116,7 +96,6 @@ class DataLSTMPrepareService:
         close = self.df["close"].values
         volume = self.df["volume"].values
 
-        # --- set1 ---
         if set_name == "set1":
             self.df["ma_5"] = pd.Series(close).rolling(5).mean()
             self.df["ma_10"] = pd.Series(close).rolling(10).mean()
@@ -129,7 +108,6 @@ class DataLSTMPrepareService:
             )
             self.df["std_20"] = pd.Series(close).rolling(20).std()
 
-        # --- set2 ---
         elif set_name == "set2":
             delta = pd.Series(close).diff()
             gain = np.where(delta > 0, delta, 0)
@@ -147,7 +125,6 @@ class DataLSTMPrepareService:
                 adjust=False,
             ).mean()
 
-        # --- set3 ---
         elif set_name == "set3":
             ma20 = pd.Series(close).rolling(20).mean()
             std20 = pd.Series(close).rolling(20).std()
@@ -156,7 +133,6 @@ class DataLSTMPrepareService:
             self.df["Momentum_10"] = pd.Series(close).diff(10)
             self.df["ROC_10"] = pd.Series(close).pct_change(10)
 
-        # --- set4 ---
         elif set_name == "set4":
             if "high" not in self.df.columns or "low" not in self.df.columns:
                 raise ValueError(
@@ -178,7 +154,6 @@ class DataLSTMPrepareService:
             ).cumsum() / (self.df["volume"].cumsum() + 1e-9)
             self.df["ROC_5"] = pd.Series(close).pct_change(5)
 
-        # --- all sets ---
         elif set_name == "set_all":
             for s in ["set1", "set2", "set3", "set4"]:
                 self.add_technical_indicators(s)
@@ -186,25 +161,10 @@ class DataLSTMPrepareService:
         else:
             raise ValueError(f"Unknown technical indicators set: {set_name}")
 
-        # usuwamy wiersze z NaN po rollingach
         self.df = self.df.dropna().reset_index(drop=True)
         return self
 
-    # ------------------------------------------------------------------
-    # Sekwencje & skalowanie
-    # ------------------------------------------------------------------
     def create_sequences(self, X, y, seq_len: int):
-        """
-        Tworzy sekwencje 3D pod LSTM.
-
-        WAŻNE: zakładamy, że y jest serią 'close' (po skalowaniu).
-        Sekwencje są zdefiniowane jako:
-          - X_seq[i]  = X[i : i+seq_len]
-          - y_seq[i]  = y[i + seq_len]
-
-        Czyli:
-          y_seq[i] = close[i + seq_len]
-        """
         Xs, ys = [], []
         for i in range(len(X) - seq_len):
             Xs.append(X[i : i + seq_len])
@@ -236,10 +196,7 @@ class DataLSTMPrepareService:
         X_scaled = self.scaler_features.transform(X)
         y_scaled = self.scaler_price.transform(y.reshape(-1, 1)).flatten()
         return X_scaled, y_scaled
-
-    # ------------------------------------------------------------------
-    # GŁÓWNY PIPELINE
-    # ------------------------------------------------------------------
+    
     def run_pipeline(
         self,
         steps: List[str],
@@ -247,38 +204,20 @@ class DataLSTMPrepareService:
         output_folders: List[str] | None = None,
         technical_indicators_set: str | None = "set1",
     ):
-        """
-        Kroki:
-        - (opcjonalnie) load_data
-        - (opcjonalnie) add_technical_indicators na CAŁYM zbiorze
-        - preprocessing (RAW / DIFF / LOG)
-        - drop EXCLUDE_COLUMNS + tylko numeryczne
-        - X: wszystkie cechy numeryczne
-        - y: kolumna 'close'
-        - sekwencje: y_seq[i] = close[i + seq_len]
-        - split train/test (80/20, bez shuffle)
-        - scalery na train, zapis .pkl
-        - sekwencje 3D, zapis .npy
-        """
-
-        # 1) Ładowanie danych
+        
         if "load_data" in steps:
             self.load_data()
 
         if self.df is None:
-            raise RuntimeError("Dataframe is empty after load_data().")
+            raise RuntimeError("Dataframe is empty after load_data()")
 
-        # 2) Dodanie wskaźników technicznych na CAŁYM zbiorze
         if technical_indicators_set:
             self.add_technical_indicators(technical_indicators_set)
 
-        # 3) Kopia robocza df (po wskaźnikach)
         df = self.df.copy()
 
-        # 4) Preprocessing
         method_upper = preprocessing_method.upper()
         if method_upper == "DIFF":
-            # różnicujemy tylko kolumny numeryczne
             num_cols = df.select_dtypes(include=[np.number]).columns
             df[num_cols] = df[num_cols].diff()
             df = df.dropna()
@@ -290,7 +229,6 @@ class DataLSTMPrepareService:
                 f"Unknown preprocessing method: {preprocessing_method}",
             )
 
-        # 5) Usunięcie niepotrzebnych kolumn + tylko numeryczne
         df = df.drop(
             columns=[col for col in self.EXCLUDE_COLUMNS if col in df.columns],
             errors="ignore",
@@ -299,7 +237,7 @@ class DataLSTMPrepareService:
 
         if "close" not in df.columns:
             raise RuntimeError(
-                "Column 'close' not found after preprocessing – cannot build target.",
+                "Column 'close' not found after preprocessing – cannot build target",
             )
 
         if df.shape[0] <= self.seq_len + 1:
@@ -307,13 +245,9 @@ class DataLSTMPrepareService:
                 f"Not enough rows ({df.shape[0]}) for seq_len={self.seq_len}.",
             )
 
-        # 6) X / y – target = 'close'
-        #    UWAGA: X zawiera również kolumnę 'close' (przeszłe wartości),
-        #    a y dla sekwencji będzie close[i + seq_len].
         y_all = df["close"].values
         X_all = df.values
 
-        # 7) Train/Test split (80/20, bez shuffle – dane czasowe)
         train_size = int(len(X_all) * 0.8)
         X_train, X_test = X_all[:train_size], X_all[train_size:]
         y_train, y_test = y_all[:train_size], y_all[train_size:]
@@ -321,7 +255,6 @@ class DataLSTMPrepareService:
         if not output_folders:
             raise ValueError("output_folders cannot be empty")
 
-        # 😎 Unikalny folder eksperymentu
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         results: Dict[str, Dict[str, str]] = {}
@@ -333,20 +266,16 @@ class DataLSTMPrepareService:
             experiment_dir = os.path.join(base_out_dir, timestamp)
             os.makedirs(experiment_dir, exist_ok=True)
 
-            # 9) Fit scalers tylko na train
             self.fit_scalers(X_train, y_train, experiment_dir)
 
-            # 10) Skalowanie
             X_train_scaled, y_train_scaled = self.scale_data(X_train, y_train)
             X_test_scaled, y_test_scaled = self.scale_data(X_test, y_test)
 
             if len(X_train_scaled) <= self.seq_len or len(X_test_scaled) <= self.seq_len:
                 raise RuntimeError(
-                    f"Not enough samples after split for seq_len={self.seq_len}.",
+                    f"Not enough samples after split for seq_len={self.seq_len}",
                 )
 
-            # 11) Sekwencje
-            # y_seq[i] = y_scaled[i + seq_len] => target = close[i+seq_len]
             Xtr, ytr = self.create_sequences(
                 X_train_scaled,
                 y_train_scaled,
@@ -358,7 +287,6 @@ class DataLSTMPrepareService:
                 self.seq_len,
             )
 
-            # 12) Zapis .npy
             out_filename = (
                 f"processed_{method_upper}_"
                 f"{technical_indicators_set}_{self.filename}_lstm"
@@ -388,6 +316,6 @@ class DataLSTMPrepareService:
                 "technical_indicators_set": technical_indicators_set,
             }
 
-            print(f"[LSTM] Folder '{experiment_dir}' processed successfully.")
+            print(f"[LSTM] Folder '{experiment_dir}' processed successfully")
 
         return results

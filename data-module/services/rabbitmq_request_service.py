@@ -111,9 +111,8 @@ class RabbitMQRequestService:
                 except Exception as e:
                     import traceback
                     error_text = traceback.format_exc()
-                    print("\n=== ERROR DURING LSTM PROCESSING ===")
+                    print("\n Error during LSTM processing")
                     print(error_text)
-                    print("===================================\n")
             
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),

@@ -13,11 +13,6 @@ from .data_service import DataService
 
 
 class OptunaService:
-    """
-    Orkiestruje optymalizację pipeline’u DataService i
-    wewnętrznie ocenia wygenerowane zestawy danych.
-    """
-
     def __init__(self, storage_url: str | None = None):
         self.storage_url = storage_url
         self.logs_dir = os.path.join(
@@ -75,9 +70,6 @@ class OptunaService:
 
         study.optimize(objective, n_trials=n_trials)
 
-        # ----------------------------
-        # Przygotowanie pełnych logów
-        # ----------------------------
         all_trials = []
         for t in study.trials:
             all_trials.append({
@@ -86,7 +78,6 @@ class OptunaService:
                 "params": t.params
             })
 
-        # posortowane od najlepszego do najgorszego
         sorted_trials = sorted(all_trials, key=lambda x: x["value"], reverse=True)
 
         result = {
@@ -111,9 +102,6 @@ class OptunaService:
         filename = f"optuna_run_{timestamp}.log"
         filepath = os.path.join(self.logs_dir, filename)
 
-        # ----------------------------
-        # BEST SECTION
-        # ----------------------------
         best_section = {
             "timestamp": timestamp,
             "best_value": log_payload["best_value"],
@@ -124,9 +112,6 @@ class OptunaService:
             "best_preprocessing": log_payload["best_preprocessing"],
         }
 
-        # ----------------------------
-        # ALL TRIALS
-        # ----------------------------
         all_trials_text = ""
         for t in log_payload["all_trials"]:
             all_trials_text += (
@@ -135,9 +120,6 @@ class OptunaService:
                 f"  params={json.dumps(t['params'], indent=4)}\n\n"
             )
 
-        # ----------------------------
-        # SORTED TRIALS
-        # ----------------------------
         sorted_text = ""
         for idx, t in enumerate(log_payload["sorted_trials"], start=1):
             sorted_text += (
@@ -145,32 +127,27 @@ class OptunaService:
                 f"   params={json.dumps(t['params'], indent=4)}\n\n"
             )
 
-        # ----------------------------
-        # WRITE LOG FILE
-        # ----------------------------
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write("===== BEST TRIAL =====\n")
+            f.write("Best trial\n")
             f.write(json.dumps(best_section, indent=2))
-            f.write("\n\n===== ALL TRIALS =====\n")
+            f.write("\n\n All trials \n")
             f.write(all_trials_text)
-            f.write("\n===== SORTED TRIALS (BEST → WORST) =====\n")
+            f.write("\n Sorted trials (best - worst)\n")
             f.write(sorted_text)
-
-    # --- prywatna część oceny ---
 
     def _evaluate_dataset(self, filepath: str, metrics: list[str]) -> float:
         df = pd.read_csv(filepath)
 
         if "target" not in df.columns:
-            raise ValueError("Dataset nie ma kolumny 'target' – brak metryki.")
+            raise ValueError("Dataset nie ma kolumny 'target' – brak metryki")
 
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
         if "target" not in numeric_cols:
-            raise ValueError("Kolumna 'target' nie jest numeryczna.")
+            raise ValueError("Kolumna 'target' nie jest numeryczna")
         numeric_cols.remove("target")
 
         if not numeric_cols:
-            raise ValueError("Brak numerycznych cech do trenowania modelu.")
+            raise ValueError("Brak numerycznych cech do trenowania modelu")
 
         X = df[numeric_cols].replace([float("inf"), float("-inf")], pd.NA)
         y = df["target"].astype(int)
