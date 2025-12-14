@@ -24,7 +24,7 @@ class SimulationRequest(BaseModel):
     max_fraction_when_confident: float
     data_files: Dict[str, str]
     model_paths: Dict[str, str]
-    agents: Dict[str, str]
+    agent_rl: str
     plots: bool
     logs: bool
     results: bool
@@ -48,7 +48,7 @@ def simulate(req: SimulationRequest):
         max_fraction_when_confident=req.max_fraction_when_confident,
         data_files=req.data_files,
         model_paths=req.model_paths,
-        agents=req.agents,
+        agent_rl=req.agent_rl,
         plots=req.plots,
         logs=req.logs,
         results=req.results
