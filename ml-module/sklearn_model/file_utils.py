@@ -25,7 +25,7 @@ def get_file_path(relative_path: str) -> str:
     """
     Zwraca pełną ścieżkę do pliku w /shared/files/{relative_path}.
     Tworzy foldery jeśli nie istnieją.
-    relative_path może zawierać podfoldery, np. "train/btc_train.csv"
+    relative_path może zawierać podfoldery, np. "train/btc_train_ref.csv"
     """
     project_root = get_project_root()
     full_path = os.path.join(project_root, "shared", "files", relative_path)
