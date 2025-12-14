@@ -2,6 +2,7 @@ from services.binance_service import BinanceService
 from services.data_service import DataService
 from services.optuna_service import OptunaService
 from services.data_lstm_prepare_service import DataLSTMPrepareService
+from services.lstm_optuna_service import LSTMOptunaService
 from services.rabbitmq_service import RabbitMQService
 from services.rabbitmq_request_service import RabbitMQRequestService
 from configuration.rabbitmq_configuration import (
@@ -30,13 +31,17 @@ data_lstm_prepare_service = DataLSTMPrepareService()
 print("Initializing Optuna Service...")
 optuna_service = OptunaService()
 
+print("Initializing LSTM Optuna Service...")
+lstm_optuna_service = LSTMOptunaService()
+
 print("Initializing RabbitMQ Request Service...")
 rabbitmq_request_service = RabbitMQRequestService(
     rabbitmq_service=rabbitmq_service,
     binance_service=binance_service,
     data_service=data_service,
     optuna_service=optuna_service,
-    data_lstm_prepare_service=data_lstm_prepare_service
+    data_lstm_prepare_service=data_lstm_prepare_service,
+    lstm_optuna_service=lstm_optuna_service
 )
 
 rabbitmq_service.request_service = rabbitmq_request_service
