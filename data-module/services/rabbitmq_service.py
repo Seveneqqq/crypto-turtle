@@ -18,8 +18,8 @@ class RabbitMQService:
             port=self.port,
             virtual_host='/',
             credentials=credentials,
-            heartbeat=600,  
-            blocked_connection_timeout=300
+            heartbeat=43200,  
+            blocked_connection_timeout=600
         ))
 
     def publish(self, queue: str, message: dict):
