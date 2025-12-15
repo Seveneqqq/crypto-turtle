@@ -13,11 +13,6 @@ from .data_service import DataService
 
 
 class OptunaService:
-    """
-    Orkiestruje optymalizację pipeline’u DataService i
-    wewnętrznie ocenia wygenerowane zestawy danych.
-    """
-
     def __init__(self, storage_url: str | None = None):
         self.storage_url = storage_url
         self.logs_dir = os.path.join(
@@ -75,6 +70,16 @@ class OptunaService:
 
         study.optimize(objective, n_trials=n_trials)
 
+        all_trials = []
+        for t in study.trials:
+            all_trials.append({
+                "trial_number": t.number,
+                "value": t.value,
+                "params": t.params
+            })
+
+        sorted_trials = sorted(all_trials, key=lambda x: x["value"], reverse=True)
+
         result = {
             "result": "success",
             "rabbit_msg_id": request.get("rabbit_msg_id"),
@@ -85,8 +90,10 @@ class OptunaService:
             "best_preprocessing": study.best_trial.params.get("preprocessing"),
             "best_params": study.best_trial.params,
             "best_value": study.best_value,
-            "trials_summary": [(t.number, t.value) for t in study.trials],
+            "all_trials": all_trials,
+            "sorted_trials": sorted_trials,
         }
+
         self._save_run_log(result)
         return result
 
@@ -95,46 +102,52 @@ class OptunaService:
         filename = f"optuna_run_{timestamp}.log"
         filepath = os.path.join(self.logs_dir, filename)
 
-        header = {
+        best_section = {
             "timestamp": timestamp,
+            "best_value": log_payload["best_value"],
+            "best_params": log_payload["best_params"],
             "best_filename": log_payload["best_filename"],
             "best_horizon": log_payload["best_horizon"],
             "best_technical_set": log_payload["best_technical_set"],
             "best_preprocessing": log_payload["best_preprocessing"],
-            "best_value": log_payload["best_value"],
-            "best_params": log_payload["best_params"],
         }
 
-        body = "\n".join(
-            f"Trial {number}: value={value}"
-            for number, value in log_payload["trials_summary"]
-        ) or "Brak zakończonych prób."
+        all_trials_text = ""
+        for t in log_payload["all_trials"]:
+            all_trials_text += (
+                f"Trial {t['trial_number']}:\n"
+                f"  value={t['value']}\n"
+                f"  params={json.dumps(t['params'], indent=4)}\n\n"
+            )
+
+        sorted_text = ""
+        for idx, t in enumerate(log_payload["sorted_trials"], start=1):
+            sorted_text += (
+                f"{idx}. Trial {t['trial_number']} → value={t['value']}\n"
+                f"   params={json.dumps(t['params'], indent=4)}\n\n"
+            )
 
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(json.dumps(header, indent=2))
-            f.write("\n\n=== TRIAL LOGS ===\n")
-            f.write(body)
-
-    # --- prywatna część oceny ---
+            f.write("Best trial\n")
+            f.write(json.dumps(best_section, indent=2))
+            f.write("\n\n All trials \n")
+            f.write(all_trials_text)
+            f.write("\n Sorted trials (best - worst)\n")
+            f.write(sorted_text)
 
     def _evaluate_dataset(self, filepath: str, metrics: list[str]) -> float:
-        """
-        Wbudowany scorer: wczytuje CSV, trenuje LogisticRegression na cechach
-        numerycznych i zwraca accuracy. Gdy będziesz gotowy, podmień to np.
-        na backtest bota lub inną metrykę.
-        """
         df = pd.read_csv(filepath)
 
         if "target" not in df.columns:
-            raise ValueError("Dataset nie ma kolumny 'target' – brak metryki.")
+            raise ValueError("Dataset nie ma kolumny 'target' – brak metryki")
 
         numeric_cols = df.select_dtypes(include="number").columns.tolist()
         if "target" not in numeric_cols:
-            raise ValueError("Kolumna 'target' nie jest numeryczna.")
+            raise ValueError("Kolumna 'target' nie jest numeryczna")
         numeric_cols.remove("target")
 
         if not numeric_cols:
-            raise ValueError("Brak numerycznych cech do trenowania modelu.")
+            raise ValueError("Brak numerycznych cech do trenowania modelu")
 
         X = df[numeric_cols].replace([float("inf"), float("-inf")], pd.NA)
         y = df["target"].astype(int)

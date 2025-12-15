@@ -4,9 +4,10 @@ from services import auth_service
 from services import rabbitmq_service
 from services import data_service
 from pydantic import BaseModel
-from typing import List, Literal
+from typing import List, Literal,Tuple
 from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
 from fastapi import HTTPException
+
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -74,6 +75,37 @@ def tune_data_route(request: TuneDataRequest):
         metrics=request.metrics
     )
     return {"msg": "Request added to queue."}
+
+class LSTMTuneDataRequest(BaseModel):
+    filename_candidates: List[str]
+    steps: List[str]                      # np. ["load_data"]
+    n_trials: int = 20
+    technical_sets: List[str] = ["set1", "set2", "set3", "set4"]
+    preprocessing_methods: List[str] = ["RAW", "DIFF", "LOG"]
+    target_col: str = "close"
+    # zakresy parametrów danych
+    seq_len_range: Tuple[int, int, int] = (32, 128, 32)   # min, max, step
+    scaler_types: List[str] = ["standard", "minmax"]
+    # zakresy parametrów modelu
+    lstm_units_range: Tuple[int, int, int] = (32, 128, 32)
+    lstm_layers_range: Tuple[int, int] = (1, 3)
+    dropout_range: Tuple[float, float, float] = (0.0, 0.5, 0.1)
+    lr_range: Tuple[float, float] = (1e-4, 1e-2)
+    batch_sizes: List[int] = [32, 64]
+    epochs: int = 5
+
+@router.post("/tune-data-lstm")
+def tune_data_lstm_route(request: LSTMTuneDataRequest):
+    data_service.request_tune_data_lstm(
+        filename_candidates=request.filename_candidates,
+        steps=request.steps,
+        n_trials=request.n_trials,
+        technical_sets=request.technical_sets,
+        preprocessing_methods=request.preprocessing_methods,
+        output_folders=["trainmodel_lstm"],   # cokolwiek, bo metoda tego wymaga
+        metrics=["mse"],                      # cokolwiek, bo metoda tego wymaga
+    )
+    return {"msg": "LSTM tune request added to queue."}
 
 @router.post("/process-data")
 def process_data_route(request: ProcessDataRequest):

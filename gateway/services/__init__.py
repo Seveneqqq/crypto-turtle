@@ -5,7 +5,8 @@ from services.ml_service import MlService
 from services.rl_service import RlService
 from services.xai_service import XaiService
 from .auth_service import AuthService
-from configuration.configuration import SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI
+from services.job_service import JobService
+from configuration.configuration import SUPABASE_URL, PLGRID_USERNAME, SSH_KEY, SUPABASE_KEY, GOOGLE_REDIRECT_URI
 from services.rabbitmq_service import RabbitMQService
 from .sqlite_service import SQLiteService
 from configuration.rabbitmq_configuration import (
@@ -22,7 +23,8 @@ from configuration.rabbitmq_queues import (
 # --- Inicjalizacja serwisów ---
 auth_service = AuthService(SUPABASE_URL, SUPABASE_KEY, GOOGLE_REDIRECT_URI)
 file_service = FileService()
-sqlite_service = SQLiteService() 
+sqlite_service = SQLiteService()
+job_service = JobService(PLGRID_USERNAME,SSH_KEY) 
 
 # RabbitMQ service
 rabbitmq_service = RabbitMQService(

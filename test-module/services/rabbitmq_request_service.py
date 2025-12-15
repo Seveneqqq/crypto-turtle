@@ -31,7 +31,7 @@ class RabbitMQRequestService:
                     max_fraction_when_confident=data.get("max_fraction_when_confident"),
                     data_files=data.get("data_files"),
                     model_paths=data.get("model_paths"),
-                    agents=data.get("agents"),
+                    agent_rl=data.get("agent_rl"),
                     plots=data.get("plots"),
                     logs=data.get("logs"),
                     results=data.get("results")
