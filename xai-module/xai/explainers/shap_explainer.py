@@ -4,11 +4,12 @@ import pandas as pd
 import os
 import traceback
 
+
 class ShapKernelExplainer:
     """
     Generic SHAP Kernel Explainer.
-    Model jest przekazywany – nie ładowany z pliku.
-    Obsługuje classifiery i regresję.
+    - liczy SHAP tylko dla jednej instancji
+    - model przekazywany jako obiekt
     """
 
     def __init__(self):
@@ -22,66 +23,83 @@ class ShapKernelExplainer:
         print(f"[ShapKernelExplainer] Data loaded shape={df.shape}")
         return df
 
-    def explain(self, model, data_path: str, background_size: int = 50):
+    def explain(
+        self,
+        model,
+        data_path: str,
+        instance: int = 0,
+        background_size: int = 30,
+        nsamples: int = 200
+    ):
         print("[ShapKernelExplainer] Starting SHAP Kernel explanation")
+        print(f"[ShapKernelExplainer] instance={instance}")
 
         df = self._load_data(data_path)
+
+        # kolumny zgodne z modelem
         train_cols = model.feature_names_in_
-        print(f"[ShapKernelExplainer] Selecting model features: {train_cols}")
+        print(f"[ShapKernelExplainer] Using model features: {train_cols}")
 
         df_filtered = df[train_cols].copy()
 
-        # Konwersja kolumn na float i logowanie
+        # konwersja na float
         for col in df_filtered.columns:
-            before_dtype = df_filtered[col].dtype
-            df_filtered[col] = pd.to_numeric(df_filtered[col], errors='coerce')
-            nan_count = df_filtered[col].isna().sum()
-            print(f"[ShapKernelExplainer] Converting column '{col}' to numeric")
-            print(f"    dtype before={before_dtype}, after={df_filtered[col].dtype}, nan_count={nan_count}")
+            df_filtered[col] = pd.to_numeric(df_filtered[col], errors="coerce")
 
         df_filtered = df_filtered.fillna(0)
-        print("[ShapKernelExplainer] Missing values replaced with 0")
 
         data = df_filtered.to_numpy()
+
+        if instance < 0 or instance >= data.shape[0]:
+            raise ValueError(f"Invalid instance index: {instance}")
+
+        # background
         background = data[:background_size]
         print(f"[ShapKernelExplainer] Background shape={background.shape}")
 
-        # Sprawdzenie, czy model jest classifierem
+        # wybór funkcji predykcji
         if hasattr(model, "predict_proba"):
-            print("[ShapKernelExplainer] Detected classifier: using predict_proba[:,1]")
-            predict_fn = lambda x: model.predict_proba(pd.DataFrame(x, columns=train_cols))[:, 1]
+            print("[ShapKernelExplainer] Classifier detected")
+            predict_fn = lambda x: model.predict_proba(
+                pd.DataFrame(x, columns=train_cols)
+            )[:, 1]
         else:
-            print("[ShapKernelExplainer] Detected regression model: using predict")
-            predict_fn = lambda x: model.predict(pd.DataFrame(x, columns=train_cols))
+            print("[ShapKernelExplainer] Regression model detected")
+            predict_fn = lambda x: model.predict(
+                pd.DataFrame(x, columns=train_cols)
+            )
 
+        # init explainer
         print("[ShapKernelExplainer] Initializing KernelExplainer")
         try:
             explainer = shap.KernelExplainer(predict_fn, background)
-        except Exception as e:
-            print(f"[ShapKernelExplainer] FAILED to initialize KernelExplainer: {e}")
+        except Exception:
             traceback.print_exc()
             raise
 
-        # Obliczanie SHAP z logowaniem crash row
-        print("[ShapKernelExplainer] Calculating SHAP values")
-        shap_values = None
-        for i in range(data.shape[0]):
-            try:
-                shap_values = explainer.shap_values(data[i:i+1], nsamples="auto")
-            except Exception as e:
-                print(f"[ShapKernelExplainer] [!!!] SHAP crashed at row {i}")
-                print(f"Row data: {data[i]}")
-                print(traceback.format_exc())
-                raise e
+        # SHAP tylko dla jednej instancji
+        print("[ShapKernelExplainer] Calculating SHAP values (single instance)")
+        try:
+            row = data[instance:instance + 1]
+            shap_values = explainer.shap_values(row, nsamples=nsamples)
+        except Exception:
+            traceback.print_exc()
+            raise
 
         print("[ShapKernelExplainer] SHAP calculation finished")
+
         return {
-            "shap_values": shap_values.tolist() if isinstance(shap_values, np.ndarray) else shap_values,
+            "instance": instance,
+            "shap_values": (
+                shap_values.tolist()
+                if isinstance(shap_values, np.ndarray)
+                else shap_values
+            ),
             "expected_value": explainer.expected_value,
-            "sample_data": data.tolist()
+            "sample_data": row.tolist(),
+            "features": list(train_cols)
         }
-
-
+    
 class ShapTreeExplainer:
     """RandomForest / XGBoost / LightGBM"""
 
@@ -92,49 +110,42 @@ class ShapTreeExplainer:
         print(f"[ShapTreeExplainer] Loading data from: {data_path}")
         if not os.path.exists(data_path):
             raise FileNotFoundError(f"Data file not found at: {data_path}")
+
         df = pd.read_csv(data_path)
-        print(f"[ShapTreeExplainer] Data loaded, shape={df.shape}")
 
-        # Konwersja danych do float i logowanie
         for col in df.columns:
-            before_dtype = df[col].dtype
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-            nan_count = df[col].isna().sum()
-            print(f"[ShapTreeExplainer] Converting column '{col}' to numeric")
-            print(f"    dtype before={before_dtype}, after={df[col].dtype}, nan_count={nan_count}")
-        df = df.fillna(0)
-        print("[ShapTreeExplainer] Missing values replaced with 0")
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
+        df = df.fillna(0)
         return df.to_numpy()
 
     def explain(self, model, data_path: str):
         print("[ShapTreeExplainer] Starting Tree SHAP explanation")
+
         data = self._load_data(data_path)
 
         print("[ShapTreeExplainer] Initializing TreeExplainer")
         try:
             explainer = shap.TreeExplainer(model)
-        except Exception as e:
-            print(f"[ShapTreeExplainer] FAILED to initialize TreeExplainer: {e}")
+        except Exception:
             traceback.print_exc()
             raise
 
         print("[ShapTreeExplainer] Calculating SHAP values")
         try:
             shap_values = explainer.shap_values(data)
-        except Exception as e:
-            print(f"[ShapTreeExplainer] [!!!] SHAP crashed")
-            for i in range(data.shape[0]):
-                try:
-                    explainer.shap_values(data[i:i+1])
-                except:
-                    print(f"Row {i} causes crash: {data[i]}")
-                    break
-            raise e
+        except Exception:
+            traceback.print_exc()
+            raise
 
         print("[ShapTreeExplainer] SHAP calculation finished")
+
         return {
-            "shap_values": shap_values.tolist() if isinstance(shap_values, np.ndarray) else shap_values,
+            "shap_values": (
+                shap_values.tolist()
+                if isinstance(shap_values, np.ndarray)
+                else shap_values
+            ),
             "expected_value": explainer.expected_value,
             "sample_data": data.tolist()
         }

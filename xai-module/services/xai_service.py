@@ -100,12 +100,15 @@ class XaiService:
             # Wybieramy odpowiedni explainer
             if explainer_type.lower() == "kernel":
                 explainer = ShapKernelExplainer()
-                shap_result = explainer.explain(model=model, data_path=data_path)
+                shap_result = explainer.explain(model=model, data_path=data_path, instance=instance)
             elif explainer_type.lower() == "tree":
                 explainer = ShapTreeExplainer()
                 shap_result = explainer.explain(model=model, data_path=data_path)
             else:
                 raise ValueError(f"Unknown explainer type: {explainer_type}")
+            
+            print("[XaiService] Explanation completed successfully")
+            print(shap_result)
 
             return {
                 "result": "success",

@@ -31,7 +31,8 @@ class RabbitMQRequestService:
                     print("Successfully sent explain_model request")
                     self.rabbitmq_service.publish(XAI_RESPONSE_QUEUE, {
                         "result": "success",
-                        "rabbit_msg_id": result["rabbit_msg_id"]
+                        "rabbit_msg_id": result["rabbit_msg_id"],
+                        "data": result["data"]
                     })
                 else:
                     print("Failed to send explain_model request")
@@ -39,5 +40,6 @@ class RabbitMQRequestService:
                     print(result.get("result"))
                     self.rabbitmq_service.publish(XAI_RESPONSE_QUEUE, {
                         "result": "failed",
+                        "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "message": "Failed to send explain_model request"
                     })
