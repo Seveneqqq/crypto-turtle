@@ -8,8 +8,9 @@ import torch
 
 
 class TrainAgentPPOService:
-    def __init__(self):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    def __init__(self, base_dir = None):
+        if base_dir is None: base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.base_dir = base_dir
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_rlagent_data")
         self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "sklearn")
         self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
@@ -55,7 +56,7 @@ class TrainAgentPPOService:
                     raise FileNotFoundError(f"Brak pliku: {filepath}")
                 df = pd.read_csv(filepath)
                 # --- Inicjalizacja modeli ---
-                models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy())
+                models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy(), base_dir=self.base_dir)
                 symbols.append(symbol)
 
             env = TradingEnv(models, symbols)

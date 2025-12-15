@@ -5,9 +5,9 @@ from .standalone_model import ModelPredictor
 
 
 class ModelSignal:
-    def __init__(self, model_name, data):
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "models")
+    def __init__(self, model_name, data, base_dir):
+        # base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.BASE_MODEL_DIR = os.path.join(base_dir,"shared","models")
 
         self.data = data
         self.model_name = model_name
