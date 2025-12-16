@@ -64,60 +64,75 @@ class RabbitMQRequestService:
             
             case "process_data":
                 print("Processing data")
+            
                 ds = self.data_service
-                ds.set_filename(data.get("filename"))
-                processed_info = ds.run_pipeline(
-                    steps=data.get("steps", []),
-                    preprocessing_method=data.get("preprocessing_method", "RAW"),
-                    output_folders=data.get("output_folders", None),
-                    technical_indicators_set=data.get("technical_indicators_set")
-                )
-
-                if processed_info:
-                    print("Successfully processed data")
+                results = []
+            
+                filename = data.get("filename")
+                horizon = data.get("horizon", 1)
+                steps = data.get("steps", [])
+                preprocessing = data.get("preprocessing_method", "RAW")
+                output_folders = data.get("output_folders", [])
+            
+                feature_sets = data.get("feature_sets")
+                if not feature_sets:
+                    feature_sets = [ds.get_model_features()]
+            
+                try:
+                    for output_folder in output_folders:
+                        for feature_combo in feature_sets:
+                            out_path = ds.generate_and_save(
+                                filename=filename,
+                                horizon=horizon,
+                                output_folder=output_folder,
+                                steps=steps,
+                                preprocessing=preprocessing,
+                                feature_combo=feature_combo,
+                            )
+                            results.append(out_path)
+            
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "result": "success",
-                        "files": processed_info
+                        "files": results
                     })
-                else:
-                    print("Failed to process data")
+            
+                except Exception as e:
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "result": "failed",
-                        "message": "Failed to process data"
+                        "message": str(e)
                     })
+
 
             case "process_data_lstm":
                 print("Processing data")
                 ds = self.data_lstm_prepare_service
                 ds.set_filename(data.get("filename"))
-            
+
                 try:
                     processed_info = ds.run_pipeline(
                         steps=data.get("steps", []),
                         preprocessing_method=data.get("preprocessing_method", "RAW"),
-                        output_folders=data.get("output_folders", None),
-                        technical_indicators_set=data.get("technical_indicators_set")
+                        output_folders=data.get("output_folders", []),
+                        technical_indicators_set=data.get("technical_indicators_set"),
+                        selected_features=data.get("selected_features", []),
                     )
-            
-                    print("Successfully processed data")
+
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "result": "success",
                         "files": processed_info
                     })
-            
+
                 except Exception as e:
                     import traceback
                     error_text = traceback.format_exc()
-                    print("\n Error during LSTM processing")
                     print(error_text)
-            
+
                     self.rabbitmq_service.publish(DATA_RESPONSE_QUEUE, {
                         "rabbit_msg_id": data.get("rabbit_msg_id"),
                         "result": "failed",
                         "message": str(e),
                         "trace": error_text
                     })
-
