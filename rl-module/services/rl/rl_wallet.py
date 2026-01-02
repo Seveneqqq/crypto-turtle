@@ -17,6 +17,7 @@ class Wallet:
         self.config = config
         self.orders = []
         self.logs = []
+        self.avg_buy_price = {s: 0.0 for s in symbols}  # Zmień nazwę z last_buy_price na avg i logikę
 
     def execute_orders(self, t, current_prices):
 
@@ -53,6 +54,18 @@ class Wallet:
             order["status"] = "rejected"
             return
         else:
+            # --- LOGIKA ŚREDNIEJ WAŻONEJ CENY ZAKUPU ---
+            current_qty = self.holdings.get(symbol, 0.0)
+            current_avg = self.avg_buy_price.get(symbol, 0.0)
+
+            # Jeśli już coś mamy, obliczamy nową średnią: (stara_wartość + nowa_wartość) / nowa_ilość
+            if current_qty > 0:
+                new_avg = ((current_qty * current_avg) + (qty * current_price)) / (current_qty + qty)
+                self.avg_buy_price[symbol] = new_avg
+            else:
+                # Jeśli to pierwszy zakup
+                self.avg_buy_price[symbol] = current_price
+            # ---------------------------------------------
             self.holdings[symbol] += qty
             self.balance -= transaction_value
             order["status"] = "accepted"
@@ -77,6 +90,9 @@ class Wallet:
             self.holdings[order["symbol"]] -= qty
             self.balance += transaction_value
             order["status"] = "accepted"
+            if self.holdings[symbol] <= 1e-9:
+                self.holdings[symbol] = 0.0
+                self.avg_buy_price[symbol] = 0.0
             return
 
     def calculate_orders(self, t, prices):
@@ -90,7 +106,7 @@ class Wallet:
             action = order["action"]
             scaled_dict = order["rl_config"]
 
-            mincost_min, mincost_max = 1.0, 50.0
+            mincost_min, mincost_max = 1.0, 5.0
             mincost = mincost_min + scaled_dict[4] * (mincost_max - mincost_min)
 
             mwpc_min, mwpc_max = 0.4, 0.9
