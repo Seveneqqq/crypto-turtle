@@ -15,8 +15,9 @@ from .visualization_service import VisualizationService
 
 
 class SimulationService:
-    def __init__(self):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    def __init__(self, base_dir = None):
+        if base_dir is None: base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.base_dir = base_dir
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_simulation_data")
         self.SIM_DIR = os.path.join(base_dir, "shared", "simulation","simulations")
         os.makedirs(self.SIM_DIR, exist_ok=True)
@@ -84,7 +85,7 @@ class SimulationService:
                     raise FileNotFoundError(f"Brak pliku: {filepath}")
                 df = pd.read_csv(filepath)
                 # --- Inicjalizacja modeli ---
-                self.models[symbol] = ModelSignal(model_name=model_paths[symbol], data=df.copy())
+                self.models[symbol] = ModelSignal(model_name=model_paths[symbol], data=df.copy(),base_dir=self.base_dir)
                 symbols.append(symbol)
 
             self.sim_mode = sim_mode
@@ -109,6 +110,7 @@ class SimulationService:
                 agent_name=agent_rl,
                 rlagent_deterministic=rlagent_deterministic,
                 wallet=self.wallet,
+                base_dir=self.base_dir,
                 config= DecisionConfig(
                     threshold_buy=threshold_buy,
                     threshold_sell=threshold_sell,

@@ -1,7 +1,9 @@
 import os
 import numpy as np
 from dataclasses import dataclass
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, SAC
+
+
 @dataclass
 class DecisionConfig:
     threshold_buy: float = 0.6
@@ -11,9 +13,7 @@ class DecisionConfig:
     clamp_model_value: bool = True
 
 class DecisionEngine:
-    def __init__(self, agent_name, rlagent_deterministic, wallet, config: DecisionConfig = DecisionConfig()):
-
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    def __init__(self, agent_name, rlagent_deterministic, wallet, base_dir, config: DecisionConfig = DecisionConfig()):
         self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "agents")
         self.agent_name = agent_name
         self.agent_path = ""
@@ -28,6 +28,8 @@ class DecisionEngine:
             match agent_type:
                 case "ppo":
                     self.agent = PPO.load(self.agent_path, env=None)
+                case "sac":
+                    self.agent = SAC.load(self.agent_path, env=None)
                 case _:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
 
@@ -67,6 +69,7 @@ class DecisionEngine:
         action, _ = self.agent.predict(obs, deterministic=self.rlagent_deterministic)
         action = np.asarray(action, dtype=np.float32).flatten()
         scaled = (action + 1.0) / 2.0
+        #print(scaled)
         n_params_per_symbol = 6
         for i, symbol in enumerate(symbols):
             start = i * n_params_per_symbol
@@ -91,6 +94,7 @@ class DecisionEngine:
             
             orders.append({
                 "symbol": symbol,
+                "predicted": best_action,
                 "action": best_action,
                 "value": best_value,
                 "price": prices[symbol],
@@ -146,6 +150,8 @@ class DecisionEngine:
     def build_obs(self, symbols, data_rows, prob_vec, prices):
 
         obs_parts = [np.array([float(self.wallet.balance)], dtype=np.float32)]
+        current_portfolio_value = self.wallet.total_value(self._get_current_prices())
+        cash_ratio = self.wallet.balance / current_portfolio_value if current_portfolio_value > 0 else 0.0
 
         for symbol in symbols:
             buy_p = float(prob_vec[symbol].get("buy", 0.0))
@@ -153,19 +159,36 @@ class DecisionEngine:
             hold_p = float(prob_vec[symbol].get("hold", 0.0))
 
             holding_amount = float(self.wallet.holdings.get(symbol, 0.0))
-            holding_value = holding_amount * float(prices[symbol])
+            current_price = float(data_rows[symbol].get("close", 0.0))
+            holding_value = holding_amount * current_price
+            position_ratio = holding_value / current_portfolio_value if current_portfolio_value > 0 else 0.0
+            #numeric_values = np.asarray(data_rows[symbol], dtype=np.float32)
+            # 3. AKTUALNY ZYSK/STRATA NA POZYCJI (Unrealized PnL %)
+            # To jest kluczowe! Agent musi wiedzieć czy pozycja krwawi.
+            avg_buy_price = self.wallet.avg_buy_price.get(symbol,0.0)  # Musisz to obsłużyć w Wallet (średnia cena zakupu)
+            unrealized_pnl_pct = 0.0
 
-            numeric_values = np.asarray(data_rows[symbol], dtype=np.float32)
+            if holding_amount > 0 and avg_buy_price > 0:
+                unrealized_pnl_pct = (current_price - avg_buy_price) / avg_buy_price
+                # Clipujemy, żeby nie rozwalić sieci przy pompie o 1000%
+                unrealized_pnl_pct = np.clip(unrealized_pnl_pct, -1.0, 1.0)
+            #
+            # Budujemy wektor dla danego symbolu
+            symbol_obs = np.array([
+                buy_p,
+                hold_p,
+                sell_p,
+                position_ratio,  # Zamiast holding_amount
+                unrealized_pnl_pct,  # Zamiast holding_value
+                # rsi,  # Znormalizowany wskaźnik
+                # log_ret_1m,  # Dynamika ceny
+                # atr_pct  # Zmienność
+            ], dtype=np.float32)
 
-            symbol_obs = np.concatenate([
-                np.array([buy_p, sell_p, hold_p], dtype=np.float32),
-                np.array([holding_amount, holding_value], dtype=np.float32),
-                numeric_values
-            ])
+            obs_parts.append(symbol_obs)
 
             obs_parts.append(symbol_obs)
 
         obs = np.concatenate(obs_parts)
         obs = np.nan_to_num(obs, nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
         return obs
-
