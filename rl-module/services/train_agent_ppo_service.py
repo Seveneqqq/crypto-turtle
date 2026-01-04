@@ -59,7 +59,7 @@ class TrainAgentPPOService:
                 models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy(), base_dir=self.base_dir)
                 symbols.append(symbol)
 
-            env = TradingEnv(models, symbols)
+            env = TradingEnv(models, symbols, base_dir=self.base_dir)
 
             progress_callback = ProgressBarCallback(total_timesteps=total_timesteps)
             torch.set_num_threads(16)

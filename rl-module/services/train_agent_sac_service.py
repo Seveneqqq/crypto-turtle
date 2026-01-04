@@ -1,6 +1,6 @@
 from .rl.agent_sac import SACAgent
 from .rl.agent import TradingEnv
-from .rl.rl_ml_signal import ModelSignal
+from .core_logic.ml_signal import ModelSignal
 import os
 import pandas as pd
 from datetime import datetime
@@ -21,7 +21,7 @@ class TrainAgentSACService:
         rabbitmq_msg_id=None,
         model_files=None,
         data_files=None,
-        total_timesteps=200000,
+        total_timesteps=20000,
         checkpoint_freq=200_000,
         learning_rate=3e-4,
         device="auto"
@@ -38,7 +38,7 @@ class TrainAgentSACService:
                 models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy(), base_dir=self.base_dir)
                 symbols.append(symbol)
 
-            env = TradingEnv(models, symbols)
+            env = TradingEnv(models, symbols, base_dir=self.base_dir)
 
             # --- Uruchomienie agenta SAC ---
             torch.set_num_threads(16)

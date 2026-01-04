@@ -110,31 +110,31 @@ class DecisionEngine:
                 reason = "rl_signal_buy"
 
             # Jeśli Agent podjął decyzję inną niż HOLD, dodajemy do listy
-            if action != "hold":
-                candidates.append({
-                    "symbol": symbol,
-                    "action": action,  # "buy" lub "sell"
-                    "value": value,  # Siła sygnału (np. 0.75)
-                    "fraction": fraction,
-                    "price": prices[symbol],
-                    "timestamp": t,
-                    "reason": reason,
-                    "rl_config": scaled[symbol] if scaled is not None else "Brak" # Ważne dla Wallet do obliczenia mincost
-                })
+
+            candidates.append({
+                "symbol": symbol,
+                "action": action,  # "buy" lub "sell"
+                "value": value,  # Siła sygnału (np. 0.75)
+                "fraction": fraction,
+                "price": prices[symbol],
+                "timestamp": t,
+                "reason": reason,
+                "rl_config": scaled[symbol] if scaled is not None else "Brak" # Ważne dla Wallet do obliczenia mincost
+            })
 
         # KROK 2: Sortowanie strategiczne (Klucz do "Sprzedaj A, by kupić B")
 
         # Rozdzielamy sprzedaże i kupna
         sells = [o for o in candidates if o['action'] == 'sell']
         buys = [o for o in candidates if o['action'] == 'buy']
-
+        holds = [o for o in candidates if o['action'] == 'hold']
         # Sortujemy wewnątrz grup malejąco po pewności (najpierw najpewniejsze ruchy)
         sells.sort(key=lambda x: x['value'], reverse=True)
         buys.sort(key=lambda x: x['value'], reverse=True)
 
         # Sklejamy listę: NAJPIERW SPRZEDAŻE, POTEM KUPNA
         # Dzięki temu Wallet najpierw uwolni USDT, a potem spróbuje je wydać.
-        final_orders = sells + buys
+        final_orders = sells + buys + holds
 
         # KROK 3: Wysłanie posortowanej paczki do portfela
         self.wallet.orders.extend(final_orders)

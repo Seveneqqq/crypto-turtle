@@ -40,6 +40,7 @@ class Wallet:
                     self.hold(order)
                 case "sell":
                     self.sell(order, current_prices[symbol])
+            order.pop("rl_config", None)
             self.logs.append(order)
             self.orders.remove(order)
 

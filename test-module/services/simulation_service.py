@@ -7,9 +7,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from .test.wallet import Wallet, WalletConfig
-from .test.ml_signal import ModelSignal
-from .test.decision import DecisionEngine, DecisionConfig
+from .core_logic.wallet import Wallet, WalletConfig
+from .core_logic.ml_signal import ModelSignal
+from .core_logic.decision import DecisionEngine, DecisionConfig
 from .test.rating import Rating
 from .visualization_service import VisualizationService
 
@@ -96,6 +96,7 @@ class SimulationService:
             self.wallet = Wallet(
                 balance = balance_start,
                 symbols = symbols,
+                core_mode="sim_rl",
                 config  = WalletConfig(
                     wallet_percentage_limit=wallet_percentage_limit,
                     mincost=mincost,
@@ -111,6 +112,7 @@ class SimulationService:
                 rlagent_deterministic=rlagent_deterministic,
                 wallet=self.wallet,
                 base_dir=self.base_dir,
+                core_mode="sim_rl",
                 config= DecisionConfig(
                     threshold_buy=threshold_buy,
                     threshold_sell=threshold_sell,
@@ -125,7 +127,7 @@ class SimulationService:
                 case "ml":
                     model_logs = self.simulation(symbols)
                 case "rl":
-                    agent_logs = self.simulation(symbols, True)
+                    agent_logs = self.simulation(symbols)
                 case "mlrl":
                     model_logs = self.simulation(symbols)
                     wallet2 = Wallet(balance_start, symbols, wallet_config)
@@ -216,7 +218,7 @@ class SimulationService:
             }
 
 
-    def simulation(self, symbols, rlagent = False):
+    def simulation(self, symbols):
 
         crypto_ref_values, initial_prices, portfolio_values, timestamps, logs, holdings = {}, {}, [], [], [], []
         num_ticks = min(
@@ -236,21 +238,16 @@ class SimulationService:
         print("[Simulation][INFO] num_ticks", num_ticks)
 
         for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
-            prob_vec, prices, data_rows = {}, {}, {}
+            prob_vec, prices = {}, {}
             timestamps.append(self.models[symbols[0]].data.iloc[t]["open_time"])
 
             for symbol in symbols:
                 prices[symbol] = self.models[symbol].data.iloc[t]["close"]
-                row = self.models[symbol].data.iloc[t]
-                data_rows[symbol] = row[numeric_cols[symbol]].astype(float).values
                 prob_array = self.models[symbol].predictions[t]
                 prob_row = dict(zip(self.models[symbol].classes, prob_array))
                 prob_vec[symbol] = prob_row
                 crypto_ref_values[symbol].append(self.balance_start * prices[symbol] / initial_prices[symbol])
 
-            if rlagent:
-                self.engine.generate_decisions(prob_vec, symbols, prices, t, data_rows)
-            else:
                 self.engine.generate_decisions(prob_vec, symbols, prices, t)
 
             holdings.append(self.wallet.total_holdings(prices))
@@ -261,8 +258,8 @@ class SimulationService:
 
         self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
 
-        if rlagent: a="agent"
-        else: a="model"
+        a="agent"
+        #else: a="model"
 
 
         self.output[a] = {

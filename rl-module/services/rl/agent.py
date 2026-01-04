@@ -1,18 +1,19 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-from .rl_wallet import Wallet, WalletConfig
-from .rl_decision import DecisionEngine, DecisionConfig
+from ..core_logic.wallet import Wallet, WalletConfig
+from ..core_logic.decision import DecisionEngine, DecisionConfig
 
 class TradingEnv(gym.Env):
-    def __init__(self, models, symbols, initial_balance=1000.0, fee=0.001):
+    def __init__(self, models, symbols,base_dir, initial_balance=1000.0, fee=0.001):
         super().__init__()
         self.models = models
         self.symbols = symbols
         self.data = {}
         self.initial_prices = {}
         self.numeric_columns = {}
-
+        self.core_mode = "rl_train"
+        self.base_dir = base_dir
         for symbol in self.symbols:
             df = models[symbol].data.reset_index(drop=True)
             self.data[symbol] = df
@@ -26,8 +27,8 @@ class TradingEnv(gym.Env):
         self.fee = float(fee)
         self.initial_balance = float(initial_balance)
         self.prev_value = self.initial_balance
-        self.wallet = Wallet(balance=initial_balance, symbols=symbols, config=WalletConfig())
-        self.engine = DecisionEngine(wallet=self.wallet, config=DecisionConfig())
+        self.wallet = Wallet(balance=initial_balance, symbols=symbols,core_mode="rl_train", config=WalletConfig())
+        self.engine = DecisionEngine(wallet=self.wallet, core_mode="rl_train",base_dir=base_dir, config=DecisionConfig())
 
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(6 * len(symbols),), dtype=np.float32)
         obs_len = 1
@@ -43,8 +44,8 @@ class TradingEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.t = 0
-        self.wallet = Wallet(balance=self.initial_balance, symbols=self.symbols, config=WalletConfig())
-        self.engine = DecisionEngine(wallet=self.wallet, config=DecisionConfig())
+        self.wallet = Wallet(balance=self.initial_balance, symbols=self.symbols,core_mode=self.core_mode, config=WalletConfig())
+        self.engine = DecisionEngine(wallet=self.wallet,core_mode=self.core_mode,base_dir=self.base_dir, config=DecisionConfig())
         self.prev_value = self.initial_balance
         return self._get_obs(), {}
 
