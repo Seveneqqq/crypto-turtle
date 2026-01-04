@@ -1,7 +1,7 @@
 import os
 import gzip
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from .test.charts import Charts
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot as plt

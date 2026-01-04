@@ -10,7 +10,7 @@ if __name__ == "__main__":
         data_files={
             "BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv"
         },
-        agent_rl="sac_trading_200000_steps.zip",
+        agent_rl="agent_ppo_2026-01-03_21-44-09.zip",
         balance_start=1000.0,
         add_fee=True,
         sim_mode="rl",
