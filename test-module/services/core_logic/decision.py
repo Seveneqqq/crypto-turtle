@@ -166,11 +166,13 @@ class DecisionEngine:
             scaled_dict[symbol] = scaled[start:end]
         return scaled_dict
 
-    def build_obs(self, symbols,  prob_vec, prices):
 
-        obs_parts = [np.array([float(self.wallet.balance)], dtype=np.float32)]
+    def build_obs(self, symbols, prob_vec, prices):
+
         current_portfolio_value = self.wallet.total_value(prices)
         cash_ratio = self.wallet.balance / current_portfolio_value if current_portfolio_value > 0 else 0.0
+
+        obs_parts = [np.array([float(cash_ratio)], dtype=np.float32)]
 
         for symbol in symbols:
             buy_p = float(prob_vec[symbol].get("buy", 0.0))
@@ -187,17 +189,13 @@ class DecisionEngine:
             if holding_amount > 0 and avg_buy_price > 0:
                 unrealized_pnl_pct = (current_price - avg_buy_price) / avg_buy_price
                 unrealized_pnl_pct = np.clip(unrealized_pnl_pct, -1.0, 1.0)
-            #
-            # Budujemy wektor dla danego symbolu
+
             symbol_obs = np.array([
                 buy_p,
                 hold_p,
                 sell_p,
                 position_ratio,  # Zamiast holding_amount
                 unrealized_pnl_pct,  # Zamiast holding_value
-                # rsi,  # Znormalizowany wskaźnik
-                # log_ret_1m,  # Dynamika ceny
-                # atr_pct  # Zmienność
             ], dtype=np.float32)
 
             obs_parts.append(symbol_obs)

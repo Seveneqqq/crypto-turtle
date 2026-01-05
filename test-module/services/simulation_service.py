@@ -73,9 +73,9 @@ class SimulationService:
             if add_fee: fee = 0.001
             else: fee = 0.0
 
-            if sim_mode in ("mlrl", "rl"):
-                rlagent=True
-            else: rlagent=False
+            if sim_mode == "ml":
+                core_mode="sim_ml"
+            else: core_mode="sim_rl"
 
             # --- Ładowanie danych ---
 
@@ -96,7 +96,7 @@ class SimulationService:
             self.wallet = Wallet(
                 balance = balance_start,
                 symbols = symbols,
-                core_mode="sim_rl",
+                core_mode=core_mode,
                 config  = WalletConfig(
                     wallet_percentage_limit=wallet_percentage_limit,
                     mincost=mincost,
@@ -112,7 +112,7 @@ class SimulationService:
                 rlagent_deterministic=rlagent_deterministic,
                 wallet=self.wallet,
                 base_dir=self.base_dir,
-                core_mode="sim_rl",
+                core_mode=core_mode,
                 config= DecisionConfig(
                     threshold_buy=threshold_buy,
                     threshold_sell=threshold_sell,
@@ -129,12 +129,13 @@ class SimulationService:
                 case "rl":
                     agent_logs = self.simulation(symbols)
                 case "mlrl":
-                    model_logs = self.simulation(symbols)
-                    wallet2 = Wallet(balance_start, symbols, wallet_config)
-                    agent_logs = self.simulation(symbols, wallet2, False)
+                    # model_logs = self.simulation(symbols)
+                    # wallet2 = Wallet(balance_start, symbols, wallet_config)
+                    # agent_logs = self.simulation(symbols, wallet2, False)
+                    pass
 
             # --- Zapis wyników ---
-
+            print(f"[Simulation] Zakończono pętlę w {timedelta(seconds=time.time() - start_time)}")
             self.output["files"] = {
                 "models": model_paths,
                 "agents": agent_rl,
@@ -146,7 +147,7 @@ class SimulationService:
                 "balance_start": balance_start,
                 "add_fee": add_fee,
                 "symbols": symbols,
-                "rlagent": rlagent,
+                "rlagent": core_mode,
                 "rlagent_deterministic": rlagent_deterministic,
                 "slippage": slippage,
                 "wallet_percentage_limit": wallet_percentage_limit,
@@ -221,48 +222,62 @@ class SimulationService:
     def simulation(self, symbols):
 
         crypto_ref_values, initial_prices, portfolio_values, timestamps, logs, holdings = {}, {}, [], [], [], []
+        close_prices, predictions = {}, {}
+        classes = {}
+        open_times = self.models[symbols[0]].data["open_time"].to_numpy()
+
         num_ticks = min(
             min(len(self.models[symbol].data) for symbol in symbols),  # długość danych
             min(len(self.models[symbol].predictions) for symbol in symbols)  # długość predykcji modeli
         )
-        numeric_cols = {}
         for symbol in symbols:
             df = self.models[symbol].data
             if len(df) > num_ticks:
                 self.models[symbol].data = df.iloc[-num_ticks:].reset_index(drop=True)
-            initial_prices[symbol] = self.models[symbol].data.iloc[0]["close"]
-            numeric_cols[symbol] = df.select_dtypes(include=[np.number]).columns.tolist()
-            crypto_ref_values[symbol] = []
+
+            close_prices[symbol] = df["close"].to_numpy()
+            predictions[symbol] = self.models[symbol].predictions
+            classes[symbol] = self.models[symbol].classes
+            initial_prices[symbol] = close_prices[symbol][0]
+
 
 
         print("[Simulation][INFO] num_ticks", num_ticks)
 
         for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
             prob_vec, prices = {}, {}
-            timestamps.append(self.models[symbols[0]].data.iloc[t]["open_time"])
+            timestamps.append(open_times[t])
 
             for symbol in symbols:
-                prices[symbol] = self.models[symbol].data.iloc[t]["close"]
-                prob_array = self.models[symbol].predictions[t]
-                prob_row = dict(zip(self.models[symbol].classes, prob_array))
-                prob_vec[symbol] = prob_row
-                crypto_ref_values[symbol].append(self.balance_start * prices[symbol] / initial_prices[symbol])
+                prices[symbol] = close_prices[symbol][t]
+                prob_array = predictions[symbol][t]
+                prob_vec[symbol] = dict(zip(classes[symbol], prob_array))
 
-                self.engine.generate_decisions(prob_vec, symbols, prices, t)
+            self.engine.generate_decisions(prob_vec, symbols, prices, t)
 
             holdings.append(self.wallet.total_holdings(prices))
             portfolio_values.append(self.wallet.total_value(prices))
+
+        for symbol in symbols:
+            # Mnożenie wektora przez skalar -> super szybkie w numpy
+            price_vector = close_prices[symbol][:num_ticks]
+            ref_vector = (price_vector / initial_prices[symbol]) * self.balance_start
+            crypto_ref_values[symbol] = ref_vector.tolist()
 
         logs = self.wallet.logs
         metrics = self.rating.rate(portfolio_values, len(logs))
 
         self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
 
-        a="agent"
-        #else: a="model"
+        if self.sim_mode == "ml":
+            name = "model"
+        elif self.sim_mode == "rl":
+            name = "agent"
+        else:
+            name = ""
 
 
-        self.output[a] = {
+        self.output[name] = {
             "timestamps": len(timestamps),
             "metrics": metrics,
             "portfolio_values": portfolio_values,

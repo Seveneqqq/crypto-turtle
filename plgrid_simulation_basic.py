@@ -10,11 +10,11 @@ if __name__ == "__main__":
         data_files={
             "BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv"
         },
-        agent_rl="agent_ppo_2026-01-03_21-44-09.zip",
+        agent_rl="agent_ppo_2026-01-05_00-17-31.zip",
         balance_start=1000.0,
         add_fee=True,
         sim_mode="rl",
-        rlagent_deterministic=False,
+        rlagent_deterministic=True,
         slippage=0,
         wallet_percentage_limit=0.9,
         max_wallet_percentage_crypto=1.0,
