@@ -7,6 +7,7 @@ class WalletConfig:
     slippage: int = 0
     stop_loss: float = 0.05
     fee: float = 0.001
+    #fee: float = 0.0
     max_wallet_percentage_crypto: float = 0.5
 
 class Wallet:
@@ -19,6 +20,7 @@ class Wallet:
         self.logs = []
         self.avg_buy_price = {s: 0.0 for s in symbols}  # Zmień nazwę z last_buy_price na avg i logikę
         self.core_mode=core_mode
+        self.transaction_count = 0
 
 
     def execute_orders(self, t, current_prices):
@@ -82,6 +84,7 @@ class Wallet:
             # ---------------------------------------------
             self.holdings[symbol] += qty
             self.balance -= transaction_value
+            self.transaction_count += 1
             order["status"] = "accepted"
             return
 
@@ -103,6 +106,7 @@ class Wallet:
         else:
             self.holdings[order["symbol"]] -= qty
             self.balance += transaction_value
+            self.transaction_count += 1
             order["status"] = "accepted"
             if self.holdings[symbol] <= 1e-9:
                 self.holdings[symbol] = 0.0

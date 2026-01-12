@@ -201,5 +201,6 @@ class DecisionEngine:
             obs_parts.append(symbol_obs)
 
         obs = np.concatenate(obs_parts)
-        obs = np.nan_to_num(obs, nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
+        obs = np.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+        obs = np.clip(obs, -10.0, 10.0)
         return obs

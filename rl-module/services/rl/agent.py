@@ -1,8 +1,8 @@
 import gymnasium as gymnasium
 from gymnasium import spaces
 import numpy as np
-from ..core_logic.wallet import Wallet, WalletConfig
-from ..core_logic.decision import DecisionEngine, DecisionConfig
+from services.core_logic.wallet import Wallet, WalletConfig
+from services.core_logic.decision import DecisionEngine, DecisionConfig
 
 class TradingEnv(gymnasium.Env):
     def __init__(self, models, symbols,base_dir, initial_balance=1000.0):
@@ -22,11 +22,11 @@ class TradingEnv(gymnasium.Env):
             self.prices[symbol] = df["close"].to_numpy()
             self.prev_prices[symbol] = df["close"][self.t]
         self.max_steps = min(len(self.data[s]) for s in self.symbols)
-        self.episode_length = 10000
+        self.episode_length = 1000
 
 
         self.initial_balance = float(initial_balance)
-        self.prev_value = self.initial_balance
+        self.prev_value = 0
         self.wallet = Wallet(balance=initial_balance, symbols=symbols,core_mode="train_rl", config=WalletConfig())
         self.engine = DecisionEngine(wallet=self.wallet, core_mode="train_rl",base_dir=base_dir, config=DecisionConfig())
 
@@ -99,7 +99,6 @@ class TradingEnv(gymnasium.Env):
             end = start + n_params_per_symbol
             scaled_dict[symbol] = scaled[start:end]
 
-        # --- ZMIANA: Zbieranie zwrotów z rynku ---
         market_returns = []
         for symbol in self.symbols:
             prices[symbol] = self.models[symbol].data.iloc[self.t]["close"]
@@ -120,23 +119,25 @@ class TradingEnv(gymnasium.Env):
         # 1. Obliczanie Agent Return
         portfolio_value = self.wallet.total_value(prices)
         prev_value = float(self.prev_value)
-        agent_return = 0.0
-        if prev_value > 1e-6:
-            agent_return = (portfolio_value - prev_value) / prev_value
-
-        # 2. Obliczanie Market Return (średnia rynku)
-        market_return = 0.0
-        if market_returns:
-            market_return = np.mean(market_returns)
-
-        # 3. Reward: Agent Return - Market Return (Alpha)
-        # Mnożymy x100, aby sieć "poczuła" różnicę
-        raw_reward = agent_return - market_return
-        reward = raw_reward * 100.0
-
-        # Clipowanie
-        reward = float(np.clip(reward, -5.0, 5.0))
-
+        #test_reward = portfolio_value - prev_value
+        # agent_return = 0.0
+        # if prev_value > 1e-6:
+        #     agent_return = (portfolio_value - prev_value) / prev_value
+        #
+        # # 2. Obliczanie Market Return (średnia rynku)
+        # market_return = 0.0
+        # if market_returns:
+        #     market_return = np.mean(market_returns)
+        self.trades_count = self.wallet.transaction_count
+        # # 3. Reward: Agent Return - Market Return (Alpha)
+        # # Mnożymy x100, aby sieć "poczuła" różnicę
+        # raw_reward = agent_return - market_return
+        # reward = raw_reward * 1000.0
+        #
+        # # Clipowanie
+        #reward = float(np.clip(test_reward, -10.0, 10.0))
+        reward = np.log(portfolio_value / self.prev_value)
+        reward *= 10.0
         # update prev_value i prev_prices (robimy kopię słownika prices!)
         self.prev_value = portfolio_value
         self.prev_prices = prices.copy()

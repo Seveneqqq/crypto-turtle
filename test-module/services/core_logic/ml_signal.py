@@ -11,7 +11,7 @@ class ModelSignal:
         self.data = data
         self.model_name = model_name
         self.model_path = None
-
+        print(f"\n[Core_Logic] Obliczanie predykcji.")
         match self.check_model_type():
             case "sklearn":
                 self.model = joblib.load(self.model_path)
@@ -30,13 +30,12 @@ class ModelSignal:
 
     def lstm_price_predictor(self):
         preds = self.model.predict_batch(self.data)
-        # Przekształcamy w „probabilities” zgodne z decision engine
         signals = []
         for p in preds:
             current = p["current_price"]
             predicted = p["predicted_price"]
             log_ret = np.log(predicted / current)
-            conf = min(abs(log_ret) * 50, 1.0)  # np. 2% zmiany ≈ 0.02*50 = 1.0
+            conf = min(abs(log_ret) * 50, 1.0)
             if log_ret > 0:
                 signals.append([conf, 1 - conf, 0.0])
             elif log_ret < 0:

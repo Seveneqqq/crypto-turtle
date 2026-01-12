@@ -135,7 +135,8 @@ class SimulationService:
                     pass
 
             # --- Zapis wyników ---
-            print(f"[Simulation] Zakończono pętlę w {timedelta(seconds=time.time() - start_time)}")
+            print(f"[Simulation] Zakończono pętlę symulacyjną w {timedelta(seconds=time.time() - start_time)}")
+            print(f"[Simulation] Zapisywanie do plików")
             self.output["files"] = {
                 "models": model_paths,
                 "agents": agent_rl,
@@ -240,9 +241,7 @@ class SimulationService:
             classes[symbol] = self.models[symbol].classes
             initial_prices[symbol] = close_prices[symbol][0]
 
-
-
-        print("[Simulation][INFO] num_ticks", num_ticks)
+        print("[Simulation] Liczba timestampów: ", num_ticks)
 
         for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
             prob_vec, prices = {}, {}
