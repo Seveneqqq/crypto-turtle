@@ -1,9 +1,14 @@
+import csv
+import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env  # <--- NOWY IMPORT
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from .rl.agent import TradingEnv
 from .core_logic.ml_signal import ModelSignal
+from datetime import timedelta
+from .rl.training_callback import TrainingCallback
+import time
 import os
 import pandas as pd
 from datetime import datetime
@@ -43,6 +48,13 @@ class TrainAgentPPOService:
                 "clip_range": 0.2
             }
             print("train_params:", train_params)
+            start_time = time.time()
+
+            #TODO: poniżej
+
+            episode_timesteps = 10240
+
+
 
             if train_params is None:
                 train_params = {}
@@ -50,19 +62,35 @@ class TrainAgentPPOService:
 
             models = {}
             symbols = []
+            num_ticks = 0
+            print(f"[TrainAgent] Przygotowywanie modeli i danych.")
+            # Dodać sprawdzanie open_time
             for symbol, filename in data_files.items():
                 filepath = os.path.join(self.DATA_DIR, filename)
                 if not os.path.exists(filepath):
                     raise FileNotFoundError(f"Brak pliku: {filepath}")
                 df = pd.read_csv(filepath)
-                models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy(), base_dir=self.base_dir)
+                df.dropna(inplace=True)
+                len_df = len(df)
+                if num_ticks == 0: num_ticks = len_df
+                if len_df < num_ticks: num_ticks = len_df
+
+                # --- Inicjalizacja modeli ---
+                models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy(),
+                                                  base_dir=self.base_dir)
                 symbols.append(symbol)
 
-            num_cpu = multiprocessing.cpu_count()
+                len_pred = len(models[symbol].predictions)
+
+                if len_pred < num_ticks: num_ticks = len_pred
+
+            for symbol in symbols: models[symbol].process_models_data(num_ticks)
+
+            num_cpu = multiprocessing.cpu_count() - 5
             print(f"[TrainAgent] Uruchamianie na {num_cpu} równoległych środowiskach.")
 
             env = make_vec_env(
-                lambda: TradingEnv(models, symbols, base_dir=self.base_dir),
+                lambda: TradingEnv(models, symbols,num_ticks, base_dir=self.base_dir),
                 n_envs=num_cpu,
                 vec_env_cls=SubprocVecEnv,
                 wrapper_class=Monitor
@@ -80,18 +108,18 @@ class TrainAgentPPOService:
 
             # env = TradingEnv(models,symbols=symbols,base_dir=self.base_dir)
 
-            progress_callback = ProgressBarCallback(total_timesteps=total_timesteps, num_cpu=num_cpu)
-            torch.set_num_threads(16)
+            training_callback = TrainingCallback(total_timesteps=total_timesteps, num_cpu=num_cpu, base_dir=self.base_dir, episode_timesteps=episode_timesteps)
+            torch.set_num_threads(11)
 
             agent = PPO("MlpPolicy", env, verbose=1, **train_params)
 
             # Douczanie agenta
             #path = os.path.join(self.AGENT_DIR, "agent_ppo_2026-01-11_23-57-11.zip")
             #agent = PPO.load(path, env=env, custom_objects=train_params, print_system_info=True)
-
+            print(f"[TrainAgent] Rozpoczynanie treningu.")
             agent.learn(
                 total_timesteps=total_timesteps,
-                callback=progress_callback,
+                callback=training_callback,
                 log_interval=10000
             )
 
@@ -102,6 +130,7 @@ class TrainAgentPPOService:
 
             env.close()
             print(f"\n[TrainAgent] Training complete.")
+            print(f"[TrainAgent] Zakończono w {timedelta(seconds=time.time() - start_time)}")
             return {
                 "rabbit_msg_id": rabbitmq_msg_id,
                 "result": "success",
@@ -124,50 +153,3 @@ class TrainAgentPPOService:
             }
 
 
-import sys
-from stable_baselines3.common.callbacks import BaseCallback
-
-
-class ProgressBarCallback(BaseCallback):
-    def __init__(self, total_timesteps, num_cpu):
-        super().__init__()
-        self.total_timesteps = total_timesteps
-        self.progress_bar_length = 40
-        self.last_progress = -1
-        self.num_envs = num_cpu
-
-    def _on_step(self) -> bool:
-        progress = int((self.num_timesteps / self.total_timesteps) * 100000)
-        trades_count = 0
-
-        try:
-            trades_list = self.training_env.get_attr("trades_count")
-            if trades_list:
-                trades_count = sum(trades_list)
-        except Exception:
-            trades_count = "?"
-
-        mean_reward = 0.0
-        last_batch_avg = 0.0
-        if self.model and hasattr(self.model, "ep_info_buffer") and self.model.ep_info_buffer:
-            all_rewards = [ep_info["r"] for ep_info in self.model.ep_info_buffer]
-
-            if all_rewards:
-                mean_reward = sum(all_rewards) / len(all_rewards)
-
-            last_n_rewards = all_rewards[-self.num_envs:]
-
-            if last_n_rewards:
-                last_batch_avg = sum(last_n_rewards) / len(last_n_rewards)
-
-        if progress != self.last_progress:
-            bar_filled = int(self.progress_bar_length * progress / 100000)
-            bar = '#' * bar_filled + '-' * (self.progress_bar_length - bar_filled)
-
-            sys.stdout.write(
-                f"\rTraining PPO ({self.num_envs} envs): [{bar}] {progress / 1000}% | Mean Reward: {mean_reward:.4f} | Mean Reward Last Episodes: {last_batch_avg:.4f} | Total Trades: {trades_count}"
-            )
-            sys.stdout.flush()
-            self.last_progress = progress
-
-        return True

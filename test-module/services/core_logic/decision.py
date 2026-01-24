@@ -2,7 +2,7 @@ import os
 import numpy as np
 from dataclasses import dataclass
 from stable_baselines3 import PPO, SAC
-
+from .structures import Order
 
 @dataclass
 class DecisionConfig:
@@ -13,16 +13,18 @@ class DecisionConfig:
     clamp_model_value: bool = True
 
 class DecisionEngine:
-    def __init__(self, wallet, base_dir, core_mode, rlagent_deterministic=None, agent_name=None, config: DecisionConfig = DecisionConfig()):
+    def __init__(self, wallet, base_dir, core_mode = "sim_ml", rlagent_deterministic=None, agent_name=None, config: DecisionConfig = DecisionConfig()):
         self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "agents")
         self.agent_name = agent_name
         self.agent_path = ""
         self.config = config
         self.core_mode = core_mode
         self.wallet = wallet
+        self.symbols = self.wallet.symbols
         self.rlagent_deterministic = rlagent_deterministic
         self.agent = None
-
+        self.BUY_IDX = 0  # np. pobrane z class_map
+        self.SELL_IDX = 2
         if self.agent_name:
             agent_type = self.check_agent_type()
             match agent_type:
@@ -33,6 +35,8 @@ class DecisionEngine:
                 case _:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
 
+    def reset(self):
+        self.config = DecisionConfig()
 
     def _normalize_model_value(self, mv):
         if mv is None:
@@ -57,85 +61,79 @@ class DecisionEngine:
 
     def rl_config(self, scaled):
 
-        thr_low, thr_high = 0.1, 0.9
+        thr_low, thr_high = 0.45, 0.65
         threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
         threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
 
-        tx_min, tx_max = 0.001, 1.0
-        tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
+        # tx_min, tx_max = 0.01, 1.0
+        # tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
+        #
+        # tx_min2, tx_max2 = 0.45, 1.0
+        # tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
 
-        tx_min2, tx_max2 = 0.001, 1.0
-        tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
-        self.config.threshold_buy = float(threshold_buy)
-        self.config.threshold_sell = float(threshold_sell)
-        self.config.tx_fraction = float(tx_fraction)
-        self.config.max_fraction_when_confident = float(tx_max_fraction)
+        self.config.threshold_buy = float(round(threshold_buy,2))
+        self.config.threshold_sell = float(round(threshold_sell,2))
+        # self.config.tx_fraction = float(round(tx_fraction,2))
+        # self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
 
-    def generate_decisions(self, prob_vec, symbols, prices, t, scaled = None):
+    def generate_decisions(self, prob_vec, prices, t, volatility=None, scaled = None):
 
         candidates = []
 
         if self.core_mode == "sim_rl":
-            scaled = self.get_obs(symbols, prob_vec, prices)
+            scaled = self.get_obs(prob_vec, prices, volatility)
 
 
-        for symbol in symbols:
+        for symbol in self.symbols:
             # Pobieramy prawdopodobieństwa z modelu ML
-            probs = prob_vec[symbol]
-            buy_prob = float(probs.get("buy", 0.0))
-            sell_prob = float(probs.get("sell", 0.0))
+            probs = prob_vec[symbol]  # To teraz jest wiersz numpy array, np. [0.1, 0.8, 0.1]
+            buy_prob = probs[self.BUY_IDX]
+            sell_prob = probs[self.SELL_IDX]
 
             if self.core_mode in ("train_rl", "sim_rl"):
                 self.rl_config(scaled[symbol])
 
-            # Domyślny stan
-            action = "hold"
-            value = 0.0
-            fraction = 0.0
-            reason = "hold"
-
+            buy_diff_prob = buy_prob - self.config.threshold_buy
+            sell_diff_prob = sell_prob - self.config.threshold_sell
             # Logika "Gatekeeper" - Agent RL decyduje, czy sygnał jest dość silny
-            # Sprawdzamy SELL
-            if sell_prob > self.config.threshold_sell:
+
+            if sell_diff_prob >= buy_diff_prob and sell_prob >= self.config.threshold_sell:
                 action = "sell"
                 value = sell_prob
                 fraction = self.calculate_fraction(value, self.config.threshold_sell)
-                reason = "rl_signal_sell"
-
-            # Sprawdzamy BUY (tylko jeśli nie sprzedajemy)
-            elif buy_prob > self.config.threshold_buy:
+            elif buy_diff_prob > sell_diff_prob and buy_prob >= self.config.threshold_buy:
                 action = "buy"
                 value = buy_prob
                 fraction = self.calculate_fraction(value, self.config.threshold_buy)
-                reason = "rl_signal_buy"
+            else:
+                action = "hold"
+                value = 0.0
+                fraction = 0.0
 
-            # Jeśli Agent podjął decyzję inną niż HOLD, dodajemy do listy
+            order = Order(
+                timestamp=t,
+                symbol=symbol,
+                action=action,
+                value=value,
+                fraction=fraction,
+                price=prices[symbol],
+                rl_config=scaled[symbol] if scaled is not None else "Brak"
+            )
+            if order.action == "hold": order.rejected("lower_than_thresholds")
 
-            candidates.append({
-                "symbol": symbol,
-                "action": action,  # "buy" lub "sell"
-                "value": value,  # Siła sygnału (np. 0.75)
-                "fraction": fraction,
-                "price": prices[symbol],
-                "timestamp": t,
-                "reason": reason,
-                "rl_config": scaled[symbol] if scaled is not None else "Brak" # Ważne dla Wallet do obliczenia mincost
-            })
+            candidates.append(order)
 
-        # KROK 2: Sortowanie strategiczne (Klucz do "Sprzedaj A, by kupić B")
 
-        # Rozdzielamy sprzedaże i kupna
-        sells = [o for o in candidates if o['action'] == 'sell']
-        buys = [o for o in candidates if o['action'] == 'buy']
-        holds = [o for o in candidates if o['action'] == 'hold']
+        sells = [o for o in candidates if o.action == 'sell']
+        buys = [o for o in candidates if o.action == 'buy']
+        holds = [o for o in candidates if o.action == 'hold']
+
         # Sortujemy wewnątrz grup malejąco po pewności (najpierw najpewniejsze ruchy)
-        sells.sort(key=lambda x: x['value'], reverse=True)
-        buys.sort(key=lambda x: x['value'], reverse=True)
+        sells.sort(key=lambda x: x.value, reverse=True)
+        buys.sort(key=lambda x: x.value, reverse=True)
 
-        # Sklejamy listę: NAJPIERW SPRZEDAŻE, POTEM KUPNA
-        # Dzięki temu Wallet najpierw uwolni USDT, a potem spróbuje je wydać.
-        final_orders = sells + buys + holds
-
+        final_orders = sells + buys
+        self.wallet.logs.extend(holds)
         # KROK 3: Wysłanie posortowanej paczki do portfela
         self.wallet.orders.extend(final_orders)
         self.wallet.execute_orders(t, prices)
@@ -152,32 +150,34 @@ class DecisionEngine:
         # frac mincost, qty
         return round(frac,4)
 
-    def get_obs(self, symbols, prob_vec, prices):
+    def get_obs(self, prob_vec, prices, volatility):
         scaled_dict = {}
-        obs = self.build_obs(symbols, prob_vec, prices)
+
+        obs = self.build_obs(prob_vec, prices, volatility)
         action, _ = self.agent.predict(obs, deterministic=self.rlagent_deterministic)
         action = np.asarray(action, dtype=np.float32).flatten()
         scaled = (action + 1.0) / 2.0
         #print(scaled)
-        n_params_per_symbol = 6
-        for i, symbol in enumerate(symbols):
+        n_params_per_symbol = 2
+        for i, symbol in enumerate(self.symbols):
             start = i * n_params_per_symbol
             end = start + n_params_per_symbol
             scaled_dict[symbol] = scaled[start:end]
         return scaled_dict
 
 
-    def build_obs(self, symbols, prob_vec, prices):
+    def build_obs(self, prob_vec, prices, volatility):
 
         current_portfolio_value = self.wallet.total_value(prices)
         cash_ratio = self.wallet.balance / current_portfolio_value if current_portfolio_value > 0 else 0.0
 
         obs_parts = [np.array([float(cash_ratio)], dtype=np.float32)]
 
-        for symbol in symbols:
-            buy_p = float(prob_vec[symbol].get("buy", 0.0))
-            sell_p = float(prob_vec[symbol].get("sell", 0.0))
-            hold_p = float(prob_vec[symbol].get("hold", 0.0))
+        for symbol in self.symbols:
+
+            buy_p = prob_vec[symbol][self.BUY_IDX]
+            sell_p = prob_vec[symbol][self.SELL_IDX]
+            #hold_p = float(prob_vec[symbol].get("hold", 0.0))
 
             holding_amount = float(self.wallet.holdings.get(symbol, 0.0))
             current_price = float(prices[symbol])
@@ -188,12 +188,13 @@ class DecisionEngine:
 
             if holding_amount > 0 and avg_buy_price > 0:
                 unrealized_pnl_pct = (current_price - avg_buy_price) / avg_buy_price
-                unrealized_pnl_pct = np.clip(unrealized_pnl_pct, -1.0, 1.0)
+                #unrealized_pnl_pct = np.clip(unrealized_pnl_pct, -1.0, 1.0)
 
             symbol_obs = np.array([
                 buy_p,
-                hold_p,
+                #hold_p,
                 sell_p,
+                volatility[symbol],
                 position_ratio,  # Zamiast holding_amount
                 unrealized_pnl_pct,  # Zamiast holding_value
             ], dtype=np.float32)
@@ -202,5 +203,5 @@ class DecisionEngine:
 
         obs = np.concatenate(obs_parts)
         obs = np.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
-        obs = np.clip(obs, -10.0, 10.0)
+        obs = np.clip(obs, -1.0, 1.0)
         return obs
