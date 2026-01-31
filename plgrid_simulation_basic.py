@@ -12,7 +12,7 @@ if __name__ == "__main__":
             #"BTC": "processed_ROBUST_set4_BTCUSDT_1s_2m_2026-01-11_9d42fe9e-b4ad-413f-ad84-aaaaaf53705c.csv"
             #"BTC": "processed_ROBUST_set4_BTCUSDT-agent_1m_5m_2025-10-11_2d07d1b6-baf3-4ed8-bdc0-390156e92dc6.csv"
         },
-        agent_rl="agent_ppo_2026-01-23_20-26-02.zip",
+        agent_rl="agent_ppo_2026-01-30_20-58-56.zip",
         balance_start=1000.0,
         add_fee=True,
         sim_mode="rl",

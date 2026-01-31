@@ -10,12 +10,12 @@ if __name__ == "__main__":
         data_files={
 			"BTC": "processed_ROBUST_set4_BTCUSDT-agent_1m_5m_2025-10-11_2d07d1b6-baf3-4ed8-bdc0-390156e92dc6.csv"
 		},
-        total_timesteps=5000000,
-        learning_rate=0.005,
+        total_timesteps=10000000,
+        learning_rate=0.00001,
         n_steps=2048,
         batch_size=512,
         gamma=0.999,
-        ent_coef=0.05
+        ent_coef=0.001
     )
 
 

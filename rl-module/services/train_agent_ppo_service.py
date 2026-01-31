@@ -1,5 +1,3 @@
-import csv
-import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env  # <--- NOWY IMPORT
@@ -8,6 +6,7 @@ from .rl.agent import TradingEnv
 from .core_logic.ml_signal import ModelSignal
 from datetime import timedelta
 from .rl.training_callback import TrainingCallback
+from .core_logic.structures import CoreConfig
 import time
 import os
 import pandas as pd
@@ -89,8 +88,13 @@ class TrainAgentPPOService:
             num_cpu = multiprocessing.cpu_count() - 5
             print(f"[TrainAgent] Uruchamianie na {num_cpu} równoległych środowiskach.")
 
+            core_config = CoreConfig(
+                balance_start= 1000.0,
+                symbols=symbols,
+            )
+
             env = make_vec_env(
-                lambda: TradingEnv(models, symbols,num_ticks, base_dir=self.base_dir),
+                lambda: TradingEnv(models, num_ticks, core_config=core_config, base_dir=self.base_dir),
                 n_envs=num_cpu,
                 vec_env_cls=SubprocVecEnv,
                 wrapper_class=Monitor
@@ -99,8 +103,8 @@ class TrainAgentPPOService:
                 env,
                 norm_obs=True,
                 norm_reward=True,
-                clip_obs=10.,
-                clip_reward=10.,
+                clip_obs=5.,
+                clip_reward=5.,
                 gamma=gamma
             )
 
@@ -110,7 +114,10 @@ class TrainAgentPPOService:
 
             training_callback = TrainingCallback(total_timesteps=total_timesteps, num_cpu=num_cpu, base_dir=self.base_dir, episode_timesteps=episode_timesteps)
             torch.set_num_threads(11)
-
+            policy_kwargs = dict(
+                activation_fn=torch.nn.ReLU,  # Zmiana z Tanh na ReLU (często stabilniejsze)
+                net_arch=[dict(pi=[64, 64], vf=[64, 64])]  # Mniejsza sieć (domyślnie jest 64,64 ale warto sprawdzić)
+            )
             agent = PPO("MlpPolicy", env, verbose=1, **train_params)
 
             # Douczanie agenta
@@ -129,8 +136,9 @@ class TrainAgentPPOService:
             agent.save(path)
 
             env.close()
-            print(f"\n[TrainAgent] Training complete.")
+
             print(f"[TrainAgent] Zakończono w {timedelta(seconds=time.time() - start_time)}")
+            print(f"\n[TrainAgent] Training complete.")
             return {
                 "rabbit_msg_id": rabbitmq_msg_id,
                 "result": "success",

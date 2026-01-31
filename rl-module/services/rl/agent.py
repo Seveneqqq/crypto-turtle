@@ -1,161 +1,192 @@
 import gymnasium as gymnasium
 from gymnasium import spaces
 import numpy as np
-from ..core_logic.wallet import Wallet, WalletConfig
-from ..core_logic.decision import DecisionEngine, DecisionConfig
+from ..core_logic.decision import DecisionEngine
+from ..core_logic.structures import PreviousEpoch,  CoreConfig
 
 
 class TradingEnv(gymnasium.Env):
-    def __init__(self, models, symbols, num_ticks, base_dir, initial_balance=1000.0):
+    def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None):
         super().__init__()
         self.models = models
-        self.symbols = symbols
-        self.trades_count = 0
+        self.symbols = core_config.symbols
         self.core_mode = "train_rl"
         self.base_dir = base_dir
         self.t = 0
+        self.end_step = 0
+
+        self.prev_epoch = PreviousEpoch()
 
         self.max_steps = num_ticks
         self.episode_length = 10240
-        self.current_probs = {}
+
         self.current_prices = {}
-
-        self.initial_balance = float(initial_balance)
+        self.prev_prices = {}
+        self.initial_balance = core_config.balance_start
         self.prev_value = 0
-        self.wallet = Wallet(balance=self.initial_balance, symbols=self.symbols, core_mode=self.core_mode,
-                             config=WalletConfig())
-        self.engine = DecisionEngine(wallet=self.wallet, core_mode=self.core_mode, base_dir=self.base_dir,
-                                     config=DecisionConfig())
+        self.current_value = 0
 
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2 * len(symbols),), dtype=np.float32)
-        obs_len = 1 + (5 * len(self.symbols))
+        # Callback Counters
 
+        self.last_reward = 0
+        self.rewards = []
+        self.epoch_counter = 0
+
+        self.engine = DecisionEngine(core_mode=self.core_mode,models=self.models, base_dir=self.base_dir,
+                                     core_config=core_config)
+
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2 * len(self.symbols),), dtype=np.float32)
+
+        obs_len = 1 + (9 * len(self.symbols))
         low = np.full(obs_len, -np.inf, dtype=np.float32)
         high = np.full(obs_len, np.inf, dtype=np.float32)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
         self.reset()
 
+    def prepare_callback(self):
+        if self.engine.wallet.transaction_count > 0:
+            self.prev_epoch.buys = self.engine.wallet.buys_count
+            self.prev_epoch.sells = self.engine.wallet.sells_count
+            self.prev_epoch.transactions = self.engine.wallet.transaction_count
+            self.prev_epoch.portfolio_values = self.engine.wallet.portfolio_values_history
+            self.prev_epoch.rewards = self.rewards
+            self.prev_epoch.calculate_history()
+            self.epoch_counter += 1
+            self.prev_epoch.epoch = self.epoch_counter
+
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        # --- ZMIANA: Losowy start (Random Slicing) ---
-        # Obliczamy maksymalny możliwy indeks startowy
-        max_start_index = self.max_steps - self.episode_length - 1
+        # -----------New epoch
 
+        max_start_index = self.max_steps - self.episode_length - 1
         if max_start_index > 0:
             self.t = np.random.randint(0, max_start_index)
         else:
             self.t = 0
 
-        # Ustalamy, kiedy ten konkretny epizod ma się skończyć
         self.end_step = self.t + self.episode_length
-        # ---------------------------------------------
-        self.current_probs = {}
-        self.current_prices = {}
 
-        self.wallet.reset(self.initial_balance)
-        self.engine.reset()
-
+        # ------------Reset Env
         self.prev_value = self.initial_balance
-        self.trades_count = 0
-        # Inicjalizacja cen dla wylosowanego momentu t
+        self.current_value = self.initial_balance
 
+
+        self.current_prices = {}
+        self.prev_prices = {}
+
+        self.prepare_callback()
+        self.engine.wallet.reset(self.initial_balance)
+        self.engine.reset()
+        self.last_reward = 0
+        self.rewards = []
 
         return self._get_obs(), {}
 
 
     def _get_obs(self):
-        volatility = {}
-        for symbol in self.symbols:
-            self.current_probs[symbol] = self.models[symbol].dict_probs[self.t]
-            self.current_prices[symbol] = self.models[symbol].close_prices[self.t]
-            volatility[symbol] = self.models[symbol].volatility[self.t]
-
-
-        obs = self.engine.build_obs(self.current_probs, self.current_prices, volatility)
+        obs = self.engine.build_obs(self.t)
         return obs
 
-    def calculate_reward(self):
-        # 1. Obliczanie Agent Return
-        portfolio_value = self.wallet.total_value(self.current_prices)
-        prev_value = float(self.prev_value)
-        # test_reward = portfolio_value - prev_value
-        # agent_return = 0.0
-        # if prev_value > 1e-6:
-        #     agent_return = (portfolio_value - prev_value) / prev_value
-        #
-        # # 2. Obliczanie Market Return (średnia rynku)
-        # market_return = 0.0
-        # if market_returns:
-        #     market_return = np.mean(market_returns)
-        self.trades_count = self.wallet.transaction_count
-        # # 3. Reward: Agent Return - Market Return (Alpha)
-        # # Mnożymy x100, aby sieć "poczuła" różnicę
-        # raw_reward = agent_return - market_return
-        # reward = raw_reward * 1000.0
-        #
-        # # Clipowanie
-        # reward = float(np.clip(test_reward, -10.0, 10.0))
-        # reward = np.log(portfolio_value / self.prev_value)
-        # reward *= 10.0
-        # reward = round(reward,4)
-        step_return = 0.0
+
+
+    #TODO: Pobieranie danych w jednym miejscu
+    def prepare_data(self):
+
+        self.prev_prices = self.current_prices
+
+        for symbol in self.symbols:
+
+            self.current_prices[symbol] = self.models[symbol].close_prices[self.t]
+
+        self.current_value = self.engine.wallet.total_value(self.current_prices)
+
+
+
+    def _calculate_reward(self):
+        """
+        Oblicza nagrodę na podstawie Alpha (Agent Return --- Market Return)
+        oraz karze za obsunięcia kapitału (Sortino-like).
+        """
+        # 1. Agent Return (Log Return)
+        agent_return = 0.0
+
         if self.prev_value > 0:
-            step_return = np.log(portfolio_value / self.prev_value)
-
-        # 2. Skalowanie (Scaling)
-        # Log return dla 1 minuty to np. 0.0001. Sieć woli liczby bliższe 1.0.
-        # Mnożymy przez 100 (lub 1000), żeby sygnał był wyraźny.
-        scaled_return = step_return * 100.0
-
-        # 3. Asymetria (Loss Aversion)
-        # Jeśli tracimy, mnożymy karę x1.5. Agent ma bać się strat bardziej niż pożądać zysków.
-        if scaled_return < 0:
-            scaled_return *= 1.0  # .5 !!!!
-        reward = scaled_return
-        reward = np.clip(reward, -1, 1)
-        # update prev_value i prev_prices (robimy kopię słownika prices!)
-        self.prev_value = portfolio_value
+            agent_return = np.log(self.current_value / self.prev_value)
 
 
-        return reward
+
+        # 2. Market Return (Benchmark - średnia log returnów coinów)
+        market_returns = []
+        for symbol in self.symbols:
+            p_curr = self.current_prices[symbol]
+            p_prev = self.prev_prices.get(symbol, p_curr)
+            if p_prev > 1e-9:
+                market_returns.append(np.log(p_curr / p_prev))
+
+        market_return = np.mean(market_returns) if market_returns else 0.0
+
+        # 3. Alpha
+        alpha = agent_return - market_return
+
+        # 4. Skalowanie
+        reward = alpha * 10.0
+        if agent_return < 0:
+            reward += (agent_return * 10.0)
+
+        # 5. Kary (Asymetria)
+        #Kara za stratę absolutną (Loss Aversion) - agent ma unikać strat bardziej niż szukać zysku
+        if market_return > 0.005 and abs(agent_return) < 0.0001:
+            reward -= 0.1
+
+        # 6. Clipping (żeby gradient nie wybuchł)
+        # reward = np.clip(reward, -10.0, 10.0)
+
+        return agent_return#, info
+
     def step(self, action):
+
         action = np.asarray(action, dtype=np.float32).flatten()
-
-        # skalowanie [-1,1] -> [0,1]
         scaled = (action + 1.0) / 2.0
-
         # mapowanie na słownik
         scaled_dict= {}
         n_params = 6
         for i, symbol in enumerate(self.symbols):
             idx = i * n_params
             scaled_dict[symbol] = scaled[idx: idx + n_params]
-        market_returns = []
-        # for symbol in self.symbols:
-        #     # Obliczanie zmiany ceny dla konkretnego symbolu
-        #     prev_p = self.prev_prices[symbol]
-        #     curr_p = prices[symbol]
-        #     if prev_p > 1e-6:
-        #         # Wzór: (Nowa - Stara) / Stara
-        #         ret = (curr_p - prev_p) / prev_p
-        #         market_returns.append(ret)
 
-        self.engine.generate_decisions(self.current_probs, self.current_prices, self.t, scaled=scaled_dict)
-        self.wallet.update_history(self.current_prices)
 
-        reward = self.calculate_reward()
-
-        cum_reward = self.wallet.last_reward + reward
-        self.wallet.rewards.append(round(cum_reward,4))
-        self.wallet.last_reward = cum_reward
-        # postęp czasu
+        self.engine.generate_decisions(self.t, scaled=scaled_dict)
+        self.engine.wallet.update_history()
         self.t += 1
-        symbol = self.symbols[0]
+        # Pobranie NOWYCH danych rynkowych (dla t+1)
+
+        self.prepare_data()
+
+        # 5. OBLICZENIE NAGRODY (Wydzielona funkcja)
+        reward = self._calculate_reward()
+
+        self.prev_value = self.current_value
+        #--------------Portfolio previous-----------------
+
+        self.engine.wallet.portfolio_values_history.append(self.current_value)
+
+
+        #--------------Rewardy previous-------------------
+
+        cum_reward = self.last_reward + reward
+        self.rewards.append(round(cum_reward, 4))
+        self.last_reward = cum_reward
+
+        # postęp czasu
+
+
         terminated = (self.t >= self.end_step) or (self.t >= self.max_steps - 1)
         truncated = False
         obs = self._get_obs() if not terminated else np.zeros(self.observation_space.shape, dtype=np.float32)
+        observation = obs.copy()
         info = {}
         # for symbol in self.symbols:
         #     info[f"{symbol}_portfolio_value"] = float(portfolio_value)
@@ -166,4 +197,5 @@ class TradingEnv(gymnasium.Env):
         #     info[f"{symbol}_mincost"] = float(scaled_dict[symbol][4])
         #     info[f"{symbol}_max_wallet_percentage_crypto"] = float(scaled_dict[symbol][5])
 
-        return obs, reward, terminated, truncated, info
+        return observation, reward, terminated, truncated, info
+

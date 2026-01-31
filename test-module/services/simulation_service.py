@@ -4,15 +4,13 @@ import gzip
 import time
 import sys
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from .core_logic.wallet import Wallet, WalletConfig
 from .core_logic.ml_signal import ModelSignal
-from .core_logic.decision import DecisionEngine, DecisionConfig
+from .core_logic.decision import DecisionEngine
 from .test.rating import Rating
 from .visualization_service import VisualizationService
-from .core_logic.structures import Order
+from .core_logic.structures import CoreConfig
 
 
 class SimulationService:
@@ -25,14 +23,10 @@ class SimulationService:
         self.OUTPUT_DIR = os.path.join(base_dir, "shared", "simulation", "outputs")
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
         self.rating = Rating()
-        self.symbols = []
+        self.core_config = CoreConfig()
         self.num_ticks = 0
-
-        self.sim_mode = "ml"
-        self.balance_start = 0.0
         self.models = {}
         self.engine = None
-        self.wallet = None
         self.output = {}
 
 
@@ -60,7 +54,7 @@ class SimulationService:
         results=True
     ):
         try:
-            self.output, self.engine, self.wallet, self.models, self.symbols = {}, None, None, {}, []
+            self.output, self.engine, self.models, symbols = {}, None, {}, []
 
             if sim_mode not in ("ml","mlrl", "rl"):
                 raise ValueError ("[SIMULATION ERROR] Invalid simulation mode")
@@ -68,12 +62,8 @@ class SimulationService:
                 raise ValueError ("[SIMULATION ERROR] mlrl is disabled for now")
             print("[Simulation] Start")
             start_time = time.time()
-
             data_files = data_files or {}
             model_paths = model_paths or {}
-
-            if add_fee: fee = 0.001
-            else: fee = 0.0
 
             # --- Ładowanie danych ---
 
@@ -90,44 +80,40 @@ class SimulationService:
 
                 # --- Inicjalizacja modeli ---
                 self.models[symbol] = ModelSignal(model_name=model_paths[symbol], data=df.copy(),base_dir=self.base_dir)
-                self.symbols.append(symbol)
+                symbols.append(symbol)
 
                 len_pred = len(self.models[symbol].predictions)
 
                 if len_pred < self.num_ticks: self.num_ticks = len_pred
 
-            for symbol in self.symbols: self.models[symbol].process_models_data(self.num_ticks)
+            for symbol in symbols: self.models[symbol].process_models_data(self.num_ticks)
 
-
-            self.sim_mode = sim_mode
-            self.balance_start = balance_start
+            self.core_config = CoreConfig(
+                sim_mode=sim_mode,
+                balance_start=balance_start,
+                add_fee=add_fee,
+                symbols=symbols,
+                rlagent=sim_mode,
+                rlagent_deterministic=rlagent_deterministic,
+                slippage=slippage,
+                wallet_percentage_limit=wallet_percentage_limit,
+                max_wallet_percentage_crypto=max_wallet_percentage_crypto,
+                stop_loss=stop_loss,
+                threshold_buy=threshold_buy,
+                threshold_sell=threshold_sell,
+                mincost=mincost,
+                tx_fraction=tx_fraction,
+                max_fraction_when_confident=max_fraction_when_confident
+            )
 
             # --- Inicjalizacja Portfela i Decision Engine---
 
-            self.wallet = Wallet(
-                balance = balance_start,
-                symbols = self.symbols,
-                config  = WalletConfig(
-                    wallet_percentage_limit=wallet_percentage_limit,
-                    mincost=mincost,
-                    slippage=slippage,
-                    stop_loss=stop_loss,
-                    fee=fee,
-                    max_wallet_percentage_crypto=max_wallet_percentage_crypto
-                )
-            )
-
             self.engine = DecisionEngine(
                 agent_name=agent_rl,
-                rlagent_deterministic=rlagent_deterministic,
-                wallet=self.wallet,
+                models=self.models,
                 base_dir=self.base_dir,
-                config= DecisionConfig(
-                    threshold_buy=threshold_buy,
-                    threshold_sell=threshold_sell,
-                    tx_fraction=tx_fraction,
-                    max_fraction_when_confident=max_fraction_when_confident
-                )
+                core_mode= "sim_ml",
+                core_config= self.core_config
             )
 
             # --- Symulacja ---
@@ -151,23 +137,8 @@ class SimulationService:
                 "data": data_files
             }
 
-            self.output["config"] = {
-                "sim_mode": sim_mode,
-                "balance_start": balance_start,
-                "add_fee": add_fee,
-                "symbols": self.symbols,
-                "rlagent": sim_mode,
-                "rlagent_deterministic": rlagent_deterministic,
-                "slippage": slippage,
-                "wallet_percentage_limit": wallet_percentage_limit,
-                "max_wallet_percentage_crypto": max_wallet_percentage_crypto,
-                "stop_loss": stop_loss,
-                "threshold_buy": threshold_buy,
-                "threshold_sell": threshold_sell,
-                "mincost": mincost,
-                "tx_fraction": tx_fraction,
-                "max_fraction_when_confident": max_fraction_when_confident,
-            }
+            self.output["config"] = self.core_config.to_dict()
+
             #TODO: mode simulation
             sim_mode = "agent"
             gzip_name, sim_path, gzip_path = self.build_filename()
@@ -214,41 +185,34 @@ class SimulationService:
         print("[Simulation] Liczba timestampów: ", self.num_ticks)
 
         for t in tqdm(range(self.num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
-            prob_vec, prices = {}, {}
-            volatility = {}
-            for symbol in self.symbols:
-                prices[symbol] = self.models[symbol].close_prices[t]
-                # prob_vec[symbol] = self.models[symbol].dict_probs[t]
-                prob_vec[symbol] = self.models[symbol].predictions[t]
-                volatility[symbol] = self.models[symbol].volatility[t]
-            self.engine.generate_decisions(prob_vec, prices, t, volatility)
-            self.wallet.update_history(prices)
+            self.engine.generate_decisions(t)
+            self.engine.wallet.update_history()
 
         crypto_ref_values = {}
 
-        for symbol in self.symbols:
+        for symbol in self.core_config.symbols:
             # Mnożenie wektora przez skalar -> super szybkie w numpy
-            ref_vector = (self.models[symbol].close_prices / self.models[symbol].close_prices[0]) * self.balance_start
+            ref_vector = (self.models[symbol].close_prices / self.models[symbol].close_prices[0]) * self.core_config.balance_start
             crypto_ref_values[symbol] = ref_vector.tolist()
 
-        metrics = self.rating.rate(self.wallet.portfolio_values_history, self.wallet.transaction_count)
+        metrics = self.rating.rate(self.engine.wallet.portfolio_values_history, self.engine.wallet.transaction_count)
 
-        serializable_logs = [order.to_dict() for order in self.wallet.logs]
-        self.wallet.logs = serializable_logs
+        serializable_logs = [order.to_dict() for order in self.engine.wallet.logs]
+        self.engine.wallet.logs = serializable_logs
         self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
 
         self.output[mode] = {
             "timestamps": self.num_ticks,
             "metrics": metrics,
-            "portfolio_values": self.wallet.portfolio_values_history,
-            "holdings": self.wallet.portfolio_holdings_history
+            "portfolio_values": self.engine.wallet.portfolio_values_history,
+            "holdings": self.engine.wallet.portfolio_holdings_history
         }
         return
 
     def save_logs(self, mode, sim_path):
         log_path = os.path.join(sim_path, f"{mode}_transaction_logs.txt")
         with open(log_path, "w", encoding="utf-8") as f:
-            for line in self.wallet.logs:
+            for line in self.engine.wallet.logs:
                 f.write(json.dumps(line) + "\n")
 
 
@@ -274,7 +238,7 @@ class SimulationService:
                 continue
 
         next_version = max(version_numbers, default=0) + 1
-        s_p = f"sim_{date_str}_v{next_version}_{self.sim_mode}"
+        s_p = f"sim_{date_str}_v{next_version}_{self.core_config.sim_mode}"
         g_n = f"{s_p}.json.gz"
         sim_path = os.path.join(self.SIM_DIR, s_p)
         gzip_path = os.path.join(self.OUTPUT_DIR, g_n)

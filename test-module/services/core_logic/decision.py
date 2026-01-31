@@ -1,27 +1,27 @@
 import os
 import numpy as np
-from dataclasses import dataclass
 from stable_baselines3 import PPO, SAC
-from .structures import Order
-
-@dataclass
-class DecisionConfig:
-    threshold_buy: float = 0.6
-    threshold_sell: float = 0.6
-    tx_fraction: float = 0.1
-    max_fraction_when_confident: float = 0.5
-    clamp_model_value: bool = True
+from .structures import Order, DecisionConfig, CoreConfig
+from .wallet import Wallet
 
 class DecisionEngine:
-    def __init__(self, wallet, base_dir, core_mode = "sim_ml", rlagent_deterministic=None, agent_name=None, config: DecisionConfig = DecisionConfig()):
+    def __init__(self, base_dir, core_mode = "sim_ml", models=None, agent_name=None, core_config: CoreConfig = None):
         self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "agents")
         self.agent_name = agent_name
         self.agent_path = ""
-        self.config = config
         self.core_mode = core_mode
-        self.wallet = wallet
-        self.symbols = self.wallet.symbols
-        self.rlagent_deterministic = rlagent_deterministic
+        self.config = DecisionConfig()
+        if core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
+
+        self.models = models
+
+        self.current_prices = {}
+        self.current_probs = {}
+
+        self.wallet = Wallet(self.core_mode, core_config)
+
+        self.symbols = core_config.symbols
+        self.rlagent_deterministic = core_config.rlagent_deterministic
         self.agent = None
         self.BUY_IDX = 0  # np. pobrane z class_map
         self.SELL_IDX = 2
@@ -61,7 +61,7 @@ class DecisionEngine:
 
     def rl_config(self, scaled):
 
-        thr_low, thr_high = 0.45, 0.65
+        thr_low, thr_high = 0.25, 0.85
         threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
         threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
 
@@ -76,17 +76,21 @@ class DecisionEngine:
         # self.config.tx_fraction = float(round(tx_fraction,2))
         # self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
 
-    def generate_decisions(self, prob_vec, prices, t, volatility=None, scaled = None):
+    def t_data(self, t):
+        for symbol in self.symbols:
+            self.current_probs[symbol] = self.models[symbol].predictions[t]
+            self.current_prices[symbol] = self.models[symbol].close_prices[t]
+        pass
 
+    def generate_decisions(self, t, scaled = None):
         candidates = []
-
+        self.t_data(t)
         if self.core_mode == "sim_rl":
-            scaled = self.get_obs(prob_vec, prices, volatility)
-
+            scaled = self.get_obs(t)
 
         for symbol in self.symbols:
             # Pobieramy prawdopodobieństwa z modelu ML
-            probs = prob_vec[symbol]  # To teraz jest wiersz numpy array, np. [0.1, 0.8, 0.1]
+            probs = self.current_probs[symbol]
             buy_prob = probs[self.BUY_IDX]
             sell_prob = probs[self.SELL_IDX]
 
@@ -95,7 +99,6 @@ class DecisionEngine:
 
             buy_diff_prob = buy_prob - self.config.threshold_buy
             sell_diff_prob = sell_prob - self.config.threshold_sell
-            # Logika "Gatekeeper" - Agent RL decyduje, czy sygnał jest dość silny
 
             if sell_diff_prob >= buy_diff_prob and sell_prob >= self.config.threshold_sell:
                 action = "sell"
@@ -116,48 +119,46 @@ class DecisionEngine:
                 action=action,
                 value=value,
                 fraction=fraction,
-                price=prices[symbol],
+                price=self.current_prices[symbol],
                 rl_config=scaled[symbol] if scaled is not None else "Brak"
             )
-            if order.action == "hold": order.rejected("lower_than_thresholds")
-
+            if order.action == "hold":
+                order.rejected("lower_than_thresholds")
+                self.wallet.transaction_count +=1
             candidates.append(order)
 
-
         sells = [o for o in candidates if o.action == 'sell']
-        buys = [o for o in candidates if o.action == 'buy']
+        buys =  [o for o in candidates if o.action == 'buy']
         holds = [o for o in candidates if o.action == 'hold']
 
         # Sortujemy wewnątrz grup malejąco po pewności (najpierw najpewniejsze ruchy)
         sells.sort(key=lambda x: x.value, reverse=True)
         buys.sort(key=lambda x: x.value, reverse=True)
 
-        final_orders = sells + buys
+        final_orders = sells + buys + holds
         self.wallet.logs.extend(holds)
-        # KROK 3: Wysłanie posortowanej paczki do portfela
         self.wallet.orders.extend(final_orders)
-        self.wallet.execute_orders(t, prices)
+        self.wallet.execute_orders(t, self.current_prices)
 
     def calculate_fraction(self, model_value, threshold):
         denom = max(1.0 - threshold, 1e-12)
 
         norm_signal = max(0.0, min(1.0, (model_value - threshold) / denom))
 
-        frac = self.config.tx_fraction + norm_signal * (
-                    self.config.max_fraction_when_confident - self.config.tx_fraction)
+        frac = self.config.tx_fraction + norm_signal * (self.config.max_fraction_when_confident - self.config.tx_fraction)
 
         frac = max(0.0, min(1.0, frac))
+
         # frac mincost, qty
         return round(frac,4)
 
-    def get_obs(self, prob_vec, prices, volatility):
+    def get_obs(self, t):
         scaled_dict = {}
 
-        obs = self.build_obs(prob_vec, prices, volatility)
+        obs = self.build_obs(t)
         action, _ = self.agent.predict(obs, deterministic=self.rlagent_deterministic)
         action = np.asarray(action, dtype=np.float32).flatten()
         scaled = (action + 1.0) / 2.0
-        #print(scaled)
         n_params_per_symbol = 2
         for i, symbol in enumerate(self.symbols):
             start = i * n_params_per_symbol
@@ -166,21 +167,21 @@ class DecisionEngine:
         return scaled_dict
 
 
-    def build_obs(self, prob_vec, prices, volatility):
-
-        current_portfolio_value = self.wallet.total_value(prices)
+    def build_obs(self, t):
+        self.t_data(t)
+        current_portfolio_value = self.wallet.total_value(self.current_prices)
         cash_ratio = self.wallet.balance / current_portfolio_value if current_portfolio_value > 0 else 0.0
 
         obs_parts = [np.array([float(cash_ratio)], dtype=np.float32)]
 
         for symbol in self.symbols:
 
-            buy_p = prob_vec[symbol][self.BUY_IDX]
-            sell_p = prob_vec[symbol][self.SELL_IDX]
+            buy_p = round(self.current_probs[symbol][self.BUY_IDX],4)
+            sell_p = round(self.current_probs[symbol][self.SELL_IDX],4)
             #hold_p = float(prob_vec[symbol].get("hold", 0.0))
 
             holding_amount = float(self.wallet.holdings.get(symbol, 0.0))
-            current_price = float(prices[symbol])
+            current_price = float(self.current_prices[symbol])
             holding_value = holding_amount * current_price
             position_ratio = holding_value / current_portfolio_value if current_portfolio_value > 0 else 0.0
             avg_buy_price = self.wallet.avg_buy_price.get(symbol,0.0)  # Musisz to obsłużyć w Wallet (średnia cena zakupu)
@@ -189,19 +190,24 @@ class DecisionEngine:
             if holding_amount > 0 and avg_buy_price > 0:
                 unrealized_pnl_pct = (current_price - avg_buy_price) / avg_buy_price
                 #unrealized_pnl_pct = np.clip(unrealized_pnl_pct, -1.0, 1.0)
-
+            np.set_printoptions(suppress=True, precision=4)
             symbol_obs = np.array([
                 buy_p,
                 #hold_p,
                 sell_p,
-                volatility[symbol],
+                self.models[symbol].open[t],
+                self.models[symbol].close[t],
+                self.models[symbol].high[t],
+                self.models[symbol].low[t],
+                self.models[symbol].volatility[t],
                 position_ratio,  # Zamiast holding_amount
                 unrealized_pnl_pct,  # Zamiast holding_value
             ], dtype=np.float32)
-
             obs_parts.append(symbol_obs)
-
+            #print(symbol_obs)
         obs = np.concatenate(obs_parts)
+
         obs = np.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
-        obs = np.clip(obs, -1.0, 1.0)
+        obs = np.clip(obs, -5.0, 5.0)
+        x:int = 4
         return obs

@@ -1,6 +1,9 @@
 import joblib
 import numpy as np
 import os
+
+from sklearn.preprocessing import StandardScaler
+
 #from .standalone_model import ModelPredictor
 from .model_package import ModelPredictor
 
@@ -13,6 +16,15 @@ class ModelSignal:
         self.close_prices = []
         self.open_times   = []
         self.volatility = []
+
+        self.open = []
+        self.high = []
+        self.low = []
+        self.close = []
+
+
+
+
         self.model_name = model_name
         self.model_path : str
         print(f"[Core_Logic] Obliczanie predykcji.")
@@ -36,6 +48,14 @@ class ModelSignal:
         self.open_times = self.data["open_time"].to_numpy()
         self.close_prices = self.data["close"].to_numpy()
 
+        #TODO: range dzielenia per symbol
+        self.close = self.data["close"].to_numpy() / 100000
+        self.high = self.data["high"].to_numpy()   / 100000
+        self.low = self.data["low"].to_numpy()     / 100000
+        self.open = self.data["open"].to_numpy()   / 100000
+
+
+
         previous_close = self.data['close'].shift(1)
         true_range_pct = np.maximum(
             (self.data['high'] - self.data['low']) / self.data['close'],
@@ -54,12 +74,6 @@ class ModelSignal:
         x = self.data[features].values
         probs = self.model.predict_proba(x)
         classes = [str(c) for c in self.model.classes_]
-
-        # dict_probs = [
-        #     dict(zip(classes, row)) for row in probs
-        # ]
-        #
-        # return dict_probs, probs, classes
         class_map = {label: idx for idx, label in enumerate(classes)}
         return probs, class_map
 

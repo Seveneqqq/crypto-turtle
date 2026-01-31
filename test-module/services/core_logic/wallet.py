@@ -1,46 +1,29 @@
-from dataclasses import dataclass
-from .structures import Order
-
-@dataclass
-class WalletConfig:
-    wallet_percentage_limit: float = 0.9
-    mincost: float = 1.0
-    slippage: int = 0
-    stop_loss: float = 0.05
-    fee: float = 0.001
-    #fee: float = 0.0
-    max_wallet_percentage_crypto: float = 1.0
+from .structures import WalletConfig, CoreConfig
 
 class Wallet:
-    def __init__(self, balance, symbols, core_mode = "sim_ml", config: WalletConfig = WalletConfig()):
-        self.balance = float(balance)
-        self.holdings = {s: 0.0 for s in symbols}
-        self.last_buy_price = {s: 0.0 for s in symbols}
-        self.symbols = symbols
+    def __init__(self, core_mode = "sim_ml", core_config: CoreConfig = None):
+        self.balance = core_config.balance_start
+        self.symbols = core_config.symbols
+        self.core_mode = core_mode
+        self.config = WalletConfig()
+        if self.core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
 
-        self.config = config
+        self.holdings = {s: 0.0 for s in self.symbols}
+        self.last_buy_price = {s: 0.0 for s in self.symbols}
+        self.avg_buy_price = {s: 0.0 for s in self.symbols}
+
+        self.transaction_count = 0
         self.orders = []
         self.logs = []
-        self.avg_buy_price = {s: 0.0 for s in symbols}  # Zmień nazwę z last_buy_price na avg i logikę
-        self.core_mode = core_mode
-        self.transaction_count = 0
-        self.last_reward = 0.0
+        self.current_prices_wallet = {}
+
         self.portfolio_values_history = []
         self.portfolio_holdings_history = []
-        self.rewards = []
 
-        # Counters
-        self.last_epoch_buys = 0
-        self.last_epoch_sells = 0
-        self.last_epoch_holds = 0
-        self.actual_portfolio_value = 0
+        # Callback Counters
+        self.buys_count = 0
+        self.sells_count = 0
         self.transaction_count = 0
-
-
-        self.last_reward = 0.0
-        self.last_epoch_portfolio_values = []
-        self.last_epoch_rewards = []
-
 
 
     def reset(self, balance):
@@ -48,61 +31,44 @@ class Wallet:
         Resetuje stan portfela do wartości początkowych,
         ponownie wykorzystując istniejące obiekty w pamięci.
         """
-        # 1. Reset prostych typów (float/int) - to jest tanie
+
         self.balance = float(balance)
+
         self.transaction_count = 0
-        self.actual_portfolio_value = 0
-        self.last_epoch_rewards = self.rewards[::50]
-        self.rewards.clear()
+        self.buys_count = 0
+        self.sells_count = 0
+
         self.config = WalletConfig()
-        self.last_epoch_portfolio_values = self.portfolio_values_history[::50]
+        self.current_prices_wallet.clear()
         self.portfolio_values_history.clear()
-
-
-        buys = sum(1 for log in self.logs if log.get('action') == 'buy')
-
-        # Zliczanie SELL
-        sells = sum(1 for log in self.logs if log.get('action') == 'sell')
-
-        # Zliczanie HOLD
-        holds = sum(1 for log in self.logs if log.get('action') == 'hold')
-        self.last_epoch_buys = buys
-        self.last_epoch_sells = sells
-        self.last_epoch_holds = holds
-
-
         self.portfolio_holdings_history.clear()
         self.orders.clear()
         self.logs.clear()
-        self.last_reward = 0.0
+
         for symbol in self.holdings:
             self.holdings[symbol] = 0.0
             self.last_buy_price[symbol] = 0.0
             self.avg_buy_price[symbol] = 0.0
 
-    def update_history(self, prices):
-        total_value = self.total_value(prices)
+    def update_history(self):
+        """ Przygotowuje logi dla symulacji """
+        total_value = self.total_value(self.current_prices_wallet)
         self.portfolio_values_history.append(round(total_value,1))
-        self.portfolio_holdings_history.append(self.total_holdings(prices))
-        self.actual_portfolio_value = total_value
-
+        self.portfolio_holdings_history.append(self.total_holdings(self.current_prices_wallet))
 
     def execute_orders(self, t, current_prices):
+        self.current_prices_wallet = current_prices
+
 
         new_orders = [o for o in self.orders if o.timestamp == t]
         if not new_orders:
             pass
         else:
             for order in new_orders:
-                if self.core_mode in ("rl_train", "sim_rl"):
-                    scaled_dict = order.rl_config
-                    self.rl_config(scaled_dict)
-                else:
-                    pass
+                if self.core_mode in ("rl_train", "sim_rl"): self.rl_config(order.rl_config)
 
                 if order.action == "buy":  self.calculate_quantity_buy(order, current_prices)
                 if order.action == "sell": self.calculate_quantity_sell(order)
-
 
         current_orders = [o for o in self.orders if o.timestamp == t - self.config.slippage]
         if not current_orders:
@@ -158,6 +124,7 @@ class Wallet:
             self.holdings[symbol] += qty
             self.balance -= transaction_value
             self.transaction_count += 1
+            self.buys_count +=1
             order.status = "accepted"
             return
 
@@ -176,6 +143,7 @@ class Wallet:
             self.holdings[order.symbol] -= order.qty
             self.balance += transaction_value
             self.transaction_count += 1
+            self.sells_count += 1
             order.status = "accepted"
             if self.holdings[symbol] <= 1e-9:
                 self.holdings[symbol] = 0.0
@@ -237,7 +205,7 @@ class Wallet:
         total = self.balance
         for s, p in prices.items():
             total += self.holdings.get(s, 0.0) * p
-        self.actual_portfolio_value = total
+        #self.actual_portfolio_value = total
         return total
 
     def total_holding_value(self, symbol, prices):
