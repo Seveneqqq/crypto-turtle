@@ -2,6 +2,9 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env  # <--- NOWY IMPORT
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
+from stable_baselines3.common.callbacks import EvalCallback
+from sympy.core.evalf import evalf_symbol
+
 from .rl.agent import TradingEnv
 from .core_logic.ml_signal import ModelSignal
 from datetime import timedelta
@@ -19,6 +22,7 @@ class TrainAgentPPOService:
         if base_dir is None: base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.base_dir = base_dir
         self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_rlagent_data")
+        self.SIMDATA_DIR = os.path.join(base_dir, "shared", "files", "processed_simulation_data")
         self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
         os.makedirs(self.AGENT_DIR, exist_ok=True)
 
@@ -94,7 +98,7 @@ class TrainAgentPPOService:
             )
 
             env = make_vec_env(
-                lambda: TradingEnv(models, num_ticks, core_config=core_config, base_dir=self.base_dir),
+                lambda: TradingEnv(models, num_ticks, core_config=core_config, base_dir=self.base_dir,episode_timesteps=episode_timesteps),
                 n_envs=num_cpu,
                 vec_env_cls=SubprocVecEnv,
                 wrapper_class=Monitor
@@ -107,9 +111,57 @@ class TrainAgentPPOService:
                 clip_reward=5.,
                 gamma=gamma
             )
+            eval_files ={
+                "BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv"
+            }
+            eval_models ={}
+            eval_symbols = []
+            eval_num_ticks = 0
+            for symbol, filename in eval_files.items():
+                filepath = os.path.join(self.SIMDATA_DIR, filename)
+                if not os.path.exists(filepath):
+                    raise FileNotFoundError(f"Brak pliku: {filepath}")
+                df = pd.read_csv(filepath)
+                df.dropna(inplace=True)
+                len_df = len(df)
+                if eval_num_ticks == 0: eval_num_ticks = len_df
+                if len_df < eval_num_ticks: eval_num_ticks = len_df
+
+                # --- Inicjalizacja modeli ---
+                eval_models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy(),
+                                                  base_dir=self.base_dir)
+                eval_symbols.append(symbol)
+
+                len_pred = len(eval_models[symbol].predictions)
+
+                if len_pred < eval_num_ticks: eval_num_ticks = len_pred
+
+            for symbol in eval_symbols: eval_models[symbol].process_models_data(eval_num_ticks)
+
+
+
+
+
+
 
             # Jeden proces
-
+            # eval_env = make_vec_env(
+            #     lambda: TradingEnv(eval_models, eval_num_ticks, core_config=core_config, base_dir=self.base_dir,episode_timesteps=num_ticks),
+            #     n_envs=num_cpu,
+            #     vec_env_cls=SubprocVecEnv,
+            #     wrapper_class=Monitor
+            # )
+            # eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=False, training=False)
+            # eval_env.obs_rms = env.obs_rms
+            # eval_callback = EvalCallback(
+            #     eval_env,
+            #     best_model_save_path=os.path.join(self.AGENT_DIR, "best_model"),
+            #     log_path=os.path.join(self.AGENT_DIR, "eval_logs"),
+            #     eval_freq=100000,  # Co ile kroków sprawdzać?
+            #     deterministic=True,
+            #     render=False,
+            #     n_eval_episodes=1  # Jeden pełny epizod wystarczy
+            # )
             # env = TradingEnv(models,symbols=symbols,base_dir=self.base_dir)
 
             training_callback = TrainingCallback(total_timesteps=total_timesteps, num_cpu=num_cpu, base_dir=self.base_dir, episode_timesteps=episode_timesteps)
@@ -126,7 +178,7 @@ class TrainAgentPPOService:
             print(f"[TrainAgent] Rozpoczynanie treningu.")
             agent.learn(
                 total_timesteps=total_timesteps,
-                callback=training_callback,
+                callback=training_callback, #, eval_callback]
                 log_interval=10000
             )
 

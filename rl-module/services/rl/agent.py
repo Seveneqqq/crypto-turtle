@@ -4,40 +4,32 @@ import numpy as np
 from ..core_logic.decision import DecisionEngine
 from ..core_logic.structures import PreviousEpoch,  CoreConfig
 
-
 class TradingEnv(gymnasium.Env):
-    def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None):
+    def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None, episode_timesteps = 10240):
         super().__init__()
-        self.models = models
+
         self.symbols = core_config.symbols
         self.core_mode = "train_rl"
         self.base_dir = base_dir
+
+        # Iteration and callback config
         self.t = 0
         self.end_step = 0
-
-        self.prev_epoch = PreviousEpoch()
-
         self.max_steps = num_ticks
-        self.episode_length = 10240
-
-        self.current_prices = {}
-        self.prev_prices = {}
-        self.initial_balance = core_config.balance_start
-        self.prev_value = 0
-        self.current_value = 0
-
-        # Callback Counters
-
-        self.last_reward = 0
-        self.rewards = []
+        self.episode_length = episode_timesteps
         self.epoch_counter = 0
 
-        self.engine = DecisionEngine(core_mode=self.core_mode,models=self.models, base_dir=self.base_dir,
+        self.prev_epoch = PreviousEpoch()
+        self.last_reward = 0
+        self.rewards = []
+        self.initial_balance = core_config.balance_start
+
+        self.engine = DecisionEngine(core_mode=self.core_mode,models=models, base_dir=self.base_dir,
                                      core_config=core_config)
 
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2 * len(self.symbols),), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(4 * len(self.symbols),), dtype=np.float32)
 
-        obs_len = 1 + (9 * len(self.symbols))
+        obs_len = 1 + (5 * len(self.symbols))
         low = np.full(obs_len, -np.inf, dtype=np.float32)
         high = np.full(obs_len, np.inf, dtype=np.float32)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
@@ -59,8 +51,6 @@ class TradingEnv(gymnasium.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        # -----------New epoch
-
         max_start_index = self.max_steps - self.episode_length - 1
         if max_start_index > 0:
             self.t = np.random.randint(0, max_start_index)
@@ -70,82 +60,82 @@ class TradingEnv(gymnasium.Env):
         self.end_step = self.t + self.episode_length
 
         # ------------Reset Env
-        self.prev_value = self.initial_balance
-        self.current_value = self.initial_balance
-
-
-        self.current_prices = {}
-        self.prev_prices = {}
 
         self.prepare_callback()
         self.engine.wallet.reset(self.initial_balance)
         self.engine.reset()
         self.last_reward = 0
         self.rewards = []
-
+        self.engine.t_data(self.t)
         return self._get_obs(), {}
-
 
     def _get_obs(self):
         obs = self.engine.build_obs(self.t)
         return obs
-
-
-
-    #TODO: Pobieranie danych w jednym miejscu
-    def prepare_data(self):
-
-        self.prev_prices = self.current_prices
-
-        for symbol in self.symbols:
-
-            self.current_prices[symbol] = self.models[symbol].close_prices[self.t]
-
-        self.current_value = self.engine.wallet.total_value(self.current_prices)
-
-
 
     def _calculate_reward(self):
         """
         Oblicza nagrodę na podstawie Alpha (Agent Return --- Market Return)
         oraz karze za obsunięcia kapitału (Sortino-like).
         """
-        # 1. Agent Return (Log Return)
-        agent_return = 0.0
+        # 1. Logarytmiczna stopa zwrotu PORTFELA (nie ceny)
+        # Jeśli portfel wzrósł z 1000$ na 1010$, to świetnie.
+        portfolio_return = 0.0
+        if self.engine.prev_value > 0:
+            portfolio_return = np.log(self.engine.current_value / self.engine.prev_value)
 
-        if self.prev_value > 0:
-            agent_return = np.log(self.current_value / self.prev_value)
+            # 2. Skalowanie (żeby liczby nie były rzędu 0.00001)
+            # Mnożymy razy 100, żeby procenty były jednościami
+        reward = portfolio_return * 100.0
+        # if self.prev_value == self.current_value:
+        #     reward -= 0.01
+        # if self.prev_value < self.current_value:
+        #     reward += 0.05
+        # 3. Kara za drawdown (obsunięcie)
+        # Jeśli tracimy, kara jest podwójna. To uczy agenta ostrożności.
+        if reward < 0:
+            reward *= 1.2  # Pain is stronger than pleasure
 
+        # 4. (Opcjonalnie) Mała kara za każdą transakcję (wymusza jakość, nie ilość)
+        # Wymaga dostępu do licznika transakcji w tym kroku
+        # if self.engine.wallet.transactions_in_this_step > 0:
+        #     reward -= 0.05
+        # if self.current_value > 1000.0:
+        #     reward += (self.current_value -1000) / 10000
 
+        return reward
 
-        # 2. Market Return (Benchmark - średnia log returnów coinów)
-        market_returns = []
+    def _calculate_reward2(self):
+        # --- Agent's actual return ---
+        portfolio_return = 0.0
+        if self.engine.prev_value > 0:
+            portfolio_return = np.log(self.engine.current_value / self.engine.prev_value)
+
+        # --- Benchmark: equal-weight buy & hold ---
+        # (oblicz raz przy resecie, cached)
+        benchmark_return = 0.0
+        n = len(self.symbols)
         for symbol in self.symbols:
-            p_curr = self.current_prices[symbol]
-            p_prev = self.prev_prices.get(symbol, p_curr)
-            if p_prev > 1e-9:
-                market_returns.append(np.log(p_curr / p_prev))
+            prices = self.engine.models[symbol].close_prices
+            if self.t > 0 and prices[self.t - 1] > 0:
+                benchmark_return += np.log(prices[self.t] / prices[self.t - 1]) / n
 
-        market_return = np.mean(market_returns) if market_returns else 0.0
+        # --- Alpha: ile lepiej od rynku? ---
+        alpha = (portfolio_return - benchmark_return) * 100.0
 
-        # 3. Alpha
-        alpha = agent_return - market_return
+        # Kara za drawdown tylko na alpha, nie na rynek
+        if alpha < 0:
+            alpha *= 1.5
 
-        # 4. Skalowanie
-        reward = alpha * 10.0
-        if agent_return < 0:
-            reward += (agent_return * 10.0)
+        # Mała kara za transakcję (wymusza jakość sygnałów)
+        # Sprawdź ile orderów zostało accepted w tym stepie
+        accepted_this_step = sum(
+            1 for o in self.engine.wallet.logs
+            if o.timestamp == self.t - 1 and o.status == "accepted"
+        )
+        transaction_penalty = accepted_this_step * 0.02
 
-        # 5. Kary (Asymetria)
-        #Kara za stratę absolutną (Loss Aversion) - agent ma unikać strat bardziej niż szukać zysku
-        if market_return > 0.005 and abs(agent_return) < 0.0001:
-            reward -= 0.1
-
-        # 6. Clipping (żeby gradient nie wybuchł)
-        # reward = np.clip(reward, -10.0, 10.0)
-
-        return agent_return#, info
-
+        return alpha - transaction_penalty
     def step(self, action):
 
         action = np.asarray(action, dtype=np.float32).flatten()
@@ -159,29 +149,19 @@ class TradingEnv(gymnasium.Env):
 
 
         self.engine.generate_decisions(self.t, scaled=scaled_dict)
-        self.engine.wallet.update_history()
         self.t += 1
         # Pobranie NOWYCH danych rynkowych (dla t+1)
 
-        self.prepare_data()
+        self.engine.t_data(self.t)
 
         # 5. OBLICZENIE NAGRODY (Wydzielona funkcja)
-        reward = self._calculate_reward()
+        reward = self._calculate_reward2()
 
-        self.prev_value = self.current_value
-        #--------------Portfolio previous-----------------
-
-        self.engine.wallet.portfolio_values_history.append(self.current_value)
-
-
-        #--------------Rewardy previous-------------------
+        self.engine.wallet.portfolio_values_history.append(self.engine.current_value)
 
         cum_reward = self.last_reward + reward
         self.rewards.append(round(cum_reward, 4))
         self.last_reward = cum_reward
-
-        # postęp czasu
-
 
         terminated = (self.t >= self.end_step) or (self.t >= self.max_steps - 1)
         truncated = False

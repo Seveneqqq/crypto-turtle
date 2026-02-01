@@ -49,10 +49,10 @@ class ModelSignal:
         self.close_prices = self.data["close"].to_numpy()
 
         #TODO: range dzielenia per symbol
-        self.close = self.data["close"].to_numpy() / 100000
-        self.high = self.data["high"].to_numpy()   / 100000
-        self.low = self.data["low"].to_numpy()     / 100000
-        self.open = self.data["open"].to_numpy()   / 100000
+        self.close = self.data["close"].to_numpy()
+        self.high = self.data["high"].to_numpy()
+        self.low = self.data["low"].to_numpy()
+        self.open = self.data["open"].to_numpy()
 
 
 

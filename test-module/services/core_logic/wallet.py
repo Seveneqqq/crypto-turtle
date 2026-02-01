@@ -59,7 +59,6 @@ class Wallet:
     def execute_orders(self, t, current_prices):
         self.current_prices_wallet = current_prices
 
-
         new_orders = [o for o in self.orders if o.timestamp == t]
         if not new_orders:
             pass
@@ -80,6 +79,7 @@ class Wallet:
             else:
                 if order.action == "buy":  self.buy(order)
                 if order.action == "sell": self.sell(order)
+            self.transaction_count += 1
             self.logs.append(order)
             self.orders.remove(order)
 
@@ -123,7 +123,6 @@ class Wallet:
             # ---------------------------------------------
             self.holdings[symbol] += qty
             self.balance -= transaction_value
-            self.transaction_count += 1
             self.buys_count +=1
             order.status = "accepted"
             return
@@ -142,7 +141,6 @@ class Wallet:
             transaction_value = usd_value * (1 - self.config.fee)
             self.holdings[order.symbol] -= order.qty
             self.balance += transaction_value
-            self.transaction_count += 1
             self.sells_count += 1
             order.status = "accepted"
             if self.holdings[symbol] <= 1e-9:

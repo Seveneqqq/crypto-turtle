@@ -131,8 +131,8 @@ class WalletConfig:
     slippage: int = 0
     stop_loss: float = 0.05
     fee: float = 0.001
-    #fee: float = 0.0
     max_wallet_percentage_crypto: float = 1.0
+
     def set(self, output_config: CoreConfig):
         self.wallet_percentage_limit = output_config.wallet_percentage_limit
         self.mincost = output_config.mincost

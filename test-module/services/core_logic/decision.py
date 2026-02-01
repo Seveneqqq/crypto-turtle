@@ -10,6 +10,7 @@ class DecisionEngine:
         self.agent_name = agent_name
         self.agent_path = ""
         self.core_mode = core_mode
+        self.core_config = core_config
         self.config = DecisionConfig()
         if core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
 
@@ -17,6 +18,8 @@ class DecisionEngine:
 
         self.current_prices = {}
         self.current_probs = {}
+        self.current_value = 0
+        self.prev_value = 0
 
         self.wallet = Wallet(self.core_mode, core_config)
 
@@ -37,6 +40,8 @@ class DecisionEngine:
 
     def reset(self):
         self.config = DecisionConfig()
+        self.prev_value = self.core_config.balance_start
+        self.current_value = self.core_config.balance_start
 
     def _normalize_model_value(self, mv):
         if mv is None:
@@ -65,26 +70,32 @@ class DecisionEngine:
         threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
         threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
 
-        # tx_min, tx_max = 0.01, 1.0
-        # tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
-        #
-        # tx_min2, tx_max2 = 0.45, 1.0
-        # tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
+        tx_min, tx_max = 0.01, 1.0
+        tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
+
+        tx_min2, tx_max2 = 0.45, 1.0
+        tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
 
         self.config.threshold_buy = float(round(threshold_buy,2))
         self.config.threshold_sell = float(round(threshold_sell,2))
-        # self.config.tx_fraction = float(round(tx_fraction,2))
-        # self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
+        self.config.tx_fraction = float(round(tx_fraction,2))
+        self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
 
     def t_data(self, t):
         for symbol in self.symbols:
             self.current_probs[symbol] = self.models[symbol].predictions[t]
             self.current_prices[symbol] = self.models[symbol].close_prices[t]
+
+        self.prev_value = self.current_value
+        self.current_value = self.wallet.total_value(self.current_prices)
         pass
 
     def generate_decisions(self, t, scaled = None):
+        if self.core_mode in ("sim_rl","sim_ml"):
+            self.t_data(t)
+
         candidates = []
-        self.t_data(t)
+
         if self.core_mode == "sim_rl":
             scaled = self.get_obs(t)
 
@@ -124,7 +135,6 @@ class DecisionEngine:
             )
             if order.action == "hold":
                 order.rejected("lower_than_thresholds")
-                self.wallet.transaction_count +=1
             candidates.append(order)
 
         sells = [o for o in candidates if o.action == 'sell']
@@ -136,7 +146,6 @@ class DecisionEngine:
         buys.sort(key=lambda x: x.value, reverse=True)
 
         final_orders = sells + buys + holds
-        self.wallet.logs.extend(holds)
         self.wallet.orders.extend(final_orders)
         self.wallet.execute_orders(t, self.current_prices)
 
@@ -166,48 +175,55 @@ class DecisionEngine:
             scaled_dict[symbol] = scaled[start:end]
         return scaled_dict
 
-
     def build_obs(self, t):
         self.t_data(t)
+
+        # 1. Globalne portfolio (bez zmian, jest OK)
         current_portfolio_value = self.wallet.total_value(self.current_prices)
         cash_ratio = self.wallet.balance / current_portfolio_value if current_portfolio_value > 0 else 0.0
-
         obs_parts = [np.array([float(cash_ratio)], dtype=np.float32)]
 
         for symbol in self.symbols:
+            # A. Pewność modelu ML (Entropy)
+            # To kluczowe dla Gatekeepera! Jeśli model ML waha się (0.4 buy, 0.4 sell),
+            # to entropia jest wysoka -> RL powinien podnieść progi (nie handlować).
+            probs = self.current_probs[symbol]
+            buy_p = probs[self.BUY_IDX]
+            sell_p = probs[self.SELL_IDX]
 
-            buy_p = round(self.current_probs[symbol][self.BUY_IDX],4)
-            sell_p = round(self.current_probs[symbol][self.SELL_IDX],4)
-            #hold_p = float(prob_vec[symbol].get("hold", 0.0))
+            # B. Zmienność rynku (Log Returns + Volatility)
+            # Zamiast różnicy cen, weź logarytmiczną stopę zwrotu (znormalizowaną)
+            price_t = self.models[symbol].close[t]
+            price_t_minus_1 = self.models[symbol].close[t - 1] if t > 0 else price_t
 
+            # Log return: niezależny od rzędu wielkości (działa tak samo dla BTC i SHIB)
+            log_ret = np.log(price_t / price_t_minus_1) if price_t_minus_1 > 0 else 0.0
+
+            # "Skalowanie" dla sieci neuronowej (log returny są małe, np. 0.001, mnożymy x100)
+            market_momentum = log_ret * 100.0
+
+            # C. Pozycja i PnL (bez zmian, jest OK)
             holding_amount = float(self.wallet.holdings.get(symbol, 0.0))
-            current_price = float(self.current_prices[symbol])
-            holding_value = holding_amount * current_price
+            holding_value = holding_amount * float(self.current_prices[symbol])
             position_ratio = holding_value / current_portfolio_value if current_portfolio_value > 0 else 0.0
-            avg_buy_price = self.wallet.avg_buy_price.get(symbol,0.0)  # Musisz to obsłużyć w Wallet (średnia cena zakupu)
-            unrealized_pnl_pct = 0.0
 
+            # Zamiast surowego PnL, który może być > 1000%, spłaszczamy go funkcją tanh
+            avg_buy_price = self.wallet.avg_buy_price.get(symbol, 0.0)
+            unrealized_pnl = 0.0
             if holding_amount > 0 and avg_buy_price > 0:
-                unrealized_pnl_pct = (current_price - avg_buy_price) / avg_buy_price
-                #unrealized_pnl_pct = np.clip(unrealized_pnl_pct, -1.0, 1.0)
-            np.set_printoptions(suppress=True, precision=4)
-            symbol_obs = np.array([
-                buy_p,
-                #hold_p,
-                sell_p,
-                self.models[symbol].open[t],
-                self.models[symbol].close[t],
-                self.models[symbol].high[t],
-                self.models[symbol].low[t],
-                self.models[symbol].volatility[t],
-                position_ratio,  # Zamiast holding_amount
-                unrealized_pnl_pct,  # Zamiast holding_value
-            ], dtype=np.float32)
-            obs_parts.append(symbol_obs)
-            #print(symbol_obs)
-        obs = np.concatenate(obs_parts)
+                raw_pnl = (self.current_prices[symbol] - avg_buy_price) / avg_buy_price
+                unrealized_pnl = np.tanh(raw_pnl)  # Zawsze w zakresie [-1, 1]
 
-        obs = np.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
-        obs = np.clip(obs, -5.0, 5.0)
-        x:int = 4
-        return obs
+            symbol_obs = np.array([
+                buy_p,  # Co mówi ML?
+                sell_p,  # Co mówi ML?
+                market_momentum,  # Czy rynek zapierdziela? (zastępuje różnicę cen)
+                position_ratio,  # Ile tego mamy?
+                unrealized_pnl  # Czy zarabiamy na tym?
+            ], dtype=np.float32)
+
+            obs_parts.append(symbol_obs)
+
+        # Składamy i przycinamy
+        obs = np.concatenate(obs_parts)
+        return np.clip(obs, -5.0, 5.0)
