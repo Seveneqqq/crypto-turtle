@@ -7,20 +7,25 @@ class WalletConfig:
     slippage: int = 0
     stop_loss: float = 0.05
     fee: float = 0.001
+    #fee: float = 0.0
     max_wallet_percentage_crypto: float = 0.5
 
 class Wallet:
-    def __init__(self, balance, symbols, config: WalletConfig):
+    def __init__(self, balance, symbols, core_mode, config: WalletConfig = WalletConfig()):
         self.balance = float(balance)
         self.holdings = {s: 0.0 for s in symbols}
         self.last_buy_price = {s: 0.0 for s in symbols}
         self.config = config
         self.orders = []
         self.logs = []
+        self.avg_buy_price = {s: 0.0 for s in symbols}  # Zmień nazwę z last_buy_price na avg i logikę
+        self.core_mode=core_mode
+        self.transaction_count = 0
 
-    def execute_orders(self, t, current_prices, use_rl=False):
 
-        self.calculate_orders(t, current_prices, use_rl)
+    def execute_orders(self, t, current_prices):
+
+        self.calculate_orders(t, current_prices)
 
         current_orders = [o for o in self.orders if o["timestamp"] == t - self.config.slippage]
 
@@ -37,13 +42,21 @@ class Wallet:
                     self.hold(order)
                 case "sell":
                     self.sell(order, current_prices[symbol])
+            order.pop("rl_config", None)
             self.logs.append(order)
             self.orders.remove(order)
 
     def rl_config(self,scaled):
-        self.config.mincost = float(scaled[4])
-        self.config.max_wallet_percentage_crypto = float(scaled[5])
-        # self.config.stop_loss = float(scaled[6])
+
+        mincost_min, mincost_max = 1.0, 5.0
+        mincost = mincost_min + scaled[4] * (mincost_max - mincost_min)
+
+        mwpc_min, mwpc_max = 0.4, 0.9
+        max_wallet_percentage_crypto = mwpc_min + scaled[5] * (mwpc_max - mwpc_min)
+
+        self.config.mincost = float(mincost)
+        self.config.max_wallet_percentage_crypto = float(max_wallet_percentage_crypto)
+        # self.config.stop_loss = scaled_dict[6]
 
     def buy(self, order, current_price):
         order["slippage_price"] = current_price
@@ -57,12 +70,23 @@ class Wallet:
             order["status"] = "rejected"
             return
         else:
+            # --- LOGIKA ŚREDNIEJ WAŻONEJ CENY ZAKUPU ---
+            current_qty = self.holdings.get(symbol, 0.0)
+            current_avg = self.avg_buy_price.get(symbol, 0.0)
+
+            # Jeśli już coś mamy, obliczamy nową średnią: (stara_wartość + nowa_wartość) / nowa_ilość
+            if current_qty > 0:
+                new_avg = ((current_qty * current_avg) + (qty * current_price)) / (current_qty + qty)
+                self.avg_buy_price[symbol] = new_avg
+            else:
+                # Jeśli to pierwszy zakup
+                self.avg_buy_price[symbol] = current_price
+            # ---------------------------------------------
             self.holdings[symbol] += qty
             self.balance -= transaction_value
+            self.transaction_count += 1
             order["status"] = "accepted"
             return
-
-
 
     def hold(self, order):
         order["status"] = "accepted"
@@ -82,10 +106,14 @@ class Wallet:
         else:
             self.holdings[order["symbol"]] -= qty
             self.balance += transaction_value
+            self.transaction_count += 1
             order["status"] = "accepted"
+            if self.holdings[symbol] <= 1e-9:
+                self.holdings[symbol] = 0.0
+                self.avg_buy_price[symbol] = 0.0
             return
 
-    def calculate_orders(self, t, prices, use_rl):
+    def calculate_orders(self, t, prices):
 
         current_orders = [o for o in self.orders if o["timestamp"] == t]
 
@@ -94,11 +122,11 @@ class Wallet:
 
         for order in current_orders:
             action = order["action"]
+            if self.core_mode in ("rl_train","sim_rl"):
+                scaled_dict = order["rl_config"]
 
-            if use_rl:
-                self.rl_config(order["rl_config"])
-                order.pop("rl_config", None)
-
+                self.rl_config(scaled_dict)
+            else: pass
 
             match action:
                 case "buy":
@@ -113,7 +141,6 @@ class Wallet:
                         order["value"] = 1.0
                         order["reason"] = "no_holdings"
         return
-
 
     def calculate_quantity_buy(self, order, prices):
         frac = order["fraction"]
@@ -157,7 +184,6 @@ class Wallet:
                     order["value"] = 1.0
                     order["reason"] = "lower_than_mincost"
                     return
-
         order["qty"] = qty
         return
 
@@ -165,7 +191,6 @@ class Wallet:
         frac = order["fraction"]
         symbol = order["symbol"]
         price = order["price"]
-
 
         crypto_qty = self.holdings.get(symbol, 0.0)
         qty = crypto_qty * frac
@@ -201,7 +226,7 @@ class Wallet:
         return per_symbol_values
 
     def check_stop_loss(self, symbol, market_price):
-        #TODO: NOT IMPLEMENTED
+        # TODO: NOT IMPLEMENTED
         pass
         # last = self.last_buy_price.get(symbol, 0.0)
         # if last <= 0:
