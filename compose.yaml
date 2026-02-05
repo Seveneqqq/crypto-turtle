@@ -42,19 +42,19 @@ services:
   #    networks:
   #      - backend
 
-  data-module:
-    build:
-      context: ./data-module
-      dockerfile: Dockerfile
-    volumes:
-      - ./shared:/app/shared
-    ports:
-      - "8001:8001"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - backend
+  # data-module:
+  #   build:
+  #     context: ./data-module
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ./shared:/app/shared
+  #   ports:
+  #     - "8001:8001"
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   networks:
+  #     - backend
 
   # ml-module:
   #    build:
@@ -104,6 +104,22 @@ services:
 #       #   condition: service_started
 #     networks:
 #       - backend
+
+  xai-module:
+     build:
+       context: ./xai-module
+       dockerfile: Dockerfile
+     volumes:
+       - ./shared:/app/shared
+     ports:
+       - "8005:8005"
+     depends_on:
+       rabbitmq:
+         condition: service_healthy
+       # rl-module:
+       #   condition: service_started
+     networks:
+       - backend
 
 
 networks:

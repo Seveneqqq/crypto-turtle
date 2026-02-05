@@ -193,7 +193,8 @@ class Charts:
             gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
             figsize=(12, 9)
         )
-
+        print(f"timestamps: {timestamps}")
+        print(f"portfolio_values: {len(portfolio_values)}")
         # --- Wykres ---
         ax.plot(range(0, timestamps), portfolio_values, label="Wartość portfela (USD)")
 

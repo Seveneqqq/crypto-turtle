@@ -1,19 +1,36 @@
-# decision.py
+import os
+import numpy as np
 from dataclasses import dataclass
-
+from stable_baselines3 import PPO
 @dataclass
 class DecisionConfig:
     threshold_buy: float = 0.6
     threshold_sell: float = 0.6
-    sizing_mode: str = "mincost_based"   # or "mincost_based"
-    mincost: float = 1.0
-    tx_fraction: float = 0.1  # fraction of cash to use for buy when signal strong
-    max_fraction_when_confident: float = 0.5  # if model gives 0.99 use up to 50% cash
+    tx_fraction: float = 0.1
+    max_fraction_when_confident: float = 0.5
     clamp_model_value: bool = True
 
 class DecisionEngine:
-    def __init__(self,  config: DecisionConfig = DecisionConfig()):
+    def __init__(self, agent_name, rlagent_deterministic, wallet, config: DecisionConfig = DecisionConfig()):
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "agents")
+        self.agent_name = agent_name
+        self.agent_path = ""
         self.config = config
+
+        self.wallet = wallet
+        self.rlagent_deterministic = rlagent_deterministic
+        self.agent = None
+
+        if self.agent_name:
+            agent_type = self.check_agent_type()
+            match agent_type:
+                case "ppo":
+                    self.agent = PPO.load(self.agent_path, env=None)
+                case _:
+                    raise ValueError(f"Unsupported agent type: {agent_type}")
+
 
     def _normalize_model_value(self, mv):
         if mv is None:
@@ -23,94 +40,132 @@ class DecisionEngine:
             mv = max(0.0, min(1.0, mv))
         return mv
 
-    def decide(self, prob_map, wallet, symbol, price):
-        """
-        prob_map: dict with keys 'buy', 'sell', 'hold' probabilities
-        wallet: Wallet instance (to compute sizes)
-        symbol, price: for sizing decisions
-        returns: dict(action, qty, model_value, reason)
-        """
-        buy_p = prob_map.get("buy", 0.0)
-        sell_p = prob_map.get("sell", 0.0)
-        buy_p = self._normalize_model_value(buy_p)
-        sell_p = self._normalize_model_value(sell_p)
+    def check_agent_type(self):
+        for subfolder in os.listdir(self.BASE_MODEL_DIR):
+            subfolder_path = os.path.join(self.BASE_MODEL_DIR, subfolder)
+            if not os.path.isdir(subfolder_path):
+                continue
 
-        # Basic thresholding
-        if buy_p >= self.config.threshold_buy:
-            action = "buy"
-            model_value = buy_p
-        elif sell_p >= self.config.threshold_sell:
-            action = "sell"
-            model_value = sell_p
-        else:
-            return {"action": "hold", "qty": 0.0, "model_value": 0.0, "reason": "below thresholds"}
+            candidate_path = os.path.join(subfolder_path, self.agent_name)
+            if os.path.exists(candidate_path):
+                self.agent_path = candidate_path
+                return subfolder.lower()
 
-        # sizing
-        if action == "buy":
-            # fraction of available cash, scaled by model_value between threshold and 1.0
-            available_cash = wallet.balance
-            # map model_value from [threshold_buy,1] -> [tx_fraction, max_fraction_when_confident]
-            denom = (1.0 - self.config.threshold_buy) if (1.0 - self.config.threshold_buy) > 0 else 1.0
-            frac = self.config.tx_fraction + ((model_value - self.config.threshold_buy) / denom) * (self.config.max_fraction_when_confident - self.config.tx_fraction)
-            frac = max(0.0, min(1.0, frac))
-            usd_amount = available_cash * frac
-            usd_amount = max(usd_amount, self.config.mincost)  # enforce mincost
-            qty = usd_amount / price if price > 0 else 0.0
-            return {"action": "buy", "qty": qty, "model_value": model_value, "reason": f"frac={frac:.3f}"}
+        raise ValueError(f"Nie znaleziono agenta '{self.agent_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")
 
-        elif action == "sell":
-            # amount to sell proportional to model_value
-            holding = wallet.holdings.get(symbol, 0.0)
-            if holding <= 0:
-                return {"action": "hold", "qty": 0.0, "model_value": model_value, "reason": "no holdings to sell"}
-            denom = (1.0 - self.config.threshold_sell) if (1.0 - self.config.threshold_sell) > 0 else 1.0
-            frac = self.config.tx_fraction + ((model_value - self.config.threshold_sell) / denom) * (self.config.max_fraction_when_confident - self.config.tx_fraction)
-            frac = max(0.0, min(1.0, frac))
-            qty = holding * frac
-            return {"action": "sell", "qty": qty, "model_value": model_value, "reason": f"frac={frac:.3f}"}
+    def rl_config(self, scaled):
+
+        self.config.threshold_buy = float(scaled[0])
+        self.config.threshold_sell = float(scaled[1])
+        self.config.tx_fraction = float(scaled[2])
+        self.config.max_fraction_when_confident = float(scaled[3])
 
 
+    def get_obs(self, symbols,data_rows, prob_vec, prices):
+        scaled_dict = {}
+        obs = self.build_obs(symbols, data_rows, prob_vec, prices)
+        action, _ = self.agent.predict(obs, deterministic=self.rlagent_deterministic)
+        action = np.asarray(action, dtype=np.float32).flatten()
+        scaled = (action + 1.0) / 2.0
+        n_params_per_symbol = 6
+        for i, symbol in enumerate(symbols):
+            start = i * n_params_per_symbol
+            end = start + n_params_per_symbol
+            scaled_dict[symbol] = scaled[start:end]
+        return scaled_dict
 
-# import pandas as pd
-#
-#
-# class DecisionEngine:
-#     def __init__(self, model_path, threshold_buy=0.6, threshold_sell=0.6):
-#         # Ładowanie modelu przy starcie
-#         try:
-#             print(f"[DecisionEngine.__init__] Ładuję model: {model_path}")
-#             self.model = joblib.load(model_path)
-#             print(f"[DecisionEngine.__init__] Model załadowany. Classes={getattr(self.model, 'classes_', None)}")
-#         except Exception as e:
-#             import traceback
-#             print("[DecisionEngine.__init__][ERROR]", e)
-#             traceback.print_exc()
-#             raise
-#         self.threshold_buy = threshold_buy
-#         self.threshold_sell = threshold_sell
-#
-#
-#     def decide(self, prob_row):
-#
-#         try:
-#             # Sprawdzenie typu
-#             if isinstance(prob_row, pd.Series):
-#                 prob_map = prob_row.to_dict()
-#             elif isinstance(prob_row, dict):
-#                 prob_map = prob_row
-#             else:
-#                 raise ValueError("Nieobsługiwany typ danych wejściowych. Oczekiwano dict lub pd.Series")
-#
-#             # Decyzja na podstawie progów
-#             if prob_map.get("buy", 0) >= self.threshold_buy:
-#                 return prob_map.get("buy", 0), "buy"
-#             elif prob_map.get("sell", 0) >= self.threshold_sell:
-#                 return prob_map.get("sell", 0), "sell"
-#             else:
-#                 return 0.0, "hold"
-#
-#         except Exception as e:
-#             import traceback
-#             print("[DecisionEngine.decide][ERROR]", e)
-#             traceback.print_exc()
-#             raise
+
+    def generate_decisions(self, prob_vec, symbols, prices, t, data_rows=None):
+        use_rl = data_rows is not None and self.agent_name is not None
+        
+        orders, scaled_dict= [],{}
+        if use_rl:
+            scaled_dict = self.get_obs(symbols, data_rows, prob_vec, prices)
+
+
+        for symbol in symbols:
+            prob_map = prob_vec[symbol]
+            best_action = max(prob_map, key=lambda k: prob_map[k])
+            best_value = round(prob_map[best_action], 4)
+            best_value = self._normalize_model_value(best_value)
+            
+            orders.append({
+                "symbol": symbol,
+                "action": best_action,
+                "value": best_value,
+                "price": prices[symbol],
+                "timestamp": t,
+                "reason": "max_for_symbol"
+            })
+
+        for order in orders:
+            action = order["action"]
+            value = order["value"]
+            symbol = order["symbol"]
+
+            if use_rl:
+                order["rl_config"] = scaled_dict[symbol]
+                self.rl_config(scaled_dict[symbol])
+
+            match action:
+                case "buy":
+                    if value < self.config.threshold_buy:
+                        order["action"] = "hold"
+                        order["value"] = 1.0
+                        order["reason"] = "below_threshold"
+                    else:
+                        order["fraction"] = self.calculate_fraction(value, self.config.threshold_buy)
+
+                case "sell":
+                    if value < self.config.threshold_sell:
+                        order["action"] = "hold"
+                        order["value"] = 1.0
+                        order["reason"] = "below_threshold"
+                    else:
+                        order["fraction"] = self.calculate_fraction(value, self.config.threshold_sell)
+                case "hold":
+                    pass
+
+        orders.sort(key=lambda o: o["value"], reverse=True)
+
+        self.wallet.orders.extend(orders)
+        self.wallet.execute_orders(t, prices, use_rl)
+
+    def calculate_fraction(self, model_value, threshold):
+        denom = max(1.0 - threshold, 1e-12)
+
+        norm_signal = max(0.0, min(1.0, (model_value - threshold) / denom))
+
+        frac = self.config.tx_fraction + norm_signal * (
+                    self.config.max_fraction_when_confident - self.config.tx_fraction)
+
+        frac = max(0.0, min(1.0, frac))
+        # frac mincost, qty
+        return round(frac,4)
+
+    def build_obs(self, symbols, data_rows, prob_vec, prices):
+
+        obs_parts = [np.array([float(self.wallet.balance)], dtype=np.float32)]
+
+        for symbol in symbols:
+            buy_p = float(prob_vec[symbol].get("buy", 0.0))
+            sell_p = float(prob_vec[symbol].get("sell", 0.0))
+            hold_p = float(prob_vec[symbol].get("hold", 0.0))
+
+            holding_amount = float(self.wallet.holdings.get(symbol, 0.0))
+            holding_value = holding_amount * float(prices[symbol])
+
+            numeric_values = np.asarray(data_rows[symbol], dtype=np.float32)
+
+            symbol_obs = np.concatenate([
+                np.array([buy_p, sell_p, hold_p], dtype=np.float32),
+                np.array([holding_amount, holding_value], dtype=np.float32),
+                numeric_values
+            ])
+
+            obs_parts.append(symbol_obs)
+
+        obs = np.concatenate(obs_parts)
+        obs = np.nan_to_num(obs, nan=0.0, posinf=1e6, neginf=-1e6).astype(np.float32)
+        return obs
+

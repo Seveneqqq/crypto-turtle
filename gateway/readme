@@ -48,3 +48,15 @@ jeszcze do przemyslenia
 
 
 //Todo: Utworzyć moduł plgrid który po ssh pozwoli na trenowanie modeli
+
+
+
+Jobs : 
+
+{
+	"host":"ares.cyfronet.pl",
+  "action": "any",
+  "payload": {
+    "custom_command": "python3 --version && pip3"
+  }
+}

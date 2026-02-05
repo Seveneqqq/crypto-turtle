@@ -2,19 +2,16 @@ import os
 import json
 import gzip
 import time
-from datetime import datetime, timedelta
-from tqdm import tqdm
 import sys
 import pandas as pd
 import numpy as np
-from stable_baselines3 import PPO
-
-from services.test.wallet import Wallet, WalletConfig
-from services.test.ml_signal import ModelSignal
-from services.test.decision import DecisionEngine, DecisionConfig
-from services.test.rating import Rating
-from services.test.charts import Charts
-from services.visualization_service import VisualizationService
+from datetime import datetime, timedelta
+from tqdm import tqdm
+from .test.wallet import Wallet, WalletConfig
+from .test.ml_signal import ModelSignal
+from .test.decision import DecisionEngine, DecisionConfig
+from .test.rating import Rating
+from .visualization_service import VisualizationService
 
 
 class SimulationService:
@@ -26,13 +23,15 @@ class SimulationService:
         self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
         self.OUTPUT_DIR = os.path.join(base_dir, "shared", "simulation", "outputs")
         os.makedirs(self.OUTPUT_DIR, exist_ok=True)
+        self.rating = Rating()
+
         self.sim_mode = "ml"
         self.balance_start = 0.0
-        self.rating = Rating()
-        self.rl_agents = None
-        self.rlagent_deterministic = None
-
+        self.models = {}
+        self.engine = None
+        self.wallet = None
         self.output = {}
+
 
     def run_simulation(
         self,
@@ -52,140 +51,114 @@ class SimulationService:
         max_fraction_when_confident=0.5,
         data_files=None,
         model_paths=None,
-        agents=None,
+        agent_rl=None,
         plots=True,
         logs=True,
         results=True
     ):
         try:
-            self.output = {}
+            self.output, self.engine, self.wallet, self.models, symbols = {}, None, None, {}, []
+
             if sim_mode not in ("ml","mlrl", "rl"):
                 raise ValueError ("[SIMULATION ERROR] Invalid simulation mode")
-            if sim_mode in ("mlrl", "rl"):
-                raise ValueError ("[SIMULATION ERROR] mlrl and rl are disabled for now")
+            if sim_mode == "mlrl":
+                raise ValueError ("[SIMULATION ERROR] mlrl is disabled for now")
             print("[Simulation] Start")
             start_time = time.time()
 
-            if add_fee:
-                fee = 0.001
+            data_files = data_files or {}
+            model_paths = model_paths or {}
+
+            if add_fee: fee = 0.001
             else: fee = 0.0
+
+            if sim_mode in ("mlrl", "rl"):
+                rlagent=True
+            else: rlagent=False
+
+            # --- Ładowanie danych ---
+
+            for symbol, filename in data_files.items():
+                filepath = os.path.join(self.DATA_DIR, filename)
+                if not os.path.exists(filepath):
+                    raise FileNotFoundError(f"Brak pliku: {filepath}")
+                df = pd.read_csv(filepath)
+                # --- Inicjalizacja modeli ---
+                self.models[symbol] = ModelSignal(model_name=model_paths[symbol], data=df.copy())
+                symbols.append(symbol)
+
+            self.sim_mode = sim_mode
+            self.balance_start = balance_start
+
+            # --- Inicjalizacja Portfela i Decision Engine---
+
+            self.wallet = Wallet(
+                balance = balance_start,
+                symbols = symbols,
+                config  = WalletConfig(
+                    wallet_percentage_limit=wallet_percentage_limit,
+                    mincost=mincost,
+                    slippage=slippage,
+                    stop_loss=stop_loss,
+                    fee=fee,
+                    max_wallet_percentage_crypto=max_wallet_percentage_crypto
+                )
+            )
+
+            self.engine = DecisionEngine(
+                agent_name=agent_rl,
+                rlagent_deterministic=rlagent_deterministic,
+                wallet=self.wallet,
+                config= DecisionConfig(
+                    threshold_buy=threshold_buy,
+                    threshold_sell=threshold_sell,
+                    tx_fraction=tx_fraction,
+                    max_fraction_when_confident=max_fraction_when_confident
+                )
+            )
+
+            # --- Symulacja ---
+
+            match sim_mode:
+                case "ml":
+                    model_logs = self.simulation(symbols)
+                case "rl":
+                    agent_logs = self.simulation(symbols, True)
+                case "mlrl":
+                    model_logs = self.simulation(symbols)
+                    wallet2 = Wallet(balance_start, symbols, wallet_config)
+                    agent_logs = self.simulation(symbols, wallet2, False)
+
+            # --- Zapis wyników ---
 
             self.output["files"] = {
                 "models": model_paths,
-                "agents": agents,
+                "agents": agent_rl,
                 "data": data_files
             }
 
             self.output["config"] = {
                 "sim_mode": sim_mode,
                 "balance_start": balance_start,
-                "add_fee": add_fee
+                "add_fee": add_fee,
+                "symbols": symbols,
+                "rlagent": rlagent,
+                "rlagent_deterministic": rlagent_deterministic,
+                "slippage": slippage,
+                "wallet_percentage_limit": wallet_percentage_limit,
+                "max_wallet_percentage_crypto": max_wallet_percentage_crypto,
+                "stop_loss": stop_loss,
+                "threshold_buy": threshold_buy,
+                "threshold_sell": threshold_sell,
+                "mincost": mincost,
+                "tx_fraction": tx_fraction,
+                "max_fraction_when_confident": max_fraction_when_confident,
             }
-            if sim_mode in ("mlrl", "rl"):
-                rlagent=True
-            else: rlagent=False
-            self.sim_mode = sim_mode
-            if rlagent:
-                self.output["config"].update({
-                    "rlagent": rlagent,
-                    "rlagent_deterministic": rlagent_deterministic
-                })
-            else:
-                self.output["config"].update({
-                    "rlagent": rlagent,
-                    "slippage": slippage,
-                    "wallet_percentage_limit": wallet_percentage_limit,
-                    "max_wallet_percentage_crypto": max_wallet_percentage_crypto,
-                    "stop_loss": stop_loss,
-                    "threshold_buy": threshold_buy,
-                    "threshold_sell": threshold_sell,
-                    "mincost": mincost,
-                    "tx_fraction": tx_fraction,
-                    "max_fraction_when_confident": max_fraction_when_confident
-                })
-
-            self.balance_start = balance_start
-            self.rlagent_deterministic = rlagent_deterministic
-            data_files = data_files or {}
-            model_paths = model_paths or {}
-            agents = agents or {}
-
-            # --- Ładowanie danych ---
-            data = {}
-            for symbol, filename in data_files.items():
-                filepath = os.path.join(self.DATA_DIR, filename)
-                if not os.path.exists(filepath):
-                    raise FileNotFoundError(f"Brak pliku: {filepath}")
-                df = pd.read_csv(filepath)
-                data[symbol] = df.copy()
-
-            symbols = list(data.keys())
-            self.output["config"].update({"symbols": symbols})
-
-            # --- Inicjalizacja portfela ---
-            wallet_config = WalletConfig(
-                wallet_percentage_limit=wallet_percentage_limit,
-                mincost=mincost,
-                slippage=slippage,
-                stop_loss=stop_loss,
-                fee=fee,
-                max_wallet_percentage_crypto=max_wallet_percentage_crypto,
-            )
-            wallet = Wallet(balance_start, symbols, wallet_config)
-
-            # --- Inicjalizacja DecisionEngine i RL agentów ---
-
-            models, engines, predictions ={}, {}, {}
-
-            for symbol in symbols:
-                # silnik decyzyjny
-                engines[symbol] = DecisionEngine(
-                    DecisionConfig(
-                        threshold_buy=threshold_buy,
-                        threshold_sell=threshold_sell,
-                        tx_fraction=tx_fraction,
-                        max_fraction_when_confident=max_fraction_when_confident,
-                        mincost=mincost
-                ))
-
-                # predykcje
-                models[symbol] = ModelSignal(model_name=model_paths[symbol], data=data[symbol])
-                predictions[symbol] = models[symbol].predictions
-
-
-                # inicjalizacja agentów
-
-                rl_agents = {}
-
-                if rlagent and symbol in agents:
-                    agent_path = os.path.join(self.AGENT_DIR, agents[symbol])
-                    if os.path.exists(agent_path):
-                        rl_agents[symbol] = PPO.load(agent_path, env=None)
-                    else:
-                        print(f"[Simulation][WARN] Brak agenta RL dla {symbol}: {agent_path}")
-                self.rl_agents = rl_agents
-
-            # --- Symulacja ---
-            match sim_mode:
-                case "ml":
-                    model_logs = self.simulation(data, symbols, predictions, engines, wallet, models)
-                case "rl":
-                    agent_logs = self.simulation(data, symbols, predictions, engines, wallet, models, True)
-                case "mlrl":
-                    model_logs = self.simulation(data, symbols, predictions, engines, wallet, models)
-                    wallet2 = Wallet(balance_start, symbols, wallet_config)
-                    agent_logs = self.simulation(data, symbols, predictions, engines, wallet2,models, False)
-
-
-
-            # --- Zapis wyników ---
-
 
             g_n, sim_path, gzip_path = self.build_filename()
 
             if logs or plots or results:
                 os.makedirs(sim_path, exist_ok=True)
-
 
             model_log_path = os.path.join(sim_path, "model_transaction_logs.txt")
             agent_log_path = os.path.join(sim_path, "agent_transaction_logs.txt")
@@ -212,10 +185,7 @@ class SimulationService:
 
             with gzip.open(gzip_path, "wt", encoding="utf-8") as f:
                 json.dump(self.output, f, indent=2)
-
-
-            if plots:
-                VisualizationService().visualize(simulation_files=g_n, sim_path=sim_path)
+            if plots: VisualizationService().visualize(simulation_files=g_n, sim_path=sim_path)
 
             print(f"[Simulation] Zakończono w {timedelta(seconds=time.time() - start_time)}")
 
@@ -244,106 +214,64 @@ class SimulationService:
             }
 
 
-    def simulation(self, data, symbols, predictions, engines, wallet, models, rlagent = False):
+    def simulation(self, symbols, rlagent = False):
 
-        # --- Symulacja ---
+        crypto_ref_values, initial_prices, portfolio_values, timestamps, logs, holdings = {}, {}, [], [], [], []
         num_ticks = min(
-            min(len(df) for df in data.values()),  # ile mamy wierszy w danych
-            min(len(preds) for preds in predictions.values())  # ile mamy predykcji z modeli
+            min(len(self.models[symbol].data) for symbol in symbols),  # długość danych
+            min(len(self.models[symbol].predictions) for symbol in symbols)  # długość predykcji modeli
         )
+        numeric_cols = {}
         for symbol in symbols:
-            df = data[symbol]
+            df = self.models[symbol].data
             if len(df) > num_ticks:
-                data[symbol] = df.iloc[-num_ticks:].reset_index(drop=True)
+                self.models[symbol].data = df.iloc[-num_ticks:].reset_index(drop=True)
+            initial_prices[symbol] = self.models[symbol].data.iloc[0]["close"]
+            numeric_cols[symbol] = df.select_dtypes(include=[np.number]).columns.tolist()
+            crypto_ref_values[symbol] = []
 
-        crypto_ref_values = {s: [] for s in symbols}
-        initial_prices = {s: float(data[s].iloc[0]["close"]) for s in symbols}
 
         print("[Simulation][INFO] num_ticks", num_ticks)
 
-        portfolio_values, timestamps, logs, holdings = [], [], [],[]
-
         for t in tqdm(range(num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
-            prices = {s: data[s].iloc[t]["close"] for s in symbols}
-            timestamps.append(data[symbols[0]].iloc[t]["open_time"])
+            prob_vec, prices, data_rows = {}, {}, {}
+            timestamps.append(self.models[symbols[0]].data.iloc[t]["open_time"])
+
             for symbol in symbols:
-                prob_array = predictions[symbol][t]
-                prob_row = dict(zip(models[symbol].classes, prob_array))
+                prices[symbol] = self.models[symbol].data.iloc[t]["close"]
+                row = self.models[symbol].data.iloc[t]
+                data_rows[symbol] = row[numeric_cols[symbol]].astype(float).values
+                prob_array = self.models[symbol].predictions[t]
+                prob_row = dict(zip(self.models[symbol].classes, prob_array))
+                prob_vec[symbol] = prob_row
+                crypto_ref_values[symbol].append(self.balance_start * prices[symbol] / initial_prices[symbol])
 
-                if rlagent:
-                    obs = build_obs(symbol, t, data, wallet, prob_array, models[symbol].classes)
-                    action, _ = self.rl_agents[symbol].predict(obs, deterministic=self.rlagent_deterministic)
-                    scaled = (action + 1.0) / 2.0  # [-1,1] -> [0,1]
-                    # decision_config = DecisionConfig(
-                    #     threshold_buy=scaled[0],
-                    #     threshold_sell=scaled[1],
-                    #     tx_fraction=scaled[2],
-                    #     max_fraction_when_confident=scaled[3],
-                    #     mincost=scaled[4] * 100
-                    # )
-                    # engines[symbol].config = decision_config
-                    # wallet.config.stop_loss = scaled[5]
-                    # wallet.config.max_wallet_percentage_crypto = scaled[6]
-                    engines[symbol].config.threshold_buy = scaled[0]
-                    engines[symbol].config.threshold_sell = scaled[1]
-                    engines[symbol].config.tx_fraction = scaled[2]
+            if rlagent:
+                self.engine.generate_decisions(prob_vec, symbols, prices, t, data_rows)
+            else:
+                self.engine.generate_decisions(prob_vec, symbols, prices, t)
 
-                decision = engines[symbol].decide(prob_row, wallet, symbol, prices[symbol])
+            holdings.append(self.wallet.total_holdings(prices))
+            portfolio_values.append(self.wallet.total_value(prices))
 
-                action, qty = decision["action"], decision["qty"]
-
-                # Wykonanie
-                if action != "hold" and qty > 0:
-                    res = wallet.execute_order(action, symbol, qty, prices[symbol])
-                    executed = res["executed"]
-                    action_end = res["status"] if res["status"] != "filled" else action
-                else:
-                    executed, action_end = 0.0, "hold"
-
-                if action_end != "hold" and executed > 0:
-                    logs.append({
-                        "symbol": symbol,
-                        "action": action_end,
-                        "timestamp": data[symbol].iloc[t]["open_time"],
-                        "usd_balance": f"{wallet.balance:.2f}",
-                        "portfel": f"{wallet.total_value(prices):.2f}",
-                        "reason": decision.get("reason", "")
-                    })
-                #  HODL
-                price_t = prices.get(symbol, None)
-                init_price = initial_prices.get(symbol, None)
-
-                if price_t is None or pd.isna(price_t) or init_price is None or init_price == 0:
-                    crypto_ref_values[symbol].append(np.nan)
-                else:
-                    hodl_value = self.balance_start * price_t / init_price
-                    crypto_ref_values[symbol].append(hodl_value)
-
-            holdings.append(wallet.total_holdings(prices))
-            portfolio_values.append(wallet.total_value(prices))
-
-        # --- Ocena wyników ---
+        logs = self.wallet.logs
         metrics = self.rating.rate(portfolio_values, len(logs))
-
 
         self.output["hodl"] = {"crypto_ref_values": crypto_ref_values}
 
-        match rlagent:
-            case False:
-                self.output["model"] = {
-                    "timestamps": len(timestamps),
-                    "metrics": metrics,
-                    "portfolio_values": portfolio_values,
-                    "holdings": holdings
-                }
-            case True:
-                self.output["agent"] = {
-                    "timestamps": len(timestamps),
-                    "metrics": metrics,
-                    "portfolio_values": portfolio_values,
-                    "holdings": holdings
-                }
+        if rlagent: a="agent"
+        else: a="model"
+
+
+        self.output[a] = {
+            "timestamps": len(timestamps),
+            "metrics": metrics,
+            "portfolio_values": portfolio_values,
+            "holdings": holdings
+        }
+
         return logs
+
     def build_filename(self):
         date_str = datetime.now().strftime("%d_%m")
         existing_files = [
@@ -361,42 +289,8 @@ class SimulationService:
                 continue
 
         next_version = max(version_numbers, default=0) + 1
-
-        # generujemy nową nazwę
         s_p = f"sim_{date_str}_v{next_version}_{self.sim_mode}"
         g_n = f"{s_p}.json.gz"
         sim_path = os.path.join(self.SIM_DIR, s_p)
         gzip_path = os.path.join(self.OUTPUT_DIR, g_n)
         return g_n, sim_path, gzip_path
-    def check_model_type(self):
-        pass
-
-
-
-def build_obs(symbol, t, data, rl_env_wallet, prob_array, classes):
-    price = float(data[symbol].iloc[t]["close"])
-    prob_vec = prob_array  # numpy array
-    row = data[symbol].iloc[t]
-    # Mapowanie nazw klas na indeksy w tablicy
-    class_idx = {c: i for i, c in enumerate(classes)}
-    price_norm = price / (107312.78 + 1e-12)
-    balance_norm = (float(rl_env_wallet.balance) / (1000.0 + 1e-12))
-    buy_p = float(prob_vec[class_idx["buy"]])
-    sell_p = float(prob_vec[class_idx["sell"]])
-    hold_p = float(prob_vec[class_idx["hold"]])
-    balance = float(rl_env_wallet.balance)
-    ret1 = float(row.get("ret1", 0.0))
-    ret1_lag1 = float(row.get("ret1_lag1", 0.0))
-    roll_mean_10 = float(row.get("roll_mean_10", 0.0))
-    roll_std_10 = float(row.get("roll_std_10", 0.0))
-    macd = float(row.get("macd", 0.0))
-    macd_sig = float(row.get("macd_sig", 0.0))
-    atr = float(row.get("ATR_14", 0.0))
-    vol = float(row.get("volume", 0.0))
-    obs = np.array([
-        buy_p, sell_p, price_norm, balance_norm,
-        ret1, ret1_lag1, roll_mean_10, roll_std_10, macd, macd_sig, atr, vol
-    ], dtype=np.float32)
-    return obs
-
-

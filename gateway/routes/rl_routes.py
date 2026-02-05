@@ -5,8 +5,8 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/rl", tags=["rl"])
 
 class TrainAgentPPORequest(BaseModel):
-    model_file: str
-    data_file: str
+    model_files: Dict[str, str]
+    data_files: Dict[str, str]
     total_timesteps: int
     learning_rate: float
     n_steps: int
@@ -27,8 +27,8 @@ class TrainAgentDQNRequest(BaseModel):
 @router.post("/train_agent_ppo")
 def train_agent_ppo(req: TrainAgentPPORequest):
     rl_service.train_agent_ppo(
-        model_file=req.model_file,
-        data_file=req.data_file,
+        model_files=req.model_files,
+        data_files=req.data_files,
         total_timesteps=req.total_timesteps,
         learning_rate=req.learning_rate,
         n_steps=req.n_steps,
