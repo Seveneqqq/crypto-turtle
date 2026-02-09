@@ -19,6 +19,7 @@ if __name__ == "__main__":
         data_files={
 			"BTC": data_btc_agent_path
 		},
+        live_logging=True,
         total_timesteps=5000,
         learning_rate=0.0003,
         n_steps=2048,

@@ -22,13 +22,14 @@ class OptunaPPOTuner:
                  model_files: Dict[str, str],
                  train_data_files: Dict[str, str],
                  eval_data_files: Dict[str, str],
+                 live_logging: bool = True,
                  study_name: str = None,
                  storage: str = None):
 
         self.model_files = model_files
         self.train_data_files = train_data_files
         self.eval_data_files = eval_data_files
-
+        self.live_logging = live_logging
         if study_name is None:
             study_name = f"ppo_tuning_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
@@ -122,6 +123,7 @@ class OptunaPPOTuner:
                 rabbitmq_msg_id=None,
                 model_files=self.model_files,
                 data_files=self.train_data_files,
+                live_logging=self.live_logging,
                 total_timesteps=total_timesteps,
                 learning_rate=learning_rate,
                 n_steps=n_steps,

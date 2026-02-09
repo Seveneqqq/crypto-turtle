@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 class TrainingCallback(BaseCallback):
-    def __init__(self, total_timesteps, num_cpu, base_dir, episode_timesteps):
+    def __init__(self, total_timesteps, num_cpu, base_dir, episode_timesteps, live = True):
         super().__init__()
         self.base_dir = base_dir
         self.episode_timesteps = episode_timesteps
@@ -20,7 +20,9 @@ class TrainingCallback(BaseCallback):
 
         self.LOG_DIR = os.path.join(self.base_dir,"shared","agents","actual_training_logs")
         os.makedirs(self.LOG_DIR, exist_ok=True)
-        self.initialize_log_files()
+        self.live = live
+        if self.live:
+            self.initialize_log_files()
 
     def _on_step(self) -> bool:
         progress = int((self.num_timesteps / self.total_timesteps) * 10000)
@@ -48,8 +50,9 @@ class TrainingCallback(BaseCallback):
             sys.stdout.flush()
             self.last_progress = progress
 
-        if self.n_calls % (self.episode_timesteps + 1) == 0:
-            self._dump_logs()
+        if self.live:
+            if self.n_calls % (self.episode_timesteps + 1) == 0:
+                self._dump_logs()
 
         return True
 

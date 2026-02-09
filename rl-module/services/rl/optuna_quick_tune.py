@@ -64,6 +64,7 @@ if __name__ == "__main__":
         model_files=model_files,
         train_data_files=train_data_files,
         eval_data_files=eval_data_files,
+        live_logging=True,
         study_name="quick_exploration_v3"
     )
 

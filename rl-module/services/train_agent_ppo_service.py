@@ -27,6 +27,7 @@ class TrainAgentPPOService:
 
     def train_agent_ppo(
             self,
+            live_logging = True,
             rabbitmq_msg_id=None,
             model_files=None,
             data_files=None,
@@ -166,7 +167,11 @@ class TrainAgentPPOService:
             # )
             # env = TradingEnv(models,symbols=symbols,base_dir=self.base_dir)
 
-            training_callback = TrainingCallback(total_timesteps=total_timesteps, num_cpu=num_cpu, base_dir=self.base_dir, episode_timesteps=episode_timesteps)
+            training_callback = TrainingCallback(total_timesteps=total_timesteps,
+                                                 num_cpu=num_cpu,
+                                                 base_dir=self.base_dir,
+                                                 episode_timesteps=episode_timesteps,
+                                                 live=live_logging)
             torch.set_num_threads(11)
             policy_kwargs = dict(
                 activation_fn=torch.nn.ReLU,  # Zmiana z Tanh na ReLU (często stabilniejsze)
