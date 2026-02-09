@@ -5,8 +5,10 @@ from ..core_logic_v2.decision import DecisionEngine
 from ..core_logic_v2.structures import PreviousEpoch,  CoreConfig
 
 class TradingEnv(gymnasium.Env):
-    def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None, episode_timesteps = 10240):
+    def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None, episode_timesteps = 10240, agent_type=None):
         super().__init__()
+
+        #TODO: przystosowanie pod dqn
 
         self.symbols = core_config.symbols
         self.core_mode = "train_rl"
