@@ -5,17 +5,16 @@ import numpy as np
 
 @dataclass(slots=True)
 class Order:
-    # --- Pola inicjalizowane przez DecisionEngine ---
     timestamp: int
     symbol: str
-    action: str  # "buy", "sell", "hold" #TODO: zamiana na inty
-    value: float  # pewność modelu (np. 0.85)
-    fraction: float  # sugerowana wielkość pozycji
+    action: str
+    value: float
+    fraction: float
     price: float
     reason: str = ""
-    rl_config: Any = None  # Konfiguracja od agenta RL dla tego symbolu
+    rl_config: Any = None
     qty: float = 0.0
-    status: str = "created"  # np. "accepted", "rejected", "pending"
+    status: str = "created"
     slippage_price: float = 0.0
 
     # , "buy:0","hold":1, "sell:2"
@@ -112,12 +111,13 @@ class CoreConfig:
 
 @dataclass(slots=True)
 class DecisionConfig:
-    threshold_buy: float = 0.6
-    threshold_sell: float = 0.6
+    threshold_buy: float = 0.5
+    threshold_sell: float = 0.5
     tx_fraction: float = 0.1
     max_fraction_when_confident: float = 0.5
     clamp_model_value: bool = True
-
+    fraction_buy: float = 0.3
+    fraction_sell: float = 0.3
     def set(self, output_config: CoreConfig):
         self.threshold_buy = output_config.threshold_buy
         self.threshold_sell = output_config.threshold_sell

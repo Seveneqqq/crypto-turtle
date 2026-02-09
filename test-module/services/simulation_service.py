@@ -6,11 +6,11 @@ import sys
 import pandas as pd
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from .core_logic.ml_signal import ModelSignal
-from .core_logic.decision import DecisionEngine
+from .core_logic_v2.ml_signal import ModelSignal
+from .core_logic_v2.decision import DecisionEngine
 from .test.rating import Rating
 from .visualization_service import VisualizationService
-from .core_logic.structures import CoreConfig
+from .core_logic_v2.structures import CoreConfig
 
 
 class SimulationService:
@@ -161,6 +161,9 @@ class SimulationService:
                 "message": "Successfully retrieved simulation data",
                 #"model_logs_file": model_log_path,
                 #"agent_logs_file": agent_log_path,
+                "final_portfolio_value": self.output["agent"]["metrics"]["final_portfolio_value"],
+                "sharpe_ratio": self.output["agent"]["metrics"]["sharpe_ratio"],
+                "max_drawdown": self.output["agent"]["metrics"]["max_drawdown"],
                 "portfolio_values": "portfolio_values",
                 "timestamp": datetime.now().isoformat()
             }

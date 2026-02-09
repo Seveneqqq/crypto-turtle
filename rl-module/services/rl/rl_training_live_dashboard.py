@@ -6,10 +6,7 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import json
 import os
-import pandas as pd
-import numpy as np
 
-# --- KONFIGURACJA ---
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 print(base_dir)
 LOG_DIR = os.path.join(base_dir, "shared", "agents", "actual_training_logs")
@@ -19,7 +16,7 @@ TARGET_EPOCHS = 100
 
 app = dash.Dash(__name__)
 
-# --- STYLE ---
+
 COLORS = {
     'bg': '#111111', 'card': '#1e1e1e', 'text': '#e0e0e0', 'accent': '#00d4ff',
     'success': '#00e676', 'warning': '#ff9100', 'danger': '#ff1744'
@@ -43,7 +40,6 @@ card_style = {
 }
 
 
-# --- FUNKCJE DANYCH ---
 def get_full_training_data():
     """Pobiera zagregowane dane globalne."""
     path = os.path.join(LOG_DIR, "full_training.json")
@@ -74,7 +70,6 @@ def get_process_data():
     return data
 
 
-# --- NOWA SEKCJA GLOBALNA (LAYOUT ZACHOWANY) ---
 global_section = html.Div([
     html.Div([
         # LEWY PANEL
@@ -156,9 +151,8 @@ app.layout = html.Div(
     ]
 )
 
-
-# --- LOGIKA GENEROWANIA WYKRESÓW GLOBALNYCH ---
 def generate_global_fig(mode, full_data):
+    """Generuje wykresy globalne."""
     fig = go.Figure()
 
     # Style layoutu
@@ -176,12 +170,11 @@ def generate_global_fig(mode, full_data):
     hist = full_data['history']
     config = full_data.get('config', {})
 
-    # Używamy sumy epok dla osi X lub numeru porządkowego
-    # epochs = [h.get('epoch_sum', i) for i, h in enumerate(hist, 1)]
+
     epochs = list(range(1, len(hist) + 1))
     max_x = config.get('global_epochs', 100)
 
-    # --- 1. REWARD SUMMARY (Button: Reward Avg) ---
+
     if mode == 'reward':
         avg = [h['reward']['avg_end_r'] for h in hist]
         mn = [h['reward']['min_end_r'] for h in hist]
@@ -202,9 +195,9 @@ def generate_global_fig(mode, full_data):
             xaxis_title="Global Epoch", yaxis_title="Reward", **layout_args,
             xaxis=dict(range=[1, max_x]),
             legend=dict(
-                orientation="h",  # Pozioma
+                orientation="h",
                 yanchor="top",
-                y=-0.3,  # Pod wykresem
+                y=-0.3,
                 xanchor="center",
                 x=0.5,
                 bgcolor="rgba(0,0,0,0)",
@@ -212,7 +205,7 @@ def generate_global_fig(mode, full_data):
             ),
         )
 
-    # --- 2. PORTFOLIO SUMMARY (Button: Portfolio Avg) ---
+
     elif mode == 'portfolio':
         avg = [h['portfolio']['avg_end_p'] for h in hist]
         mn = [h['portfolio']['min_end_p'] for h in hist]
@@ -233,9 +226,9 @@ def generate_global_fig(mode, full_data):
             xaxis_title="Global Epoch", yaxis_title="Value ($)", **layout_args,
             xaxis=dict(range=[1, max_x]),
             legend=dict(
-                orientation="h",  # Pozioma
+                orientation="h",
                 yanchor="top",
-                y=-0.3,  # Pod wykresem
+                y=-0.3,
                 xanchor="center",
                 x=0.5,
                 bgcolor="rgba(0,0,0,0)",
@@ -243,7 +236,7 @@ def generate_global_fig(mode, full_data):
             ),
         )
 
-    # --- 3. PORTFOLIO VOLATILITY (Button: Heatmap -> Port. Vol) ---
+
     elif mode == 'heatmap':
         max_max = [h['portfolio']['max_max_p'] for h in hist]
         min_min = [h['portfolio']['min_min_p'] for h in hist]
@@ -265,9 +258,9 @@ def generate_global_fig(mode, full_data):
             xaxis_title="Global Epoch", yaxis_title="Value ($)", **layout_args,
             xaxis=dict(range=[1, max_x]),
             legend=dict(
-                orientation="h",  # Pozioma
+                orientation="h",
                 yanchor="top",
-                y=-0.3,  # Pod wykresem
+                y=-0.3,
                 xanchor="center",
                 x=0.5,
                 bgcolor="rgba(0,0,0,0)",
@@ -275,13 +268,13 @@ def generate_global_fig(mode, full_data):
             ),
         )
 
-    # --- 4. TRANSACTIONS HISTOGRAM (Button: Histogram) ---
+
     elif mode == 'histogram':
         buys, sells = [], []
         for h in hist:
             tot = h['avg_transactions']
             b, s = h['avg_buys'], h['avg_sells']
-            if (b + s) > tot and (b + s) > 0:  # Korekta
+            if (b + s) > tot and (b + s) > 0:
                 diff = (b + s) - tot
                 b -= diff * (b / (b + s))
                 s -= diff * (s / (b + s))
@@ -296,9 +289,9 @@ def generate_global_fig(mode, full_data):
             title=dict(text="Wykres wykonanych transakcji", **title_defaults),
             barmode='stack', yaxis_range=[0, ep_len], yaxis_title="Transactions",xaxis_title="Global Epoch", xaxis=dict(range=[1, max_x]), **layout_args,
             legend=dict(
-                orientation="h",  # Pozioma
+                orientation="h",
                 yanchor="top",
-                y=-0.3,  # Pod wykresem
+                y=-0.3,
                 xanchor="center",
                 x=0.5,
                 bgcolor="rgba(0,0,0,0)",
@@ -306,7 +299,7 @@ def generate_global_fig(mode, full_data):
             ),
         )
 
-    # --- 5. REWARD VOLATILITY (Button: Empty -> Rew. Vol) ---
+
     elif mode == 'empty':
         max_max = [h['reward']['max_max_r'] for h in hist]
         min_min = [h['reward']['min_min_r'] for h in hist]
@@ -328,9 +321,9 @@ def generate_global_fig(mode, full_data):
             xaxis_title="Global Epoch",yaxis_title="Reward", **layout_args,
             xaxis=dict(range=[1, max_x]),
             legend=dict(
-                orientation="h",  # Pozioma
+                orientation="h",
                 yanchor="top",
-                y=-0.3,  # Pod wykresem
+                y=-0.3,
                 xanchor="center",
                 x=0.5,
                 bgcolor="rgba(0,0,0,0)",
@@ -341,15 +334,16 @@ def generate_global_fig(mode, full_data):
     return fig
 
 
-# --- CALLBACKI (Bez zmian w logice, tylko podpięcie nowej funkcji rysowania) ---
 
-# Status aktywności
+
+
 @app.callback(
     [Output('main-title', 'children'), Output('activity-store', 'data')],
     [Input('interval-component', 'n_intervals')],
     [State('activity-store', 'data')]
 )
 def update_activity_status(n, activity_data):
+    """Sprawdza status aktywności."""
     full_data = get_full_training_data()
     hist = full_data.get('history', []) if full_data else []
 
@@ -366,7 +360,7 @@ def update_activity_status(n, activity_data):
         new_last_time = last_time
         new_last_ep = last_ep
 
-    is_active = (current_time - new_last_time) < 300  # 5 min timeout
+    is_active = (current_time - new_last_time) < 300
     status_text = "🟢 (Aktywny)" if is_active else "🔴 (Nieaktywny)"
     if not hist: status_text = "🟡 (Oczekiwanie)"
 
@@ -374,7 +368,7 @@ def update_activity_status(n, activity_data):
     return title, {'last_epoch': new_last_ep, 'last_timestamp': new_last_time}
 
 
-# Panel Lewy
+
 @app.callback(
     [Output('global-graph-1', 'figure'), Output('store-g1', 'data'),
      Output('btn-g1-rew', 'style'), Output('btn-g1-port', 'style'), Output('btn-g1-heat', 'style'),
@@ -385,6 +379,7 @@ def update_activity_status(n, activity_data):
     [State('store-g1', 'data')]
 )
 def update_g1(n, b1, b2, b3, b4, b5, current):
+    """Updateuje wykres lewy globalny"""
     ctx = dash.callback_context
     if ctx.triggered and 'btn' in ctx.triggered[0]['prop_id']:
         bid = ctx.triggered[0]['prop_id']
@@ -406,7 +401,7 @@ def update_g1(n, b1, b2, b3, b4, b5, current):
     return generate_global_fig(current, get_full_training_data()), current, *styles
 
 
-# Panel Prawy
+
 @app.callback(
     [Output('global-graph-2', 'figure'), Output('store-g2', 'data'),
      Output('btn-g2-port', 'style'), Output('btn-g2-rew', 'style'), Output('btn-g2-heat', 'style'),
@@ -417,6 +412,7 @@ def update_g1(n, b1, b2, b3, b4, b5, current):
     [State('store-g2', 'data')]
 )
 def update_g2(n, b1, b2, b3, b4, b5, current):
+    """Updateujue wykres prawy globalny"""
     ctx = dash.callback_context
     if ctx.triggered and 'btn' in ctx.triggered[0]['prop_id']:
         bid = ctx.triggered[0]['prop_id']
@@ -438,10 +434,11 @@ def update_g2(n, b1, b2, b3, b4, b5, current):
     return generate_global_fig(current, get_full_training_data()), current, *styles
 
 
-# Pasek Postępu
+
 @app.callback([Output('progress-bar', 'style'), Output('progress-text', 'children')],
               [Input('interval-component', 'n_intervals')])
 def update_prog(n):
+    """Updateuje pasek postępu"""
     full_data = get_full_training_data()
     max_eps = full_data.get('config', {}).get('max_episodes', TARGET_EPOCHS) if full_data else TARGET_EPOCHS
     num_cpu = full_data.get('config', {}).get('num_processes', TARGET_EPOCHS) if full_data else TARGET_EPOCHS
@@ -451,7 +448,7 @@ def update_prog(n):
             'transition': 'width 0.5s'}, f"{current}/{max_eps} ({pct:.1f}%)"
 
 
-# Grid - Zmiana trybu
+
 @app.callback(
     [Output('view-mode-store', 'data'),
      Output('btn-auto', 'style'), Output('btn-pie', 'style'),
@@ -461,6 +458,7 @@ def update_prog(n):
     [State('view-mode-store', 'data')]
 )
 def change_mode(b1, b2, b3, b4, current_mode):
+    """Przyciski"""
     ctx = dash.callback_context
     if not ctx.triggered: return 'auto', btn_active_style, btn_style, btn_style, btn_style
     bid = ctx.triggered[0]['prop_id'].split('.')[0]
@@ -478,14 +476,12 @@ def change_mode(b1, b2, b3, b4, current_mode):
         s[new + 1] = btn_active_style
     return new, *s
 
-
-
-# --- CALLBACK: Grid - Aktualizacja wykresów procesów ---
 @app.callback(
     [Output('graphs-container', 'children'), Output('global-title', 'children'), Output('process-count', 'children')],
     [Input('interval-component', 'n_intervals'), Input('view-mode-store', 'data')]
 )
 def update_grid(n_intervals, view_mode):
+    """Updateuje wykresy gridowe"""
     data_list = get_process_data()
     if not data_list: return [html.Div("Oczekiwanie...", style={'color': 'gray'})], "Brak Danych", ""
 
@@ -508,7 +504,7 @@ def update_grid(n_intervals, view_mode):
         p_id = p.get('process_id', '?')
         epoch = p.get('epoch', '?')
 
-        # --- View 0: Pie (Bez zmian) ---
+
         if current_view == 0:
             v = [metrics['buys'], metrics['sells'], metrics['holds']]
             if sum(v) == 0: v = [0, 0, 1]
@@ -516,25 +512,25 @@ def update_grid(n_intervals, view_mode):
                                  marker=dict(colors=[COLORS['success'], COLORS['danger'], '#757575']),
                                  textinfo='percent'))
 
-        # --- View 1: Portfolio ---
+
         elif current_view == 1:
             y = port_data.get('portfolio_values', [])
             x = list(range(len(y)))
 
-            # 1. Główna linia
+
             fig.add_trace(go.Scatter(
                 x=x, y=y, mode='lines',
                 fill='tozeroy', fillcolor='rgba(0, 212, 255, 0.1)',
                 line=dict(color=COLORS['accent'], width=2),
-                name='Current Val'  # <-- Podpis głównej linii
+                name='Current Val'
             ))
 
-            # 2. Linie pomocnicze jako Traces (żeby były w legendzie)
+
             mn = port_data.get('min_p')
             mx = port_data.get('max_p')
             avg = port_data.get('mean_p')
 
-            # Aby narysować linię poziomą "Scatterem", potrzebujemy punktu początkowego i końcowego osi X
+
             x_range = [x[0], x[-1]] if x else [0, 0]
 
             if mx:
@@ -556,28 +552,28 @@ def update_grid(n_intervals, view_mode):
                     name='Mean'
                 ))
 
-            # Skalowanie
+
             if y:
                 margin = (max(y) - min(y)) * 0.1 if len(y) > 1 else 100
                 if margin == 0: margin = 100
                 fig.update_layout(yaxis=dict(range=[min(y) - margin, max(y) + margin]))
 
-        # --- View 2: Reward ---
+
         elif current_view == 2:
             y = rew_data.get('reward_values', [])
             x = list(range(len(y)))
 
-            # 1. Główna linia
+
             fig.add_trace(go.Scatter(
                 x=x, y=y, mode='lines',
                 line=dict(color=COLORS['warning'], width=2),
-                name='Reward'  # <-- Podpis głównej linii
+                name='Reward'
             ))
 
-            # Linia 0 (jako adnotacja, bo to punkt odniesienia, nie musi być w legendzie)
+
             fig.add_hline(y=0, line_color="#444", line_width=1)
 
-            # 2. Linie pomocnicze
+
             mn = rew_data.get('min_r')
             mx = rew_data.get('max_r')
             avg = rew_data.get('mean_r')
@@ -603,21 +599,21 @@ def update_grid(n_intervals, view_mode):
                     name='Mean'
                 ))
 
-        # --- Konfiguracja Layoutu (Legenda pod wykresem) ---
+
         fig.update_layout(
             template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             font=dict(size=12, color="#ccc", family='Roboto, sans-serif'),
-            margin=dict(l=20, r=20, t=30, b=50),  # b=50 daje miejsce na legendę
+            margin=dict(l=20, r=20, t=30, b=50),
             xaxis=dict(visible=False), yaxis=dict(showgrid=True, gridcolor='#333'),
             title=dict(text=f"Proc: {p_id} | Epoka: {epoch}", font=dict(size=12, color="white"), x=0.5,
                        xanchor='center'),
 
-            # USTAWIENIA LEGENDY
+
             showlegend=True,
             legend=dict(
-                orientation="h",  # Pozioma
+                orientation="h",
                 yanchor="top",
-                y=-0.1,  # Pod wykresem
+                y=-0.1,
                 xanchor="center",
                 x=0.5,
                 bgcolor="rgba(0,0,0,0)",

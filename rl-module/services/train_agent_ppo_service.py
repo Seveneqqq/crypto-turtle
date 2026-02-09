@@ -3,13 +3,12 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env  # <--- NOWY IMPORT
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines3.common.callbacks import EvalCallback
-from sympy.core.evalf import evalf_symbol
 
-from .rl.agent import TradingEnv
-from .core_logic.ml_signal import ModelSignal
+from .rl.agent_v2 import TradingEnv
+from .core_logic_v2.ml_signal import ModelSignal
 from datetime import timedelta
 from .rl.training_callback import TrainingCallback
-from .core_logic.structures import CoreConfig
+from .core_logic_v2.structures import CoreConfig
 import time
 import os
 import pandas as pd
@@ -36,7 +35,9 @@ class TrainAgentPPOService:
             n_steps=2048,
             batch_size=64,
             gamma=0.97,
-            ent_coef=0.01):
+            ent_coef=0.01,
+            episode_timesteps=1024,  # <- DODAJ TO
+            ml_threshold=0.45):  # <- DODAJ TO
 
         try:
             train_params = {
@@ -55,7 +56,6 @@ class TrainAgentPPOService:
 
             #TODO: poniżej
 
-            episode_timesteps = 10240
 
 
 
@@ -95,6 +95,8 @@ class TrainAgentPPOService:
             core_config = CoreConfig(
                 balance_start= 1000.0,
                 symbols=symbols,
+                threshold_buy=ml_threshold,
+                threshold_sell=ml_threshold
             )
 
             env = make_vec_env(

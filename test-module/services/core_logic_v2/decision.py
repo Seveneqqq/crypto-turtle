@@ -66,20 +66,26 @@ class DecisionEngine:
 
     def rl_config(self, scaled):
 
-        thr_low, thr_high = 0.25, 0.85
-        threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
-        threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
+        # thr_low, thr_high = 0.0, 1.0
+        # threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
+        # threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
+        # #
+        # # tx_min, tx_max = 0.01, 1.0
+        # # tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
+        # #
+        # # tx_min2, tx_max2 = 0.45, 1.0
+        # # tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
+        # #
+        # self.config.threshold_buy = float(threshold_buy)
+        # self.config.threshold_sell = float(threshold_sell)
+        # self.config.tx_fraction = float(round(tx_fraction,2))
+        # self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
+        fr_min, fr_max = 0.01, 1.0
+        fraction_buy = fr_min + scaled[0] * (fr_max - fr_min)
+        fraction_sell = fr_min + scaled[1] * (fr_max - fr_min)
 
-        tx_min, tx_max = 0.01, 1.0
-        tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
-
-        tx_min2, tx_max2 = 0.45, 1.0
-        tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
-
-        self.config.threshold_buy = float(round(threshold_buy,2))
-        self.config.threshold_sell = float(round(threshold_sell,2))
-        self.config.tx_fraction = float(round(tx_fraction,2))
-        self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
+        self.config.fraction_buy = float(fraction_buy)
+        self.config.fraction_sell = float(fraction_sell)
 
     def t_data(self, t):
         for symbol in self.symbols:
@@ -107,18 +113,19 @@ class DecisionEngine:
 
             if self.core_mode in ("train_rl", "sim_rl"):
                 self.rl_config(scaled[symbol])
-
             buy_diff_prob = buy_prob - self.config.threshold_buy
             sell_diff_prob = sell_prob - self.config.threshold_sell
 
             if sell_diff_prob >= buy_diff_prob and sell_prob >= self.config.threshold_sell:
                 action = "sell"
                 value = sell_prob
-                fraction = self.calculate_fraction(value, self.config.threshold_sell)
+                #fraction = self.calculate_fraction(value, self.config.threshold_sell)
+                fraction = self.config.fraction_sell
             elif buy_diff_prob > sell_diff_prob and buy_prob >= self.config.threshold_buy:
                 action = "buy"
                 value = buy_prob
-                fraction = self.calculate_fraction(value, self.config.threshold_buy)
+                # fraction = self.calculate_fraction(value, self.config.threshold_buy)
+                fraction = self.config.fraction_buy
             else:
                 action = "hold"
                 value = 0.0
@@ -157,7 +164,7 @@ class DecisionEngine:
         frac = self.config.tx_fraction + norm_signal * (self.config.max_fraction_when_confident - self.config.tx_fraction)
 
         frac = max(0.0, min(1.0, frac))
-
+        print(frac)
         # frac mincost, qty
         return round(frac,4)
 
@@ -167,6 +174,7 @@ class DecisionEngine:
         obs = self.build_obs(t)
         action, _ = self.agent.predict(obs, deterministic=self.rlagent_deterministic)
         action = np.asarray(action, dtype=np.float32).flatten()
+
         scaled = (action + 1.0) / 2.0
         n_params_per_symbol = 2
         for i, symbol in enumerate(self.symbols):
@@ -217,6 +225,7 @@ class DecisionEngine:
             symbol_obs = np.array([
                 buy_p,  # Co mówi ML?
                 sell_p,  # Co mówi ML?
+                # self.models[symbol].volatility[t],
                 market_momentum,  # Czy rynek zapierdziela? (zastępuje różnicę cen)
                 position_ratio,  # Ile tego mamy?
                 unrealized_pnl  # Czy zarabiamy na tym?
