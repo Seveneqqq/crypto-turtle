@@ -33,7 +33,7 @@ class TrainAgentSACService(BaseTrainService):
 
         try:
             start_time = time.time()
-            self._load_data(model_files, data_files)
+            if self.models == {}: self._load_data(model_files, data_files)
 
             env, callback = self._setup_env(
                 total_timesteps=total_timesteps,
