@@ -9,7 +9,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from ..core_logic.ml_signal import ModelSignal
 from ..core_logic.structures import CoreConfig
-from .agent_v2 import TradingEnv
+from .agent import TradingEnv
 from .training_callback import TrainingCallback
 
 class BaseTrainService(ABC):
