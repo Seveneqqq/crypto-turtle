@@ -6,11 +6,11 @@ import sys
 import pandas as pd
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from .core_logic_v2.ml_signal import ModelSignal
-from .core_logic_v2.decision import DecisionEngine
+from .core_logic.ml_signal import ModelSignal
+from .core_logic.decision import DecisionEngine
 from .test.rating import Rating
 from .visualization_service import VisualizationService
-from .core_logic_v2.structures import CoreConfig
+from .core_logic.structures import CoreConfig
 
 
 class SimulationService:
