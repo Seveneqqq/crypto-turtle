@@ -53,6 +53,7 @@ if __name__ == "__main__":
         max_fraction_when_confident=0.5,
         plots=True,
         logs=True,
-        results=True
+        results=True,
+        experiment_version="v0"
     )
 

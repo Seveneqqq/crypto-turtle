@@ -22,7 +22,8 @@ if __name__ == "__main__":
         ent_coef='auto',
         episode_timesteps=1024,
         ml_threshold=0.45,
-        live_logging=True
+        live_logging=True,
+        experiment_version="v0"
     )
 
 

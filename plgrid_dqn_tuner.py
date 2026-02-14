@@ -27,6 +27,7 @@ if __name__ == "__main__":
         #n_jobs    = 1,
         #timeout   = None,
         #study_name= None
-        live_logging = True
+        live_logging = True,
+        experiment_version="v0"
     )
 

@@ -26,5 +26,6 @@ if __name__ == "__main__":
         ml_threshold=0.45,
         #dqn_bins=3,
         live_logging=True,
+        experiment_version="v0"
     )
 

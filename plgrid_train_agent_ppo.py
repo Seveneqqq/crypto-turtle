@@ -22,5 +22,6 @@ if __name__ == "__main__":
         episode_timesteps=1024,
         ml_threshold=0.50,
         live_logging=True,
+        experiment_version="v0"
     )
 
