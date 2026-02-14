@@ -32,6 +32,7 @@ class TrainAgentDQNService(BaseTrainService):
                     episode_timesteps=1024,
                     ml_threshold=0.45,
                     live_logging=True,
+                    experiment_version="v0",
                     dqn_bins=3):
 
         try:
@@ -45,7 +46,8 @@ class TrainAgentDQNService(BaseTrainService):
                 live_logging=live_logging,
                 ml_threshold=ml_threshold,
                 num_envs=4,
-                gamma=gamma
+                gamma=gamma,
+                experiment_version=experiment_version
             )
 
             policy_kwargs = dict(

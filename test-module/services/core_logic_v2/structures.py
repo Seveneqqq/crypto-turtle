@@ -9,8 +9,8 @@ class Order:
     symbol: str
     action: str
     value: float
-    fraction: float
     price: float
+    fraction: float = 0.0
     reason: str = ""
     rl_config: Any = None
     qty: float = 0.0
@@ -104,6 +104,7 @@ class CoreConfig:
     mincost: float = 0.0
     tx_fraction: float = 0.0
     max_fraction_when_confident: float = 0.0
+    experiment_version: str = ""
 
     def to_dict(self):
         d = asdict(self)
@@ -118,6 +119,7 @@ class DecisionConfig:
     clamp_model_value: bool = True
     fraction_buy: float = 0.3
     fraction_sell: float = 0.3
+
     def set(self, output_config: CoreConfig):
         self.threshold_buy = output_config.threshold_buy
         self.threshold_sell = output_config.threshold_sell

@@ -4,6 +4,7 @@ import multiprocessing
 from datetime import datetime
 from abc import ABC
 import torch
+from plotly.data import experiment
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
@@ -73,7 +74,8 @@ class BaseTrainService(ABC):
                    ml_threshold,
                    num_envs=None,
                    normalize=True,
-                   gamma=0.99):
+                   gamma=0.99,
+                   experiment_version="v0"):
         """Przygotowanie środowiska tradingowego"""
 
         if num_envs is None:
@@ -85,7 +87,8 @@ class BaseTrainService(ABC):
             balance_start=1000.0,
             symbols=self.symbols,
             threshold_buy=ml_threshold,
-            threshold_sell=ml_threshold
+            threshold_sell=ml_threshold,
+            experiment_version=experiment_version,
         )
 
         env = make_vec_env(

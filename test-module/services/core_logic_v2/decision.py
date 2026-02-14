@@ -1,6 +1,8 @@
 import os
 import numpy as np
+import types
 from stable_baselines3 import PPO, SAC
+from .version_registry import EXPERIMENTS
 from .structures import Order, DecisionConfig, CoreConfig
 from .wallet import Wallet
 
@@ -20,7 +22,8 @@ class DecisionEngine:
         self.current_probs = {}
         self.current_value = 0
         self.prev_value = 0
-
+        self.experiment_version = core_config.experiment_version
+        self.n_params_per_symbol = 0
         self.wallet = Wallet(self.core_mode, core_config)
 
         self.symbols = core_config.symbols
@@ -37,11 +40,42 @@ class DecisionEngine:
                     self.agent = SAC.load(self.agent_path, env=None)
                 case _:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
+        self._apply_experiment_version()
 
     def reset(self):
         self.config = DecisionConfig()
         self.prev_value = self.core_config.balance_start
         self.current_value = self.core_config.balance_start
+
+    def _apply_experiment_version(self):
+        """Binduje custom methods z experiment registry"""
+
+
+        if self.experiment_version not in EXPERIMENTS:
+            raise ValueError(
+                f"Unknown experiment: {self.experiment_version}. "
+                f"Available: {list(EXPERIMENTS.keys())}"
+            )
+
+        exp = EXPERIMENTS[self.experiment_version]
+
+        # Override n_params_per_symbol
+        self.n_params_per_symbol = exp["n_params_per_symbol"]
+
+        # Bind Decision methods
+        for method_name, method_func in exp["decision_methods"].items():
+            bound_method = types.MethodType(method_func, self)
+            setattr(self, method_name, bound_method)
+
+        # Bind Wallet methods
+        for method_name, method_func in exp["wallet_methods"].items():
+            bound_method = types.MethodType(method_func, self.wallet)
+            setattr(self.wallet, method_name, bound_method)
+
+        # print(f"✓ Applied experiment version: {self.experiment_version}")
+        # print(f"  - n_params_per_symbol: {self.n_params_per_symbol}")
+        # print(f"  - Decision methods: {list(exp['decision_methods'].keys())}")
+        # print(f"  - Wallet methods: {list(exp['wallet_methods'].keys())}")
 
     def _normalize_model_value(self, mv):
         if mv is None:
@@ -66,26 +100,20 @@ class DecisionEngine:
 
     def rl_config(self, scaled):
 
-        # thr_low, thr_high = 0.0, 1.0
-        # threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
-        # threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
-        # #
-        # # tx_min, tx_max = 0.01, 1.0
-        # # tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
-        # #
-        # # tx_min2, tx_max2 = 0.45, 1.0
-        # # tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
-        # #
-        # self.config.threshold_buy = float(threshold_buy)
-        # self.config.threshold_sell = float(threshold_sell)
-        # self.config.tx_fraction = float(round(tx_fraction,2))
-        # self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
-        fr_min, fr_max = 0.01, 1.0
-        fraction_buy = fr_min + scaled[0] * (fr_max - fr_min)
-        fraction_sell = fr_min + scaled[1] * (fr_max - fr_min)
+        thr_low, thr_high = 0.25, 0.85
+        threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
+        threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
 
-        self.config.fraction_buy = float(fraction_buy)
-        self.config.fraction_sell = float(fraction_sell)
+        tx_min, tx_max = 0.01, 1.0
+        tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
+
+        tx_min2, tx_max2 = 0.45, 1.0
+        tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
+
+        self.config.threshold_buy = float(round(threshold_buy,2))
+        self.config.threshold_sell = float(round(threshold_sell,2))
+        self.config.tx_fraction = float(round(tx_fraction,2))
+        self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
 
     def t_data(self, t):
         for symbol in self.symbols:
@@ -113,19 +141,16 @@ class DecisionEngine:
 
             if self.core_mode in ("train_rl", "sim_rl"):
                 self.rl_config(scaled[symbol])
+
             buy_diff_prob = buy_prob - self.config.threshold_buy
             sell_diff_prob = sell_prob - self.config.threshold_sell
 
             if sell_diff_prob >= buy_diff_prob and sell_prob >= self.config.threshold_sell:
                 action = "sell"
                 value = sell_prob
-                #fraction = self.calculate_fraction(value, self.config.threshold_sell)
-                fraction = self.config.fraction_sell
             elif buy_diff_prob > sell_diff_prob and buy_prob >= self.config.threshold_buy:
                 action = "buy"
                 value = buy_prob
-                # fraction = self.calculate_fraction(value, self.config.threshold_buy)
-                fraction = self.config.fraction_buy
             else:
                 action = "hold"
                 value = 0.0
@@ -136,12 +161,13 @@ class DecisionEngine:
                 symbol=symbol,
                 action=action,
                 value=value,
-                fraction=fraction,
                 price=self.current_prices[symbol],
                 rl_config=scaled[symbol] if scaled is not None else "Brak"
             )
             if order.action == "hold":
                 order.rejected("lower_than_thresholds")
+            else:
+                order = self.calculate_fraction(order)
             candidates.append(order)
 
         sells = [o for o in candidates if o.action == 'sell']
@@ -156,17 +182,20 @@ class DecisionEngine:
         self.wallet.orders.extend(final_orders)
         self.wallet.execute_orders(t, self.current_prices)
 
-    def calculate_fraction(self, model_value, threshold):
-        denom = max(1.0 - threshold, 1e-12)
+    def calculate_fraction(self, order):
 
-        norm_signal = max(0.0, min(1.0, (model_value - threshold) / denom))
+        if order.action == "buy":
+              threshold = self.config.threshold_buy
+        else: threshold = self.config.threshold_sell
+
+        denom = max(1.0 - threshold, 1e-12)
+        norm_signal = max(0.0, min(1.0, (order.value - threshold) / denom))
 
         frac = self.config.tx_fraction + norm_signal * (self.config.max_fraction_when_confident - self.config.tx_fraction)
-
         frac = max(0.0, min(1.0, frac))
-        print(frac)
-        # frac mincost, qty
-        return round(frac,4)
+        order.fraction = round(frac,4)
+
+        return order
 
     def get_obs(self, t):
         scaled_dict = {}
@@ -176,10 +205,10 @@ class DecisionEngine:
         action = np.asarray(action, dtype=np.float32).flatten()
 
         scaled = (action + 1.0) / 2.0
-        n_params_per_symbol = 2
+
         for i, symbol in enumerate(self.symbols):
-            start = i * n_params_per_symbol
-            end = start + n_params_per_symbol
+            start = i * self.n_params_per_symbol
+            end = start + self.n_params_per_symbol
             scaled_dict[symbol] = scaled[start:end]
         return scaled_dict
 

@@ -28,7 +28,8 @@ class TrainAgentPPOService(BaseTrainService):
                     clip_range=0.2,
                     episode_timesteps=1024,
                     ml_threshold=0.45,
-                    live_logging=True):
+                    live_logging=True,
+                    experiment_version="v0"):
 
         try:
             start_time = time.time()
@@ -41,7 +42,8 @@ class TrainAgentPPOService(BaseTrainService):
                 live_logging=live_logging,
                 ml_threshold=ml_threshold,
                 num_envs=11,
-                gamma=gamma
+                gamma=gamma,
+                experiment_version=experiment_version,
             )
 
             policy_kwargs = dict(

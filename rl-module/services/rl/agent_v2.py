@@ -1,8 +1,10 @@
 import gymnasium as gymnasium
 from gymnasium import spaces
 import numpy as np
+import types
 from ..core_logic_v2.decision import DecisionEngine
 from ..core_logic_v2.structures import PreviousEpoch,  CoreConfig
+from ..core_logic_v2.version_registry import EXPERIMENTS
 
 class TradingEnv(gymnasium.Env):
     def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None, episode_timesteps = 10240, agent_type=None):
@@ -13,6 +15,7 @@ class TradingEnv(gymnasium.Env):
         self.symbols = core_config.symbols
         self.core_mode = "train_rl"
         self.base_dir = base_dir
+        self.experiment_version = core_config.experiment_version
 
         # Iteration and callback config
         self.t = 0
@@ -20,16 +23,17 @@ class TradingEnv(gymnasium.Env):
         self.max_steps = num_ticks
         self.episode_length = episode_timesteps
         self.epoch_counter = 0
-
+        self.action_space_shape = 0
         self.prev_epoch = PreviousEpoch()
         self.last_reward = 0
         self.rewards = []
         self.initial_balance = core_config.balance_start
+        self._apply_experiment_version()
 
         self.engine = DecisionEngine(core_mode=self.core_mode,models=models, base_dir=self.base_dir,
                                      core_config=core_config)
 
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2 * len(self.symbols),), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(self.action_space_shape * len(self.symbols),), dtype=np.float32)
 
         obs_len = 1 + (5 * len(self.symbols))
         low = np.full(obs_len, -np.inf, dtype=np.float32)
@@ -37,6 +41,32 @@ class TradingEnv(gymnasium.Env):
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
         self.reset()
+
+    def _apply_experiment_version(self):
+        """Binduje custom methods z experiment registry"""
+
+
+        if self.experiment_version not in EXPERIMENTS:
+            raise ValueError(
+                f"Unknown experiment: {self.experiment_version}. "
+                f"Available: {list(EXPERIMENTS.keys())}"
+            )
+
+        exp = EXPERIMENTS[self.experiment_version]
+
+        # Override n_params_per_symbol
+        self.action_space_shape = exp["n_params_per_symbol"]
+
+        # Bind Decision methods
+        for method_name, method_func in exp["env_methods"].items():
+            bound_method = types.MethodType(method_func, self)
+            setattr(self, method_name, bound_method)
+
+
+        # print(f"✓ Applied experiment version: {self.experiment_version}")
+        # print(f"  - n_params_per_symbol: {self.n_params_per_symbol}")
+        # print(f"  - Decision methods: {list(exp['decision_methods'].keys())}")
+        # print(f"  - Wallet methods: {list(exp['wallet_methods'].keys())}")
 
     def prepare_callback(self):
         if self.engine.wallet.transaction_count > 0:
