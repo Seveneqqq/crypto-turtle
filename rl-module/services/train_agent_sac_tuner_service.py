@@ -65,7 +65,8 @@ class SACTunerService(BaseTunerService):
                 ent_coef=ent_coef,
                 episode_timesteps=episode_timesteps,
                 ml_threshold=ml_threshold,
-                live_logging=self.live_logging
+                live_logging=self.live_logging,
+                experiment_version=self.experiment_version
             )
 
             if agent_result["result"] != "success":

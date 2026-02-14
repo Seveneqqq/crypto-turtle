@@ -2,9 +2,9 @@ import gymnasium as gymnasium
 from gymnasium import spaces
 import numpy as np
 import types
-from ..core_logic_v2.decision import DecisionEngine
-from ..core_logic_v2.structures import PreviousEpoch,  CoreConfig
-from ..core_logic_v2.version_registry import EXPERIMENTS
+from ..core_logic.decision import DecisionEngine
+from ..core_logic.structures import PreviousEpoch,  CoreConfig
+from ..core_logic.version_registry import EXPERIMENTS
 
 class TradingEnv(gymnasium.Env):
     def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None, episode_timesteps = 10240, agent_type=None):

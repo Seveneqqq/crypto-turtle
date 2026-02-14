@@ -19,7 +19,7 @@ class BaseTunerService:
 
         self.agent_type = None
         self.live_logging = False
-
+        self.experiment_version = None
         self.config = None
         self.defaults = None
         self.study_name = None
@@ -120,7 +120,8 @@ class BaseTunerService:
                 max_fraction_when_confident=0.5,
                 plots=False,
                 logs=False,
-                results=True
+                results=True,
+                experiment_version=self.experiment_version
             )
 
             final_value = sim_result.get('final_portfolio_value', 1000.0)
@@ -160,7 +161,9 @@ class BaseTunerService:
                    n_jobs: int = 1,
                    timeout: int = None,
                    study_name: str = None,
-                   live_logging: bool = True) -> optuna.Study:
+                   live_logging: bool = True,
+                   experiment_version: str = "v0"
+                   ) -> optuna.Study:
         """Run hyperparameter tuning."""
 
         # ZAPISUJEMY PLIKI DO INSTANCJI
@@ -168,6 +171,7 @@ class BaseTunerService:
         self.train_data_files = train_data_files
         self.eval_data_files = eval_data_files
         self.live_logging = live_logging
+        self.experiment_version = experiment_version
         # Use empty config if None
         if config is None:
             config = {}

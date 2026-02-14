@@ -4,12 +4,11 @@ import multiprocessing
 from datetime import datetime
 from abc import ABC
 import torch
-from plotly.data import experiment
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
-from ..core_logic_v2.ml_signal import ModelSignal
-from ..core_logic_v2.structures import CoreConfig
+from ..core_logic.ml_signal import ModelSignal
+from ..core_logic.structures import CoreConfig
 from .agent_v2 import TradingEnv
 from .training_callback import TrainingCallback
 

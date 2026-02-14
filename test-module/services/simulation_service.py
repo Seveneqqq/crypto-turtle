@@ -51,7 +51,8 @@ class SimulationService:
         agent_rl=None,
         plots=True,
         logs=True,
-        results=True
+        results=True,
+        experiment_version="v0"
     ):
         try:
             self.output, self.engine, self.models, symbols = {}, None, {}, []
@@ -103,7 +104,8 @@ class SimulationService:
                 threshold_sell=threshold_sell,
                 mincost=mincost,
                 tx_fraction=tx_fraction,
-                max_fraction_when_confident=max_fraction_when_confident
+                max_fraction_when_confident=max_fraction_when_confident,
+                experiment_version=experiment_version
             )
 
             # --- Inicjalizacja Portfela i Decision Engine---
