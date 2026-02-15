@@ -17,6 +17,8 @@ class BaseTunerService:
         self.eval_data_files = {}
         self.log_path = os.path.join(self.base_dir, "shared", "agents", "optuna_studies")
 
+        self.sim = block_simulation()
+
         self.agent_type = None
         self.live_logging = False
         self.experiment_version = None
@@ -151,10 +153,82 @@ class BaseTunerService:
             traceback.print_exc()
             return -1000.0
 
+    def _evaluate_ml_simulation(self,
+                                trial: optuna.Trial,
+                                threshold_buy: float,
+                                threshold_sell: float,
+                                wallet_percentage_limit: float,
+                                max_wallet_percentage_crypto: float,
+                                stop_loss: float,
+                                tx_fraction: float,
+                                max_fraction_when_confident: float,
+                                slippage: float,
+                                mincost: float,
+                                balance_start: float) -> float:
+        """Evaluate simulation using only ML models (no RL agent)."""
+
+
+
+        try:
+            print(f"[Simulation Trial {trial.number}] Running ML-only evaluation...")
+
+            sim_result = self.sim.run_simulation(
+                rabbit_msg_id=None,
+                model_paths=self.model_files,
+                data_files=self.eval_data_files,
+                agent_rl=None,  # NO RL AGENT - ML models only!
+                balance_start=balance_start,
+                add_fee=True,
+                sim_mode="ml",  # ML mode instead of "rl"
+                rlagent_deterministic=False,  # Not applicable for ML mode
+                slippage=slippage,
+                wallet_percentage_limit=wallet_percentage_limit,
+                max_wallet_percentage_crypto=max_wallet_percentage_crypto,
+                stop_loss=stop_loss,
+                threshold_buy=threshold_buy,
+                threshold_sell=threshold_sell,
+                mincost=mincost,
+                tx_fraction=tx_fraction,
+                max_fraction_when_confident=max_fraction_when_confident,
+                plots=False,
+                logs=False,
+                results=False,
+                experiment_version=self.experiment_version
+            )
+
+            final_value = sim_result.get('final_portfolio_value', balance_start)
+            sharpe = sim_result.get('sharpe_ratio', 0.0)
+            max_dd = sim_result.get('max_drawdown', -100.0)
+
+            # Calculate return percentage
+            metric = (final_value - balance_start) / balance_start * 100
+
+            print(f"\n[Simulation Trial {trial.number}] - Results:")
+            print(f"  Final Value: ${final_value:.2f}")
+            print(f"  Return: {metric:.2f}%")
+            print(f"  Sharpe: {sharpe:.2f}")
+            print(f"  Max DD: {max_dd:.2f}%\n")
+
+            trial.set_user_attr('final_value', final_value)
+            trial.set_user_attr('sharpe_ratio', sharpe)
+            trial.set_user_attr('max_drawdown', max_dd)
+            trial.set_user_attr('sim_mode', 'ml')
+
+            # Save trial result (without agent_path since we don't use RL agent)
+            self._save_trial_result(trial, metric, final_value, sharpe, max_dd, agent_path=None)
+
+            return metric
+
+        except Exception as e:
+            print(f"\n[Simulation Trial {trial.number}] Evaluation FAILED: {e}")
+            import traceback
+            traceback.print_exc()
+            return -1000.0
+
     def run_tuning(self,
                    model_files: Dict[str, str],
-                   train_data_files: Dict[str, str],
                    eval_data_files: Dict[str, str],
+                   train_data_files: Dict[str, str] = None,
                    config: Dict[str, List] = None,
                    defaults: Dict[str, Any] = None,
                    n_trials: int = 50,

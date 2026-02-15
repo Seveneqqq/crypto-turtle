@@ -47,6 +47,14 @@ def block_dqn_tuner():
     service = DQNTunerService(base_dir)
     return service
 
+def block_simulation_tuner():
+    SimulationTunerService = load(
+        "rl-module.services.simulation_tuner_service",
+        "SimulationTunerService"
+    )
+    service = SimulationTunerService(base_dir)
+    return service
+
 def block_simulation():
     SimulationService = load(
         "test-module.services.simulation_service",

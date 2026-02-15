@@ -125,7 +125,7 @@ class DecisionConfig:
         self.threshold_sell = output_config.threshold_sell
         self.tx_fraction = output_config.tx_fraction
         self.max_fraction_when_confident = output_config.max_fraction_when_confident
-        print(output_config)
+        #print(output_config)
 
 class WalletConfig:
     wallet_percentage_limit: float = 0.9

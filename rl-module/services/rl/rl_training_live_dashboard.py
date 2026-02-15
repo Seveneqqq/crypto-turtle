@@ -15,7 +15,7 @@ UPDATE_INTERVAL_MS = 4000
 TARGET_EPOCHS = 100
 
 app = dash.Dash(__name__)
-
+app.title = "RL Training Viewer"
 # --- DEFINICJE KOLORÓW I MOTYWÓW ---
 
 # Oryginalne kolory (używane do linii wykresów i trybu ciemnego)
@@ -718,4 +718,4 @@ def update_grid(n_intervals, view_mode, theme_name):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8050)
+    app.run(debug=False, port=8050)
