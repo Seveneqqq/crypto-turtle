@@ -1,162 +1,181 @@
 import gymnasium as gymnasium
 from gymnasium import spaces
 import numpy as np
-from services.core_logic.wallet import Wallet, WalletConfig
-from services.core_logic.decision import DecisionEngine, DecisionConfig
+from ..core_logic.decision import DecisionEngine
+from ..core_logic.structures import PreviousEpoch,  CoreConfig
 
 class TradingEnv(gymnasium.Env):
-    def __init__(self, models, symbols,base_dir, initial_balance=1000.0):
+    def __init__(self, models, num_ticks, base_dir, core_config: CoreConfig = None, episode_timesteps = 10240):
         super().__init__()
-        self.models = models
-        self.symbols = symbols
-        self.data = {}
-        self.trades_count = 0
+
+        self.symbols = core_config.symbols
         self.core_mode = "train_rl"
         self.base_dir = base_dir
-        self.prices = {}
-        self.prev_prices = {}
+
+        # Iteration and callback config
         self.t = 0
-        for symbol in self.symbols:
-            df = models[symbol].data.reset_index(drop=True)
-            self.data[symbol] = df
-            self.prices[symbol] = df["close"].to_numpy()
-            self.prev_prices[symbol] = df["close"][self.t]
-        self.max_steps = min(len(self.data[s]) for s in self.symbols)
-        self.episode_length = 1000
+        self.end_step = 0
+        self.max_steps = num_ticks
+        self.episode_length = episode_timesteps
+        self.epoch_counter = 0
 
+        self.prev_epoch = PreviousEpoch()
+        self.last_reward = 0
+        self.rewards = []
+        self.initial_balance = core_config.balance_start
 
-        self.initial_balance = float(initial_balance)
-        self.prev_value = 0
-        self.wallet = Wallet(balance=initial_balance, symbols=symbols,core_mode="train_rl", config=WalletConfig())
-        self.engine = DecisionEngine(wallet=self.wallet, core_mode="train_rl",base_dir=base_dir, config=DecisionConfig())
+        self.engine = DecisionEngine(core_mode=self.core_mode,models=models, base_dir=self.base_dir,
+                                     core_config=core_config)
 
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(6 * len(symbols),), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(4 * len(self.symbols),), dtype=np.float32)
+
         obs_len = 1 + (5 * len(self.symbols))
-
         low = np.full(obs_len, -np.inf, dtype=np.float32)
         high = np.full(obs_len, np.inf, dtype=np.float32)
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
         self.reset()
 
+    def prepare_callback(self):
+        if self.engine.wallet.transaction_count > 0:
+            self.prev_epoch.buys = self.engine.wallet.buys_count
+            self.prev_epoch.sells = self.engine.wallet.sells_count
+            self.prev_epoch.transactions = self.engine.wallet.transaction_count
+            self.prev_epoch.portfolio_values = self.engine.wallet.portfolio_values_history
+            self.prev_epoch.rewards = self.rewards
+            self.prev_epoch.calculate_history()
+            self.epoch_counter += 1
+            self.prev_epoch.epoch = self.epoch_counter
+
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        # --- ZMIANA: Losowy start (Random Slicing) ---
-        # Obliczamy maksymalny możliwy indeks startowy
         max_start_index = self.max_steps - self.episode_length - 1
-
         if max_start_index > 0:
             self.t = np.random.randint(0, max_start_index)
         else:
             self.t = 0
 
-        # Ustalamy, kiedy ten konkretny epizod ma się skończyć
         self.end_step = self.t + self.episode_length
-        # ---------------------------------------------
 
-        self.wallet = Wallet(balance=self.initial_balance, symbols=self.symbols, core_mode=self.core_mode,
-                             config=WalletConfig())
-        self.engine = DecisionEngine(wallet=self.wallet, core_mode=self.core_mode, base_dir=self.base_dir,
-                                     config=DecisionConfig())
-        self.prev_value = self.initial_balance
-        self.trades_count = 0
-        # Inicjalizacja cen dla wylosowanego momentu t
-        self.prev_prices = {}
-        for symbol in self.symbols:
-            df = self.models[symbol].data
-            self.prev_prices[symbol] = df.iloc[self.t]["close"]
+        # ------------Reset Env
 
+        self.prepare_callback()
+        self.engine.wallet.reset(self.initial_balance)
+        self.engine.reset()
+        self.last_reward = 0
+        self.rewards = []
+        self.engine.t_data(self.t)
         return self._get_obs(), {}
 
-
     def _get_obs(self):
-        prob_vec, close_prices= {},{}
-
-        for symbol in self.symbols:
-            prob_array = self.models[symbol].predictions[self.t]
-            classes = self.models[symbol].classes
-            prob_vec[symbol] = dict(zip(classes, prob_array))
-            close_prices[symbol] = self.prices[symbol][self.t]
-
-        obs = self.engine.build_obs(self.symbols, prob_vec, close_prices)
+        obs = self.engine.build_obs(self.t)
         return obs
 
-    def reward(self):
-        reward = 1.0
+    def _calculate_reward(self):
+        """
+        Oblicza nagrodę na podstawie Alpha (Agent Return --- Market Return)
+        oraz karze za obsunięcia kapitału (Sortino-like).
+        """
+        # 1. Logarytmiczna stopa zwrotu PORTFELA (nie ceny)
+        # Jeśli portfel wzrósł z 1000$ na 1010$, to świetnie.
+        portfolio_return = 0.0
+        if self.engine.prev_value > 0:
+            portfolio_return = np.log(self.engine.current_value / self.engine.prev_value)
+
+            # 2. Skalowanie (żeby liczby nie były rzędu 0.00001)
+            # Mnożymy razy 100, żeby procenty były jednościami
+        reward = portfolio_return * 100.0
+        # if self.prev_value == self.current_value:
+        #     reward -= 0.01
+        # if self.prev_value < self.current_value:
+        #     reward += 0.05
+        # 3. Kara za drawdown (obsunięcie)
+        # Jeśli tracimy, kara jest podwójna. To uczy agenta ostrożności.
+        if reward < 0:
+            reward *= 1.2  # Pain is stronger than pleasure
+
+        # 4. (Opcjonalnie) Mała kara za każdą transakcję (wymusza jakość, nie ilość)
+        # Wymaga dostępu do licznika transakcji w tym kroku
+        # if self.engine.wallet.transactions_in_this_step > 0:
+        #     reward -= 0.05
+        # if self.current_value > 1000.0:
+        #     reward += (self.current_value -1000) / 10000
+
         return reward
-    def step(self, action):
-        action = np.asarray(action, dtype=np.float32).flatten()
 
-        # skalowanie [-1,1] -> [0,1]
-        scaled = (action + 1.0) / 2.0
+    def _calculate_reward2(self):
+        # --- Agent's actual return ---
+        portfolio_return = 0.0
+        if self.engine.prev_value > 0:
+            portfolio_return = np.log(self.engine.current_value / self.engine.prev_value)
 
-        # mapowanie na słownik
-        scaled_dict, prices, data_rows, prob_vec = {}, {}, {}, {}
-        n_params_per_symbol = 6
-        for i, symbol in enumerate(self.symbols):
-            start = i * n_params_per_symbol
-            end = start + n_params_per_symbol
-            scaled_dict[symbol] = scaled[start:end]
-
-        market_returns = []
+        # --- Benchmark: equal-weight buy & hold ---
+        # (oblicz raz przy resecie, cached)
+        benchmark_return = 0.0
+        n = len(self.symbols)
         for symbol in self.symbols:
-            prices[symbol] = self.models[symbol].data.iloc[self.t]["close"]
-            data_rows[symbol] = self.models[symbol].data.iloc[self.t]
-            prob_array = self.models[symbol].predictions[self.t]
-            prob_vec[symbol] = dict(zip(self.models[symbol].classes, prob_array))
+            prices = self.engine.models[symbol].close_prices
+            if self.t > 0 and prices[self.t - 1] > 0:
+                benchmark_return += np.log(prices[self.t] / prices[self.t - 1]) / n
 
-            # Obliczanie zmiany ceny dla konkretnego symbolu
-            prev_p = self.prev_prices[symbol]
-            curr_p = prices[symbol]
-            if prev_p > 1e-6:
-                # Wzór: (Nowa - Stara) / Stara
-                ret = (curr_p - prev_p) / prev_p
-                market_returns.append(ret)
+        # --- Alpha: ile lepiej od rynku? ---
+        alpha = (portfolio_return - benchmark_return) * 100.0
 
-        self.engine.generate_decisions(prob_vec, self.symbols, prices, self.t, scaled_dict)
+        # Kara za drawdown tylko na alpha, nie na rynek
+        if alpha < 0:
+            alpha *= 1.5
 
-        # 1. Obliczanie Agent Return
-        portfolio_value = self.wallet.total_value(prices)
-        prev_value = float(self.prev_value)
-        #test_reward = portfolio_value - prev_value
-        # agent_return = 0.0
-        # if prev_value > 1e-6:
-        #     agent_return = (portfolio_value - prev_value) / prev_value
-        #
-        # # 2. Obliczanie Market Return (średnia rynku)
-        # market_return = 0.0
-        # if market_returns:
-        #     market_return = np.mean(market_returns)
-        self.trades_count = self.wallet.transaction_count
-        # # 3. Reward: Agent Return - Market Return (Alpha)
-        # # Mnożymy x100, aby sieć "poczuła" różnicę
-        # raw_reward = agent_return - market_return
-        # reward = raw_reward * 1000.0
-        #
-        # # Clipowanie
-        #reward = float(np.clip(test_reward, -10.0, 10.0))
-        reward = np.log(portfolio_value / self.prev_value)
-        reward *= 10.0
-        # update prev_value i prev_prices (robimy kopię słownika prices!)
-        self.prev_value = portfolio_value
-        self.prev_prices = prices.copy()
+        # Mała kara za transakcję (wymusza jakość sygnałów)
+        # Sprawdź ile orderów zostało accepted w tym stepie
+        accepted_this_step = sum(
+            1 for o in self.engine.wallet.logs
+            if o.timestamp == self.t - 1 and o.status == "accepted"
+        )
+        transaction_penalty = accepted_this_step * 0.02
 
-        # postęp czasu
+        return alpha - transaction_penalty
+    def step(self, action):
+
+        action = np.asarray(action, dtype=np.float32).flatten()
+        scaled = (action + 1.0) / 2.0
+        # mapowanie na słownik
+        scaled_dict= {}
+        n_params = 6
+        for i, symbol in enumerate(self.symbols):
+            idx = i * n_params
+            scaled_dict[symbol] = scaled[idx: idx + n_params]
+
+
+        self.engine.generate_decisions(self.t, scaled=scaled_dict)
         self.t += 1
-        symbol = self.symbols[0]
+        # Pobranie NOWYCH danych rynkowych (dla t+1)
+
+        self.engine.t_data(self.t)
+
+        # 5. OBLICZENIE NAGRODY (Wydzielona funkcja)
+        reward = self._calculate_reward2()
+
+        self.engine.wallet.portfolio_values_history.append(self.engine.current_value)
+
+        cum_reward = self.last_reward + reward
+        self.rewards.append(round(cum_reward, 4))
+        self.last_reward = cum_reward
+
         terminated = (self.t >= self.end_step) or (self.t >= self.max_steps - 1)
         truncated = False
-        #print(f"[DEBUG] terminated={terminated}" )
         obs = self._get_obs() if not terminated else np.zeros(self.observation_space.shape, dtype=np.float32)
+        observation = obs.copy()
         info = {}
-        for symbol in self.symbols:
-            info[f"{symbol}_portfolio_value"] = float(portfolio_value)
-            info[f"{symbol}_threshold_buy"] = float(scaled_dict[symbol][0])
-            info[f"{symbol}_threshold_sell"] = float(scaled_dict[symbol][1])
-            info[f"{symbol}_tx_fraction"] = float(scaled_dict[symbol][2])
-            info[f"{symbol}_max_fraction_when_confident"] = float(scaled_dict[symbol][3])
-            info[f"{symbol}_mincost"] = float(scaled_dict[symbol][4])
-            info[f"{symbol}_max_wallet_percentage_crypto"] = float(scaled_dict[symbol][5])
+        # for symbol in self.symbols:
+        #     info[f"{symbol}_portfolio_value"] = float(portfolio_value)
+        #     info[f"{symbol}_threshold_buy"] = float(scaled_dict[symbol][0])
+        #     info[f"{symbol}_threshold_sell"] = float(scaled_dict[symbol][1])
+        #     info[f"{symbol}_tx_fraction"] = float(scaled_dict[symbol][2])
+        #     info[f"{symbol}_max_fraction_when_confident"] = float(scaled_dict[symbol][3])
+        #     info[f"{symbol}_mincost"] = float(scaled_dict[symbol][4])
+        #     info[f"{symbol}_max_wallet_percentage_crypto"] = float(scaled_dict[symbol][5])
 
-        return obs, reward, terminated, truncated, info
+        return observation, reward, terminated, truncated, info
+
