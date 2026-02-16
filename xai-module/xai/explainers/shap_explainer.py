@@ -176,7 +176,7 @@ class ShapKernelExplainer:
             "features": features
         }
 
-        # 🔥 LOG + SAVE
+        # LOG + SAVE
         self._log_result_summary(result)
         self._save_result_json(result, explainer_name="shap_kernel")
 
@@ -275,7 +275,7 @@ class ShapTreeExplainer:
         **kwargs
     ):
         try:
-            # 🔥 jeśli model to Pipeline → wyciągamy estimator końcowy
+            # jeśli model to Pipeline → wyciągamy estimator końcowy
             if isinstance(model, Pipeline):
                 if self.logger:
                     self.logger.info("Extracting final estimator from Pipeline")
@@ -294,7 +294,7 @@ class ShapTreeExplainer:
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(row)
 
-            # 🔥 klasyfikacja binarna → wybieramy klasę pozytywną
+            # klasyfikacja binarna → wybieramy klasę pozytywną
             if isinstance(shap_values, list):
                 shap_values = shap_values[1]
 
@@ -305,7 +305,7 @@ class ShapTreeExplainer:
 
         expected_value = explainer.expected_value
 
-        # 🔥 konwersja numpy → python
+        # konwersja numpy → python
         if isinstance(expected_value, np.ndarray):
             expected_value = expected_value.tolist()
         elif isinstance(expected_value, (np.float32, np.float64)):

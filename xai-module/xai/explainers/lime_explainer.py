@@ -196,7 +196,7 @@ class LimeExplainer:
             "features": feature_names
         }
 
-        # 🔥 LOG + SAVE
+        # LOG + SAVE
         self._log_result_summary(result)
         self._save_result_json(result, explainer_name="lime")
 
