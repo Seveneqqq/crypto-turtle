@@ -21,7 +21,7 @@ class ModelSignal:
         self.high = []
         self.low = []
         self.close = []
-
+        self.predicted_prices = []
 
 
 
@@ -37,7 +37,7 @@ class ModelSignal:
 
             case "lstm":
                 self.model = ModelPredictor(self.model_path)
-                self.dict_probs, self.predictions, self.classes = self.lstm_price_predictor()
+                self.predictions, self.class_map = self.lstm_price_predictor()
 
 
 
@@ -78,12 +78,19 @@ class ModelSignal:
         return probs, class_map
 
     def lstm_price_predictor(self):
-        preds = self.model.predict_batch(self.data)
+        preds = self.model.predict_batch(
+            self.data,
+            batch_size=256,
+            include_signals=True # ← Wyłącz sygnały techniczne!
+        )
+
+        # Prosty fallback - oblicz z price_change
         signals = []
+        prices = []
         for p in preds:
-            buy = p["buy_signal"]
+            buy = p["signals"]["buy_signal"]
             hold = 0.0
-            sell = p["sell_signal"]
+            sell = p["signals"]["sell_signal"]
             signals.append([buy, hold, sell])
             # log_ret = np.log(predicted / current)
             # conf = min(abs(log_ret) * 50, 1.0)
@@ -93,11 +100,11 @@ class ModelSignal:
             #     signals.append([0.0, 1 - conf, conf])
             # else:
             #     signals.append([0.0, 1.0, 0.0])
+            prices.append(p["predicted_price"])
+
         classes = ["buy", "hold", "sell"]
-        dict_probs = [
-            dict(zip(classes, row)) for row in preds
-        ]
-        return dict_probs, np.array(signals), classes
+        self.predicted_prices = prices
+        return np.array(signals), classes
 
 
 

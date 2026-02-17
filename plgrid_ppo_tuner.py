@@ -18,7 +18,7 @@ if __name__ == "__main__":
             "gamma"            : ["F", 0.95, 0.999],
             "batch_size"       : ["C", 512, 1024],
             "ml_threshold"     : ["F", 0.45, 0.65],
-            "total_timesteps"  : ["C", 1000000, 500000, 100000],
+            "total_timesteps"  : ["C", 10000, 500000, 100000],
 
             # PPO-specific
             "n_steps"   : ["C", 2048, 4096],
