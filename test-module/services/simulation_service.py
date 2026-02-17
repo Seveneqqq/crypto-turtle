@@ -6,11 +6,11 @@ import sys
 import pandas as pd
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from .core_logic_v2.ml_signal import ModelSignal
-from .core_logic_v2.decision import DecisionEngine
+from .core_logic.ml_signal import ModelSignal
+from .core_logic.decision import DecisionEngine
 from .test.rating import Rating
 from .visualization_service import VisualizationService
-from .core_logic_v2.structures import CoreConfig
+from .core_logic.structures import CoreConfig
 
 
 class SimulationService:
@@ -26,6 +26,7 @@ class SimulationService:
         self.core_config = CoreConfig()
         self.num_ticks = 0
         self.models = {}
+        self.symbols = []
         self.engine = None
         self.output = {}
 
@@ -51,10 +52,11 @@ class SimulationService:
         agent_rl=None,
         plots=True,
         logs=True,
-        results=True
+        results=True,
+        experiment_version="v0"
     ):
         try:
-            self.output, self.engine, self.models, symbols = {}, None, {}, []
+            self.output, self.engine,  symbols = {}, None,  []
 
             if sim_mode not in ("ml","mlrl", "rl"):
                 raise ValueError ("[SIMULATION ERROR] Invalid simulation mode")
@@ -68,31 +70,33 @@ class SimulationService:
             # --- Ładowanie danych ---
 
             # Dodać sprawdzanie open_time
-            for symbol, filename in data_files.items():
-                filepath = os.path.join(self.DATA_DIR, filename)
-                if not os.path.exists(filepath):
-                    raise FileNotFoundError(f"Brak pliku: {filepath}")
-                df = pd.read_csv(filepath)
-                df.dropna(inplace=True)
-                len_df = len(df)
-                if self.num_ticks == 0: self.num_ticks = len_df
-                if len_df < self.num_ticks: self.num_ticks = len_df
+            if self.models == {}:
+                for symbol, filename in data_files.items():
+                    filepath = os.path.join(self.DATA_DIR, filename)
+                    if not os.path.exists(filepath):
+                        raise FileNotFoundError(f"Brak pliku: {filepath}")
+                    df = pd.read_csv(filepath)
+                    df.dropna(inplace=True)
+                    len_df = len(df)
+                    if self.num_ticks == 0: self.num_ticks = len_df
+                    if len_df < self.num_ticks: self.num_ticks = len_df
 
-                # --- Inicjalizacja modeli ---
-                self.models[symbol] = ModelSignal(model_name=model_paths[symbol], data=df.copy(),base_dir=self.base_dir)
-                symbols.append(symbol)
+                    # --- Inicjalizacja modeli ---
+                    self.models[symbol] = ModelSignal(model_name=model_paths[symbol], data=df.copy(),base_dir=self.base_dir)
+                    symbols.append(symbol)
 
-                len_pred = len(self.models[symbol].predictions)
+                    len_pred = len(self.models[symbol].predictions)
 
-                if len_pred < self.num_ticks: self.num_ticks = len_pred
+                    if len_pred < self.num_ticks: self.num_ticks = len_pred
 
-            for symbol in symbols: self.models[symbol].process_models_data(self.num_ticks)
+                for symbol in symbols: self.models[symbol].process_models_data(self.num_ticks)
+                self.symbols = symbols
 
             self.core_config = CoreConfig(
                 sim_mode=sim_mode,
                 balance_start=balance_start,
                 add_fee=add_fee,
-                symbols=symbols,
+                symbols=self.symbols,
                 rlagent=sim_mode,
                 rlagent_deterministic=rlagent_deterministic,
                 slippage=slippage,
@@ -103,7 +107,8 @@ class SimulationService:
                 threshold_sell=threshold_sell,
                 mincost=mincost,
                 tx_fraction=tx_fraction,
-                max_fraction_when_confident=max_fraction_when_confident
+                max_fraction_when_confident=max_fraction_when_confident,
+                experiment_version=experiment_version
             )
 
             # --- Inicjalizacja Portfela i Decision Engine---
@@ -140,17 +145,20 @@ class SimulationService:
             self.output["config"] = self.core_config.to_dict()
 
             #TODO: mode simulation
-            sim_mode = "agent"
+            sim_mode = "model"
             gzip_name, sim_path, gzip_path = self.build_filename()
 
             if logs or plots or results:
                 os.makedirs(sim_path, exist_ok=True)
 
-            with gzip.open(gzip_path, "wt", encoding="utf-8") as f:
-                json.dump(self.output, f, indent=2)
+
+
 
             if logs: self.save_logs(sim_mode, sim_path)
-            if results: self.save_results(sim_mode, sim_path)
+            if results:
+                self.save_results(sim_mode, sim_path)
+                with gzip.open(gzip_path, "wt", encoding="utf-8") as f:
+                    json.dump(self.output, f, indent=2)
             if plots: VisualizationService().visualize(simulation_files=gzip_name, sim_path=sim_path)
 
             print(f"[Simulation] Zakończono w {timedelta(seconds=time.time() - start_time)}")
@@ -161,9 +169,9 @@ class SimulationService:
                 "message": "Successfully retrieved simulation data",
                 #"model_logs_file": model_log_path,
                 #"agent_logs_file": agent_log_path,
-                "final_portfolio_value": self.output["agent"]["metrics"]["final_portfolio_value"],
-                "sharpe_ratio": self.output["agent"]["metrics"]["sharpe_ratio"],
-                "max_drawdown": self.output["agent"]["metrics"]["max_drawdown"],
+                "final_portfolio_value": self.output["model"]["metrics"]["final_portfolio_value"],
+                "sharpe_ratio": self.output["model"]["metrics"]["sharpe_ratio"],
+                "max_drawdown": self.output["model"]["metrics"]["max_drawdown"],
                 "portfolio_values": "portfolio_values",
                 "timestamp": datetime.now().isoformat()
             }

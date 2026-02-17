@@ -5,17 +5,16 @@ import numpy as np
 
 @dataclass(slots=True)
 class Order:
-    # --- Pola inicjalizowane przez DecisionEngine ---
     timestamp: int
     symbol: str
-    action: str  # "buy", "sell", "hold" #TODO: zamiana na inty
-    value: float  # pewność modelu (np. 0.85)
-    fraction: float  # sugerowana wielkość pozycji
+    action: str
+    value: float
     price: float
+    fraction: float = 0.0
     reason: str = ""
-    rl_config: Any = None  # Konfiguracja od agenta RL dla tego symbolu
+    rl_config: Any = None
     qty: float = 0.0
-    status: str = "created"  # np. "accepted", "rejected", "pending"
+    status: str = "created"
     slippage_price: float = 0.0
 
     # , "buy:0","hold":1, "sell:2"
@@ -105,6 +104,7 @@ class CoreConfig:
     mincost: float = 0.0
     tx_fraction: float = 0.0
     max_fraction_when_confident: float = 0.0
+    experiment_version: str = ""
 
     def to_dict(self):
         d = asdict(self)
@@ -112,18 +112,20 @@ class CoreConfig:
 
 @dataclass(slots=True)
 class DecisionConfig:
-    threshold_buy: float = 0.6
-    threshold_sell: float = 0.6
+    threshold_buy: float = 0.5
+    threshold_sell: float = 0.5
     tx_fraction: float = 0.1
     max_fraction_when_confident: float = 0.5
     clamp_model_value: bool = True
+    fraction_buy: float = 0.3
+    fraction_sell: float = 0.3
 
     def set(self, output_config: CoreConfig):
         self.threshold_buy = output_config.threshold_buy
         self.threshold_sell = output_config.threshold_sell
         self.tx_fraction = output_config.tx_fraction
         self.max_fraction_when_confident = output_config.max_fraction_when_confident
-        print(output_config)
+        #print(output_config)
 
 class WalletConfig:
     wallet_percentage_limit: float = 0.9
