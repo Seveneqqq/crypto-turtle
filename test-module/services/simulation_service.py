@@ -153,6 +153,7 @@ class SimulationService:
 
 
 
+
             if logs: self.save_logs(sim_mode, sim_path)
             if results:
                 self.save_results(sim_mode, sim_path)
