@@ -33,3 +33,36 @@ class RabbitMQRequestService:
                         "result": "failed",
                         "message": "Failed to retrieve train_agent_ppo data"
                     })
+
+    def handle_realtime_request(self, data):
+        print("Getting realtime request ...")
+        print(data)
+
+        match data.get("event"):
+
+            case "processed_candles":
+                print("Processing realtime candles")
+
+                result = {
+                    "symbol": data.get("symbol"),
+                    "interval": data.get("interval"),
+                    "candles": data.get("data")
+                }
+
+                print("Result from processing realtime data:")
+                print(result)
+
+                # if result and result.get("result") == "success":
+                #     print("Successfully processed realtime data")
+
+                #     self.rabbitmq_service.publish(RL_RESPONSE_QUEUE, result)
+
+                # else:
+                #     print("Failed to process realtime data")
+
+                #     self.rabbitmq_service.publish(RL_RESPONSE_QUEUE, {
+                #         "result": "failed",
+                #         "message": "Failed to process realtime data"
+                #     })
+
+                #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance
