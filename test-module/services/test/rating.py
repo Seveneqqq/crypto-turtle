@@ -22,6 +22,7 @@ class Rating:
             "max_portfolio_growth": ((max(portfolio_values) / portfolio_values[0]) - 1) * 100,
             "max_portfolio_drop": ((min(portfolio_values) / portfolio_values[0]) - 1) * 100,
             "transaction_count": transactions,
+            "final_portfolio_value":portfolio_values[-1]
         }
 
 
