@@ -1,267 +1,209 @@
-import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use("Agg")
 
-class Charts:
-    def __init__(self):
-        self.portfolio_values = {}
+# Ustawienie backendu 'Agg' jest krytyczne dla Dockera (brak GUI)
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
+import numpy as np
 
-    @staticmethod
-    def draw_universal_chart(data, pdf_title):
+
+class ChartGenerator:
+    def generate_chart(self, timestamps, portfolio_values, crypto_ref_values, logs, metrics, filename, output_dir):
         """
-        Tworzy uniwersalny wykres dla trybów ML, RL lub MLRL,
-        bez błędów gdy brakuje agent/model/crypto_ref_values
+        Generuje dashboard symulacji.
+        :param logs: Może być listą słowników lub pd.DataFrame
         """
-        # Bezpieczne pobranie metryk
-        agent_metrics = data.get("agent", {}).get("metrics", {})
-        model_metrics = data.get("model", {}).get("metrics", {})
 
-        agent_rate = agent_metrics.get("score", 0)
-        model_rate = model_metrics.get("score", 0)
+        # 1. PRZYGOTOWANIE DANYCH
+        # Zabezpieczenie: jeśli logs to lista, konwertujemy na DataFrame
+        if isinstance(logs, list):
+            df_logs = pd.DataFrame(logs)
+        else:
+            df_logs = logs.copy()
 
-        sim_mode = data.get("config", {}).get("sim_mode", "")
-        symbols = data.get("config", {}).get("symbols", [])
-        crypto_ref_values = data.get("hodl", {}).get("crypto_ref_values", {})
+        # Konwersja timestampów logów jeśli trzeba (zakładamy, że są zgodne z osią X)
+        # Jeśli timestamps to obiekty datetime, upewnij się, że w df_logs też są datetime.
 
-        fig, (ax_title, ax) = plt.subplots(
+        # 2. USTAWIENIA STYLU
+        plt.style.use('dark_background')
+        # Kolory dla poszczególnych kryptowalut (cykl kolorów)
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+
+        # 3. UKŁAD WYKRESU (3 wiersze: Portfel, Ceny, Metryki)
+        # height_ratios: Metryki na dole zajmują mniej miejsca
+        fig, (ax_port, ax_metrics) = plt.subplots(
             2, 1,
-            gridspec_kw={'height_ratios': [0.05, 0.95]},  # 10% na tytuł, 90% na wykres
-            figsize=(12, 7)
+            figsize=(16, 10),
+            sharex=False,  # Metrics nie ma osi czasu
+            gridspec_kw={'height_ratios': [3, 1]}
         )
-        ax_title.axis("off")  # wyłącz osie
-        ax_title.text(0.5, 0.5, pdf_title, ha='center', va='center', fontsize=12, fontweight='bold')
+        # fig, (ax_port, ax_price, ax_metrics) = plt.subplots(
+        #     3, 1,
+        #     figsize=(16, 14),
+        #     sharex=False,  # Metrics nie ma osi czasu
+        #     gridspec_kw={'height_ratios': [3,2, 1]}
+        # )
 
-        # --- Wartości portfeli ---
-        if sim_mode in ("ml", "mlrl") and "model" in data:
-            model_portfolio = data["model"].get("portfolio_values", [])
-            if model_portfolio:
-                ax.plot(range(len(model_portfolio)), model_portfolio, label="Model (ML)", color="blue")
+        # Aby Portfel i Ceny miały wspólną oś X (zoom działa na obu)
+        #ax_port.get_shared_x_axes().joined(ax_port, ax_price)
+        #ax_price.set_xticklabels([])  # Ukryj etykiety X dla środkowego wykresu
 
-        if sim_mode in ("rl", "mlrl") and "agent" in data:
-            agent_portfolio = data["agent"].get("portfolio_values", [])
-            if agent_portfolio:
-                ax.plot(range(len(agent_portfolio)), agent_portfolio, label="Agent (RL)", color="red")
+        # --- WYKRES 1: PORTFOLIO VALUE ---
+        self._plot_portfolio(ax_port, timestamps, portfolio_values,crypto_ref_values)
 
-        # --- HODL (tylko jeśli jedna kryptowaluta i istnieją dane) ---
-        if len(symbols) == 1 and symbols[0] in crypto_ref_values:
-            hodl_values = crypto_ref_values.get(symbols[0], [])
-            if hodl_values:
-                ax.plot(range(len(hodl_values)), hodl_values, linestyle="--", color="gray", label=f"HODL {symbols[0]}")
+        # --- WYKRES 2: CENY I TRANSAKCJE ---
+        #self._plot_assets_and_signals(ax_price, timestamps, crypto_ref_values, df_logs, colors)
 
-        # --- Ustawienia wykresu ---
-        ax.set_xlabel("Timestamp")
-        ax.set_ylabel("Wartość portfela (USD)")
+        # --- SEKCJA 3: METRYKI ---
+        self._render_metrics(ax_metrics, metrics)
 
-        title_map = {
-            "ml": f"Model ML [{model_rate}] – Symulacja wartości portfela",
-            "rl": f"Agent RL [{agent_rate}] – Symulacja wartości portfela",
-            "mlrl": f"Porównanie: Model ML [{model_rate}] vs Agent RL [{agent_rate}]"
-        }
-        ax.set_title(title_map.get(sim_mode, "Symulacja portfela"))
-
-        ax.legend()
-        ax.grid(True, linestyle="--", alpha=0.6)
-
+        # 4. ZAPIS I CZYSZCZENIE
         plt.tight_layout()
-        return fig
+        output_path = f"{output_dir}/{filename}.png"
+        plt.savefig(output_path, dpi=100, bbox_inches='tight')
+        plt.close(fig)  # Zwolnienie pamięci RAM
 
-    @staticmethod
-    def draw_crypto_percentage_chart(data, rlagent: bool = False):
-        """
-        Rysuje wykres wartości portfela, gotówki (USD) i poszczególnych kryptowalut.
-        Zakłada strukturę:
-          data["config"]["symbols"] -> ["BTC", "ETH", ...]
-          data["model" lub "agent"]["holdings"] -> [[btc_t0, eth_t0, ...], [btc_t1, eth_t1, ...], ...]
-        """
-        key = "agent" if rlagent else "model"
-        section = data[key]
+        return output_path
 
-        portfolio_values = section["portfolio_values"]
-        holdings = section["holdings"]
-        symbols = data["config"]["symbols"]
+    def _plot_portfolio(self, ax, timestamps, values, crypto_ref_values):
+        """Rysuje wykres wartości portfela vs HODL."""
 
-        # transpozycja holdings: [ [btc_t0, eth_t0], [btc_t1, eth_t1] ] -> {BTC: [..], ETH: [..]}
-        holdings_by_symbol = {sym: [row[i] for row in holdings] for i, sym in enumerate(symbols)}
+        # 1. Główna linia (Twoja Strategia)
+        # Pogrubiłem ją (linewidth=2) żeby się wyróżniała
+        ax.plot(timestamps, values, color='#00ffcc', linewidth=1, label='Strategy (Total)')
+        ax.fill_between(timestamps, values, alpha=0.1, color='#00ffcc')
 
-        # Oblicz USD (gotówka)
-        usd_values = []
-        for i in range(len(portfolio_values)):
-            total_crypto = sum(holdings[i])  # suma wartości kryptowalut w danym kroku
-            usd = portfolio_values[i] - total_crypto
-            usd_values.append(usd)
+        # 2. Linie referencyjne (HODL) dla każdego symbolu
+        # Definiujemy kolory dla linii HODL (np. pomarańczowy dla BTC, fiolet dla ETH...)
+        colors = ['#ff9900', '#ff3333', '#ffff00', '#cc00ff', '#99ff33']
 
-        # Rysowanie wykresu
-        fig, ax = plt.subplots(figsize=(12, 7))
-        x = range(len(portfolio_values))
+        for i, (symbol, ref_vals) in enumerate(crypto_ref_values.items()):
+            # Wybór koloru cyklicznie
+            color = colors[i % len(colors)]
 
-        # linie
-        ax.plot(x, portfolio_values, color="black", linewidth=2, label="Portfolio total")
-        ax.plot(x, usd_values, color="gray", linestyle="--", label="USD (cash)")
+            # Zabezpieczenie długości tablic (na wypadek różnic o 1 tick)
+            limit = min(len(timestamps), len(ref_vals))
 
-        for sym, vals in holdings_by_symbol.items():
-            ax.plot(x, vals, label=sym)
+            ax.plot(
+                timestamps[:limit],
+                ref_vals[:limit],
+                color=color,
+                linestyle='--',  # Linia przerywana odróżnia benchmark od strategii
+                linewidth=1,
+                alpha=0.6,  # Lekko przezroczyste, żeby nie zagłuszały wykresu
+                label=f'HODL {symbol}'
+            )
+        all_values = values + [val for sublist in crypto_ref_values.values() for val in sublist]
+        if all_values:
+            y_min = min(all_values)
+            y_max = max(all_values)
+            # Dodajemy 5% marginesu góra/dół, żeby wykres nie dotykał krawędzi
+            margin = (y_max - y_min) * 0.05
+            ax.set_ylim(y_min - margin, y_max + margin)
+        # 3. Stylizacja i Legenda
+        ax.set_title("Portfolio Performance vs HODL", fontsize=14, fontweight='bold', color='white')
+        ax.set_ylabel("Value (USDT)", fontsize=14)
+        ax.tick_params(axis='both', which='major', labelsize=14, colors='#dddddd')
 
-        # opis i legenda
-        mode_name = "Agent RL" if rlagent else "Model ML"
-        ax.set_title(f"Skład portfela — {mode_name}", fontsize=14, fontweight="bold")
-        ax.set_xlabel("Kroki / Timestamp")
-        ax.set_ylabel("Wartość (USD)")
-        ax.legend()
-        ax.grid(True, linestyle="--", alpha=0.6)
-        plt.tight_layout()
+        ax.grid(True, linestyle='--', alpha=0.2)
 
-        return fig
+        # Legenda automatycznie doda nowe wpisy
+        ax.legend(loc='upper left', frameon=True, facecolor='#1a1a1a', edgecolor='none', fontsize=12)
 
-    # metody dla simulation_service (na razie zostają)
+    def _plot_assets_and_signals(self, ax, timestamps, crypto_refs, df_logs, colors):
+        """Rysuje ceny aktywów oraz nakłada punkty kupna/sprzedaży."""
 
-    @staticmethod
-    def draw_common_chart(model_portfolio_values, agent_portfolio_values, model_timestamps, agent_timestamps, model_metrics, agent_metrics, plot_path):
-        fig, (ax, ax_text) = plt.subplots(
-            2, 1,
-            gridspec_kw={'height_ratios': [5, 1]},
-            figsize=(12, 9)
-        )
+        symbols = list(crypto_refs.keys())
 
-        # --- Wykres wartości portfela ---
-        ax.plot(range(0,model_timestamps), model_portfolio_values, label="Model DecisionEngine", color="blue")
-        ax.plot(range(0,agent_timestamps), agent_portfolio_values, label="Agent RL", color="red")
+        for i, symbol in enumerate(symbols):
+            # Dobieramy kolor dla danego symbolu
+            color = colors[i % len(colors)]
+            ref_values = crypto_refs[symbol]
 
-        ax.set_xlabel("Timestamp")
-        ax.set_ylabel("Wartość portfela (USD)")
-        ax.set_title("Porównanie wartości portfela: Model vs Agent RL")
-        ax.set_xticks([])
-        ax.set_xticklabels([])
-        ax.legend()
+            # Dopasowanie długości (na wypadek różnic o 1 tick)
+            limit = min(len(timestamps), len(ref_values))
 
-        # --- Tekst porównawczy bez LaTeX ---
-        ax_text.axis("off")
+            # Rysowanie linii ceny (Referencyjna wartość HODL lub Cena)
+            ax.plot(timestamps[:limit], ref_values[:limit], label=f"{symbol}", color=color, alpha=0.7, linewidth=1)
 
-        # Pozycje pionowe
-        y_start = 0.9
-        delta_y = 0.12
+            # --- RYSOWANIE TRANSAKCJI (WEKTOROWO) ---
+            if not df_logs.empty:
+                # Filtrujemy DataFrame dla konkretnego symbolu
+                mask_symbol = df_logs['symbol'] == symbol
 
-        metrics_list = ["total_return", "max_portfolio_growth", "max_portfolio_drop",
-                        "transaction_count", "avg_transactions_per_day",
-                        "cagr", "max_drawdown", "sharpe_ratio", "sortino_ratio", "calmar_ratio", "score"]
+                # KUPNO (Zielony trójkąt w górę)
+                buys = df_logs[mask_symbol & (df_logs['action'] == 'buy')]
+                if not buys.empty:
+                    self._scatter_transactions(ax, timestamps, buys, marker='^', color='#00ff00', label=None)
 
-        metric_names = ["Łączny zwrot", "Maksymalny wzrost portfela", "Maksymalny spadek portfela",
-                        "Liczba transakcji", "Śr. transakcji/dzień",
-                        "CAGR", "Max Drawdown", "Sharpe ratio", "Sortino ratio", "Calmar ratio", "Score"]
+                # SPRZEDAŻ (Czerwony trójkąt w dół)
+                sells = df_logs[mask_symbol & (df_logs['action'] == 'sell')]
+                if not sells.empty:
+                    self._scatter_transactions(ax, timestamps, sells, marker='v', color='#ff0066', label=None)
 
-        for i, (key, name) in enumerate(zip(metrics_list, metric_names)):
-            m_val = model_metrics.get(key, 0)
-            a_val = agent_metrics.get(key, 0)
+        ax.set_title("💰 Asset Prices & Transactions", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Asset Value (Ref)", fontsize=10)
+        ax.grid(True, linestyle='--', alpha=0.15)
+        ax.legend(loc='upper left', frameon=True, facecolor='#1a1a1a', edgecolor='none', fontsize=8)
 
-            if m_val > a_val:
-                winner = "Model"
-                diff = (m_val - a_val) / a_val * 100 if a_val != 0 else 0
-            elif a_val > m_val:
-                winner = "Agent RL"
-                diff = (a_val - m_val) / m_val * 100 if m_val != 0 else 0
-            else:
-                winner = "Remis"
-                diff = 0
+        # Formatowanie daty na osi X (jeśli timestamps to datetime)
+        # ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        # ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        plt.setp(ax.get_xticklabels(), rotation=30, ha='right')
 
-            # Opis
-            ax_text.text(0.2, y_start - i * delta_y, f"{name}:", ha="right", va="center", fontsize=10)
-            # Model (niebieski)
-            ax_text.text(0.25, y_start - i * delta_y, f"{m_val:.2f}", color="blue", ha="center", va="center",
-                         fontsize=10)
-            # Agent (czerwony)
-            ax_text.text(0.4, y_start - i * delta_y, f"{a_val:.2f}", color="red", ha="center", va="center",
-                         fontsize=10)
-            # Zwycięzca
-            if winner == "Model":
-                ax_text.text(0.55, y_start - i * delta_y, f"{winner} (+{diff:.2f}%)", color="blue", ha="left",
-                             va="center",
-                             fontsize=10)
-            else:
-                ax_text.text(0.55, y_start - i * delta_y, f"{winner} (+{diff:.2f}%)", color="red", ha="left",
-                             va="center",
-                             fontsize=10)
-        plt.tight_layout()
-        plt.show()
-        plt.savefig(plot_path, format="png")
-        plt.close()
+    def _scatter_transactions(self, ax, timestamps, log_subset, marker, color, label):
+        """Pomocnicza funkcja do szybkiego rysowania punktów."""
+        # Musimy zmapować timestamp z logów na oś X wykresu.
+        # Wersja A: Jeśli log['timestamp'] to index (int)
+        try:
+            indices = log_subset['timestamp'].values.astype(int)
+            # Filtrujemy indeksy, które wychodzą poza zakres
+            valid_mask = indices < len(timestamps)
+            indices = indices[valid_mask]
+            prices = log_subset['price'].values[valid_mask]  # Zakładając, że loguje cenę aktywa a nie wartość portfela
 
+            # Pobieramy daty odpowiadające indeksom
+            dates = [timestamps[i] for i in indices]
 
-    @staticmethod
-    def draw_chart(portfolio_values, crypto_ref_values, timestamps, metrics, symbols, plot_path):
+            # Rysujemy
+            ax.scatter(dates, prices, marker=marker, color=color, s=60, edgecolors='black', linewidth=0.5, zorder=5,
+                       alpha=0.9, label=label)
 
-        fig, (ax, ax_text) = plt.subplots(
-            2, 1,
-            gridspec_kw={'height_ratios': [5, 1]},  # proporcja: 5 - wykres, 1 - tekst
-            figsize=(12, 9)
-        )
-        print(f"timestamps: {timestamps}")
-        print(f"portfolio_values: {len(portfolio_values)}")
-        # --- Wykres ---
-        ax.plot(range(0, timestamps), portfolio_values, label="Wartość portfela (USD)")
+        except Exception as e:
+            print(f"[Chart Error] Could not plot transactions: {e}")
 
-        if len(symbols) == 1:
-            for symbol in symbols:
-                ax.plot(range(0, timestamps), crypto_ref_values[symbol], linestyle='--',
-                        label=f"HODL {symbol}")
-        title = "Model ML"
-        if plot_path == "agent_plot.png": title = "Agent RL"
+    def _render_metrics(self, ax, metrics):
+        """Renderuje tabelkę z metrykami zamiast wykresu."""
+        ax.axis('off')  # Wyłączamy osie
 
-        ax.set_xlabel("Timestamp")
-        ax.set_ylabel("Wartość portfela (USD)")
-        ax.set_title(f"[{title}] Symulacja wartości portfela (Wynik: {metrics['score']} pkt)")
-        ax.set_xticks([])
-        ax.set_xticklabels([])
-        ax.legend()
+        # Tytuł sekcji
+        ax.text(0.01, 0.9, "SIMULATION METRICS", transform=ax.transAxes,
+                fontsize=16, fontweight='bold', color='#aaaaaa')
 
-        # --- Podział metryk na 3 bloki ---
-        block_left = [
-            # f"Pliki z danymi: {data_files}",
-            # f"Pliki z modelami: {models}",
-            # f"Pliki z agentami: {agents}",
-            f"Tu będą pliki jak wymyślę jak to zawijać"
-        ]
+        # Dzielimy metryki na dwie kolumny
+        items = list(metrics.items())
+        mid = (len(items) + 1) // 2
+        col1 = items[:mid]
+        col2 = items[mid:]
 
-        block_center = [
-            f"Łączny zwrot: {metrics['total_return']:.2f}%",
-            f"Maksymalny wzrost portfela: {metrics['max_portfolio_growth']:.2f}%",
-            f"Maksymalny spadek portfela: {metrics['max_portfolio_drop']:.2f}%",
-            f"Ilość transakcji: {metrics['transaction_count']}",
-            f"Śr. transakcji/dzień: {metrics['avg_transactions_per_day']:.2f}"
-        ]
+        # Funkcja pomocnicza do budowania stringa
+        def build_col_text(items_list):
+            text = ""
+            for k, v in items_list:
+                # Skracanie nazw kluczy i formatowanie liczb
+                clean_key = k.replace("_", " ").title()[:20]
+                if isinstance(v, float):
+                    val_str = f"{v:.4f}"
+                else:
+                    val_str = str(v)
+                text += f"{clean_key:<22} : {val_str}\n"
+            return text
 
-        block_right = [
-            f"CAGR: {metrics['cagr']:.2f}%",
-            f"Max Drawdown: {metrics['max_drawdown']:.2f}%",
-            f"Calmar ratio: {metrics['calmar_ratio']:.2f}",
-            f"Sharpe ratio: {metrics['sharpe_ratio']:.2f}",
-            f"Sortino ratio: {metrics['sortino_ratio']:.2f}"
-        ]
+        # Rysowanie tekstu w dwóch kolumnach (monospace font jest kluczowy do wyrównania)
+        ax.text(0.02, 0.75, build_col_text(col1), transform=ax.transAxes,
+                fontsize=14, family='monospace', color='white', verticalalignment='top')
 
-        # --- Rysowanie bloków pod wykresem ---
-        ax_text.axis("off")
-
-        # Lewy blok (x=0.2)
-        ax_text.text(
-            0.2, 0.5, "\n".join(block_left),
-            ha="center", va="center", fontsize=10,
-            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-        )
-
-        # Środkowy blok pusty (x=0.5)
-        ax_text.text(
-            0.5, 0.5, "\n".join(block_center),
-            ha="center", va="center", fontsize=10,
-            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-        )
-
-        # Prawy blok (x=0.8)
-        ax_text.text(
-            0.8, 0.5, "\n".join(block_right),
-            ha="center", va="center", fontsize=10,
-            bbox=dict(facecolor="whitesmoke", edgecolor="gray", boxstyle="round,pad=0.5")
-        )
-
-        plt.tight_layout()
-        plt.show()
-        plt.savefig(plot_path, format="png")
-        plt.close()
-        return metrics
+        ax.text(0.52, 0.75, build_col_text(col2), transform=ax.transAxes,
+                fontsize=14, family='monospace', color='white', verticalalignment='top')
