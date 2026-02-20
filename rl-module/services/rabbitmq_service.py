@@ -47,6 +47,13 @@ class RabbitMQService:
             self.request_service.handle_request(data)
         else:
             print("No request_service attached!")
+    
+    def handle_realtime_request(self, data):
+        print(f"Handling realtime request: {data}")
+        if self.request_service:
+            self.request_service.handle_realtime_request(data)
+        else:
+            print("No request_service attached!")
 
     def consume(self, queue: str, callback):
         def _consume():
@@ -58,25 +65,6 @@ class RabbitMQService:
                     channel = connection.channel()
                     channel.queue_declare(queue=queue, durable=True)
 
-                    # def wrapped_callback(ch, method, properties, body):
-                    #     try:
-                    #         if not body:
-                    #             print("Received empty message body, skipping...")
-                    #             return
-                    #
-                    #         message_str = body.decode("utf-8") if isinstance(body, bytes) else body
-                    #         data = json.loads(message_str)
-                    #         callback(data)
-                    #
-                    #     except json.JSONDecodeError as e:
-                    #         print(f"JSON decode error: {e} | Raw body: {body}")
-                    #     except Exception as e:
-                    #         print(f"Unexpected error in consumer: {e}")
-                    #     finally:
-                    #         try:
-                    #             ch.basic_ack(delivery_tag=method.delivery_tag)
-                    #         except pika.exceptions.StreamLostError:
-                    #             print("[ERROR] Connection lost while acknowledging message")
                     def wrapped_callback(ch, method, properties, body):
                         def process_message():
                             try:
