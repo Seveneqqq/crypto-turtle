@@ -50,11 +50,14 @@ class Wallet:
             self.last_buy_price[symbol] = 0.0
             self.avg_buy_price[symbol] = 0.0
 
-    def update_history(self):
+    def update_history(self, logs = False):
         """ Przygotowuje logi dla symulacji """
         total_value = self.total_value(self.current_prices_wallet)
         self.portfolio_values_history.append(round(total_value,1))
         self.portfolio_holdings_history.append(self.total_holdings(self.current_prices_wallet))
+        # print("Portfolio total",total_value)
+        if logs:
+            return self.logs[-1]
 
     def execute_orders(self, t, current_prices):
         self.current_prices_wallet = current_prices
@@ -80,6 +83,7 @@ class Wallet:
                 if order.action == "buy":  self.buy(order)
                 if order.action == "sell": self.sell(order)
             self.transaction_count += 1
+            order.total_portfolio_value = self.total_value(current_prices)
             self.logs.append(order)
             self.orders.remove(order)
 

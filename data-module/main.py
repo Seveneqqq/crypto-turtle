@@ -5,13 +5,15 @@ from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
 from services import rabbitmq_service
 from services.realtime_data_service import RealtimeDataService
 
+#from services.data_service import DataService
 
+from shared.plgrid.data_module.data_service import DataService
 
 app = FastAPI()
-
+data_service = DataService()
 
 # 🔹 inicjalizacja realtime service
-realtime_data_service = RealtimeDataService(rabbitmq_service=rabbitmq_service)
+realtime_data_service = RealtimeDataService(rabbitmq_service=rabbitmq_service, data_service=data_service)
 
 
 @app.get("/")

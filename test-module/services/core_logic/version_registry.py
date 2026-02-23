@@ -1,3 +1,5 @@
+# from .binance_integration import *
+
 # ============================================================================
 # DECISION ENGINE METHODS
 # ============================================================================
@@ -65,6 +67,23 @@ EXPERIMENTS = {
 
         "env_methods": {}
     },
+
+    # "testnet_v0": {
+    #     "description": "Wersja z rzeczywistymi transakcjami na Binance Testnet",
+    #     "n_params_per_symbol": 4,
+    #
+    #     "decision_methods": {},
+    #
+    #     "wallet_methods": {
+    #         "buy": testnet_wallet_buy,
+    #         "sell": testnet_wallet_sell,
+    #         "testnet_wallet_init": testnet_wallet_init,
+    #         "testnet_wallet_get_symbol_info": testnet_wallet_get_symbol_info,
+    #         "testnet_wallet_format_quantity": testnet_wallet_format_quantity,
+    #     },
+    #
+    #     "env_methods": {}
+    # },
 }
 
 # ============================================================================

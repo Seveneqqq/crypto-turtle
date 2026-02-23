@@ -15,14 +15,22 @@ shared/files/processed_simulation_data/*.csv
 venv/
 .env/
 .venv/
-
+node_modules
+shared/simulation
+rl-module/services/core_logic
+dashboard
 #Models,files
 */simulation/plots/*.*
 */simulation/logs/*.*
 */models/ml/*.pkl
-*/models/sklearn*.*
-shared/models/sklearn/*
-shared/files/*
+*/simulation/simulations/*
+*/simulation/old sims/*
+*/simulation/*
+*/models
+*/agents
+*/files
+*/quality_reports
+*/realtime_simulation
 # ============================
 # Logs
 # ============================

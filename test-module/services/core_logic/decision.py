@@ -162,7 +162,7 @@ class DecisionEngine:
                 action=action,
                 value=value,
                 price=self.current_prices[symbol],
-                rl_config=scaled[symbol] if scaled is not None else "Brak"
+                rl_config=scaled[symbol] if scaled is not None else f"Brak{probs}"
             )
             if order.action == "hold":
                 order.rejected("lower_than_thresholds")

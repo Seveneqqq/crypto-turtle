@@ -47,13 +47,6 @@ class RabbitMQService:
             self.request_service.handle_request(data)
         else:
             print("No request_service attached!")
-    
-    def handle_realtime_request(self, data):
-        print(f"Handling realtime request: {data}")
-        if self.request_service:
-            self.request_service.handle_realtime_request(data)
-        else:
-            print("No request_service attached!")
 
     def consume(self, queue: str, callback):
         def _consume():

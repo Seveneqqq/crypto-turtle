@@ -2,12 +2,13 @@ from configuration.rabbitmq_queues import TEST_RESPONSE_QUEUE
 
 
 class RabbitMQRequestService:
-    def __init__(self, rabbitmq_service, simulation_service, visualization_service, data_quality_service):
+    def __init__(self, rabbitmq_service, simulation_service, visualization_service, data_quality_service, realtime_generate_decision_service):
 
         self.rabbitmq_service = rabbitmq_service
         self.simulation_service = simulation_service
         self.visualization_service = visualization_service
         self.data_quality_service = data_quality_service
+        self.realtime_generate_decision_service = realtime_generate_decision_service
 
     def handle_request(self, data):
         print(data)
@@ -78,3 +79,42 @@ class RabbitMQRequestService:
                     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
 
                     
+    def handle_realtime_request(self, data):
+        print("Getting realtime request ...")
+        # print(data)
+
+        match data.get("event"):
+
+            case "processed_candles":
+                print("Processing realtime candles")
+                result = {
+                    "symbol": data.get("symbol"),
+                    "interval": data.get("interval"),
+                    "candles": data.get("data")
+                }
+                print(result)
+
+
+
+
+
+
+                result = self.realtime_generate_decision_service.live_decision(result=result)
+
+                print("Result from processing realtime data:")
+                # print(result)
+
+                if result and result.get("result") == "success":
+                    print("Successfully processed realtime data")
+
+                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
+
+                else:
+                    print("Failed to process realtime data")
+
+                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
+                        "result": "failed",
+                        "message": "Failed to process realtime data"
+                    })
+
+                #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance

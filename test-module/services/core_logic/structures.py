@@ -16,6 +16,7 @@ class Order:
     qty: float = 0.0
     status: str = "created"
     slippage_price: float = 0.0
+    total_portfolio_value: float = 0.0
 
     # , "buy:0","hold":1, "sell:2"
     def rejected(self, reason: str):

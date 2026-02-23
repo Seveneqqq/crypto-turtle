@@ -266,3 +266,62 @@ class DataService:
             }
 
         return results
+
+    def process_candles_list(
+            self,
+            candles: list[dict],
+            steps: list[str] = ["make_features", "add_technical_indicators"],
+            preprocessing_method: str = "ROBUST",
+            technical_indicators_set: str = "set4"
+    ) -> list[dict]:
+        """
+        Przetwarza listę candles (dictów) przez pipeline i zwraca przetworzoną listę.
+        Dla realtime - nie zapisuje do pliku, tylko zwraca dane.
+        """
+        if not candles or len(candles) == 0:
+            return []
+
+        import pandas as pd
+
+        # Konwersja listy dictów na DataFrame
+        df = pd.DataFrame(candles)
+
+        # Uzupełnienie brakujących kolumn (jeśli potrzeba)
+        required_cols = ["quote_asset_volume", "number_of_trades",
+                         "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume"]
+        for col in required_cols:
+            if col not in df.columns:
+                df[col] = 0.0
+
+        # Konwersja open_time na datetime jeśli jest w ms
+        if "open_time" in df.columns:
+            if df["open_time"].dtype in [int, float]:
+                df["open_time"] = pd.to_datetime(df["open_time"], unit="ms")
+
+        # Ustawienie df jako self.df (tymczasowo)
+        self.df = df.copy()
+        self.technical_indicators_set = technical_indicators_set
+
+        # Wykonanie steps
+        step_map = {
+            "make_features": self.make_features,
+            "add_technical_indicators": lambda: self.add_technical_indicators(technical_indicators_set),
+        }
+
+        for step in steps:
+            if step in step_map:
+                step_map[step]()
+
+        # Preprocessing (opcjonalnie - dla realtime często RAW)
+        if preprocessing_method.upper() != "RAW":
+            X_processed, _, numeric_cols = self.apply_preprocessing(preprocessing_method)
+            self.df[numeric_cols] = X_processed
+
+        # Konwersja z powrotem na listę dictów
+        # Usuń NaN wiersze (mogły powstać z rolling windows)
+        df_clean = self.df.dropna().reset_index(drop=True)
+
+        # Konwersja do listy dictów
+        processed_candles = df_clean.to_dict("records")
+
+        return processed_candles

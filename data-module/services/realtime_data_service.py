@@ -10,8 +10,11 @@ import websocket
 
 
 class RealtimeDataService:
-    def __init__(self, rabbitmq_service=None):
+    def __init__(self, rabbitmq_service=None, data_service=None):
         self.rabbitmq_service = rabbitmq_service
+
+        self.data_service = data_service
+
         self.ws = None
         self.symbol = None
         self.interval = None
@@ -80,13 +83,18 @@ class RealtimeDataService:
 
         for k in data:
             candle = {
-                "open_time": k[0],
+                "open_time": k[0],          # Zmieniono z open_time na timestamp
                 "close_time": k[6],
                 "open": float(k[1]),
                 "high": float(k[2]),
                 "low": float(k[3]),
                 "close": float(k[4]),
-                "volume": float(k[5])
+                "volume": float(k[5]),
+                "quote_asset_volume": float(k[7]), # Dodaj te pola, jeśli model ich używa
+                "number_of_trades": int(k[8]),
+                "taker_buy_base_asset_volume": float(k[9]),
+                "taker_buy_quote_asset_volume": float(k[10]),
+                "ignore": k[11]
             }
             self.candles_buffer.append(candle)
 
@@ -118,7 +126,12 @@ class RealtimeDataService:
                     "high": float(kline["h"]),
                     "low": float(kline["l"]),
                     "close": current_price,
-                    "volume": current_volume
+                    "volume": current_volume,
+                    "quote_asset_volume": float(kline["q"]),
+                    "number_of_trades": int(kline["n"]),
+                    "taker_buy_base_asset_volume": float(kline["V"]),
+                    "taker_buy_quote_asset_volume": float(kline["Q"]),
+                    "ignore": kline["B"]
                 }
 
                 self.candles_buffer.append(new_candle)
@@ -132,12 +145,26 @@ class RealtimeDataService:
                 candles_snapshot = list(self.candles_buffer)
 
                 # ============================================================
-                # 🔥 TUTAJ PODŁĄCZASZ SWÓJ SERWIS FEATURE PROCESSING
-                # np:
-                # processed_data = your_feature_service.process(candles_snapshot)
-                #
-                # NA RAZIE JEST ZAŚLEPKA:
-                processed_data = candles_snapshot
+                # ✅ ZMIANA: Przetwarzanie przez data_service
+                # ============================================================
+                if self.data_service:
+                    try:
+                        processed_candles = self.data_service.process_candles_list(
+                            candles=candles_snapshot,
+                            steps=["make_features", "add_technical_indicators"],
+                            preprocessing_method="ROBUST",  # lub "ROBUST", "Z-SCORE" itp.
+                            technical_indicators_set="set4"  # lub inny set
+                        )
+                        processed_data = processed_candles
+                        self.logger.info(f"✅ Processed {len(processed_candles)} candles with features")
+                    except Exception as e:
+                        self.logger.error(f"❌ Failed to process candles: {e}")
+                        import traceback
+                        self.logger.error(traceback.format_exc())
+                        processed_data = candles_snapshot  # fallback do surowych danych
+                else:
+                    self.logger.warning("⚠️ data_service not available, using raw candles")
+                    processed_data = candles_snapshot
                 # ============================================================
 
                 if self.rabbitmq_service:

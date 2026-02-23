@@ -1,5 +1,5 @@
 from services.binance_service import BinanceService
-from services.data_service import DataService
+#from services.data_service import DataService
 from services.optuna_service import OptunaService
 from services.data_lstm_prepare_service import DataLSTMPrepareService
 from services.lstm_optuna_service import LSTMOptunaService
@@ -11,6 +11,8 @@ from configuration.rabbitmq_configuration import (
 )
 from configuration.configuration import BINANCE_API_KEY, BINANCE_API_URL
 
+from shared.plgrid.data_module.data_service import DataService
+#from services.data_service import DataService
 
 print("Initializing RabbitMQ Service...")
 rabbitmq_service = RabbitMQService(
@@ -30,8 +32,11 @@ data_service = DataService()
 print("Initializing Data LSTM Prepare Service...")
 data_lstm_prepare_service = DataLSTMPrepareService()
 
-# print("Initializing Realtime Data Service...")
-# realtime_data_service = RealtimeDataService()
+print("Initializing Realtime Data Service...")
+realtime_data_service = RealtimeDataService(
+    rabbitmq_service=rabbitmq_service,
+    data_service=data_service
+)
 
 print("Initializing Optuna Service...")
 optuna_service = OptunaService()
