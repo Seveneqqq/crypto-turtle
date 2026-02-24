@@ -26,7 +26,8 @@ class ModelSignal:
 
 
         self.model_name = model_name
-        self.model_path : str
+        self.model_path : str = ""
+        self.model_type = ""
         print(f"[Core_Logic] Obliczanie predykcji.")
 
 
@@ -34,7 +35,7 @@ class ModelSignal:
         match self.check_model_type():
             case "sklearn":
                 self.model = joblib.load(self.model_path)
-                # self.dict_probs, self.predictions, self.classes = self.sklearn()
+
                 if realtime:
                     self.features = self.model.feature_names_in_
                     self.predictions = []
@@ -45,6 +46,9 @@ class ModelSignal:
             case "lstm":
                 self.model = ModelPredictor(self.model_path)
                 self.predictions, self.class_map = self.lstm_price_predictor()
+
+            case _:
+                print("[ModelSignal][ERROR] Brak obsługi tego typu modelu.")
 
 
 
@@ -75,6 +79,14 @@ class ModelSignal:
         # Krok 3: Wypełnienie NaN (bo rolling robi dziury na początku)
         self.data['volatility'].fillna(0.0, inplace=True)
         self.volatility = self.data["volatility"].to_numpy()
+
+    def generate_prediction(self, data):
+        match self.model_type:
+            case "sklearn":
+                self.realtime_sklearn(data)
+            case _:
+                print("[ModelSignal][ERROR] Brak obsługi tego typu modelu.")
+
 
     def sklearn(self):
         features = self.model.feature_names_in_
@@ -146,6 +158,7 @@ class ModelSignal:
             candidate_path = os.path.join(subfolder_path, self.model_name)
             if os.path.exists(candidate_path):
                 self.model_path = candidate_path
+                self.model_type = subfolder.lower()
                 return subfolder.lower()  # 'sklearn' lub 'lstm'
 
         raise ValueError(f"Nie znaleziono modelu '{self.model_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")

@@ -96,6 +96,7 @@ services:
        dockerfile: Dockerfile
      volumes:
        - ./shared:/app/shared
+       - ./test-module/configuration/realtime_simulation_config.json:/app/configuration/realtime_simulation_config.json
      ports:
        - "8004:8004"
      depends_on:

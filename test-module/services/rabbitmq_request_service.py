@@ -10,6 +10,12 @@ class RabbitMQRequestService:
         self.data_quality_service = data_quality_service
         self.realtime_generate_decision_service = realtime_generate_decision_service
 
+        self.aggregator = CandleAggregator(
+            on_complete=self._handle_complete_batch,
+            initial_wait_s=10,
+            wait_s=5
+        )
+
     def handle_request(self, data):
         print(data)
         match data.get("action"):
@@ -78,7 +84,25 @@ class RabbitMQRequestService:
                     print("Failed to calculate data quality")
                     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
 
-                    
+    def _handle_complete_batch(self, batch: dict):
+        # batch = {"btcusdt": {candles: ...}, "ethusdt": {candles: ...}}
+        print(batch)
+        result = self.realtime_generate_decision_service.live_decision(
+            results=list(batch.values())
+        )
+        if result and result.get("result") == "success":
+            print("Successfully processed realtime data")
+
+            self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
+
+        else:
+            print("Failed to process realtime data")
+
+            self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
+                "result": "failed",
+                "message": "Failed to process realtime data"
+            })
+
     def handle_realtime_request(self, data):
         print("Getting realtime request ...")
         # print(data)
@@ -87,34 +111,110 @@ class RabbitMQRequestService:
 
             case "processed_candles":
                 print("Processing realtime candles")
+                #print(data.get("symbol"))
                 result = {
                     "symbol": data.get("symbol"),
                     "interval": data.get("interval"),
                     "candles": data.get("data")
                 }
-                print(result)
+                result2 = self.realtime_generate_decision_service.live_decision(result=result)
+                # self.aggregator.add(
+                #     symbol=data.get("symbol"),
+                #     result={
+                #         "symbol": data.get("symbol"),
+                #         "interval": data.get("interval"),
+                #         "candles": data.get("data")
+                #     }
+                # )
 
 
 
 
 
-
-                result = self.realtime_generate_decision_service.live_decision(result=result)
-
-                print("Result from processing realtime data:")
-                # print(result)
-
-                if result and result.get("result") == "success":
-                    print("Successfully processed realtime data")
-
-                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
-
-                else:
-                    print("Failed to process realtime data")
-
-                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
-                        "result": "failed",
-                        "message": "Failed to process realtime data"
-                    })
+                # # result = self.realtime_generate_decision_service.live_decision(result=result)
+                #
+                # print("Result from processing realtime data:")
+                # # print(result)
+                #
+                # if result and result.get("result") == "success":
+                #     print("Successfully processed realtime data")
+                #
+                #     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
+                #
+                # else:
+                #     print("Failed to process realtime data")
+                #
+                #     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
+                #         "result": "failed",
+                #         "message": "Failed to process realtime data"
+                #     })
 
                 #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance
+
+import threading
+import time
+
+class CandleAggregator:
+    def __init__(self, on_complete, initial_wait_s: int = 10, wait_s: int = 5, idle_reset_min: int = 10):
+        self.on_complete = on_complete
+        self.initial_wait_s = initial_wait_s
+        self.wait_s = wait_s
+        self.idle_reset_s = idle_reset_min * 60
+
+        self.known_symbols: set = set()
+        self.current_batch: dict = {}
+        self.is_first_batch = True
+        self.batch_timer: threading.Timer | None = None
+        self.last_flush_time: float | None = None
+        self.lock = threading.Lock()
+
+    def _is_idle_too_long(self) -> bool:
+        if self.last_flush_time is None:
+            return False
+        return time.time() - self.last_flush_time > self.idle_reset_s
+
+    def add(self, symbol: str, result: dict):
+        with self.lock:
+            # 1. Rejestracja symbolu (musi być przed jakimkolwiek flushem)
+            if symbol not in self.known_symbols:
+                self.known_symbols.add(symbol)
+                print(f"[Aggregator] Rejestracja: {symbol}. Znane: {self.known_symbols}")
+
+            # 2. Dodanie do paczki
+            self.current_batch[symbol] = result
+
+            # 3. Sprawdź czy mamy komplet (zbiory muszą być identyczne)
+            if self.known_symbols == self.current_batch.keys():
+                print(f"[Aggregator] Komplet ({len(self.current_batch)}) - Flush natychmiastowy")
+                if self.batch_timer:
+                    self.batch_timer.cancel()
+                    self.batch_timer = None
+                self._flush_unlocked()
+                return
+
+            # 4. Jeśli nie ma kompletu i timer nie tyka, wystartuj go
+            # Używamy krótkiego czasu (wait_s), bo symbole "przychodzą jednocześnie"
+            if self.batch_timer is None:
+                wait = self.initial_wait_s if self.is_first_batch else self.wait_s
+                print(f"[Aggregator] Brak kompletu, czekam {wait}s na resztę...")
+                self.batch_timer = threading.Timer(wait, self._flush)
+                self.batch_timer.start()
+
+    def _flush(self):
+        with self.lock:
+            self._flush_unlocked()
+
+    def _flush_unlocked(self):
+        batch = self.current_batch.copy()
+
+        missing = self.known_symbols - batch.keys()
+        if missing:
+            print(f"[Aggregator] Symbols timed out, removing: {missing}")
+            self.known_symbols -= missing
+
+        self.current_batch = {}
+        self.batch_timer = None
+        self.is_first_batch = False
+        self.last_flush_time = time.time()
+
+        threading.Thread(target=self.on_complete, args=(batch,), daemon=True).start()
