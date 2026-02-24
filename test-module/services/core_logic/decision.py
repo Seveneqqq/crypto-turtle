@@ -40,14 +40,14 @@ class DecisionEngine:
                     self.agent = SAC.load(self.agent_path, env=None)
                 case _:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
-        self._apply_experiment_version()
+        self.apply_experiment_version()
 
     def reset(self):
         self.config = DecisionConfig()
         self.prev_value = self.core_config.balance_start
         self.current_value = self.core_config.balance_start
 
-    def _apply_experiment_version(self):
+    def apply_experiment_version(self):
         """Binduje custom methods z experiment registry"""
 
 

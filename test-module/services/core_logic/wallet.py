@@ -8,9 +8,12 @@ class Wallet:
         self.config = WalletConfig()
         if self.core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
 
-        self.holdings = {s: 0.0 for s in self.symbols}
-        self.last_buy_price = {s: 0.0 for s in self.symbols}
-        self.avg_buy_price = {s: 0.0 for s in self.symbols}
+        self.holdings = {}
+        self.last_buy_price = {}
+        self.avg_buy_price = {}
+
+        for symbol in self.symbols:
+            self.initialize_symbol_and_holdings(symbol)
 
         self.transaction_count = 0
         self.orders = []
@@ -46,9 +49,13 @@ class Wallet:
         self.logs.clear()
 
         for symbol in self.holdings:
-            self.holdings[symbol] = 0.0
-            self.last_buy_price[symbol] = 0.0
-            self.avg_buy_price[symbol] = 0.0
+            self.initialize_symbol_and_holdings(symbol)
+
+    def initialize_symbol_and_holdings(self, symbol):
+        self.holdings[symbol] = 0.0
+        self.last_buy_price[symbol] = 0.0
+        self.avg_buy_price[symbol] = 0.0
+
 
     def update_history(self, logs = False):
         """ Przygotowuje logi dla symulacji """

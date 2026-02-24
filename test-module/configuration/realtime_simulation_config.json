@@ -1,0 +1,23 @@
+{
+  "models": {
+    "btcusdt": "btc_model_c_v1_1210_11.pkl",
+    "ethusdt": "eth_model_c_v1_1210_11.pkl"
+  },
+  "core_config":{
+    "sim_mode": "ml",
+    "balance_start": 1000.0,
+    "add_fee": true,
+    "rlagent_deterministic": false,
+    "slippage": 0,
+    "wallet_percentage_limit": 0.8531,
+    "max_wallet_percentage_crypto": 0.8278,
+    "stop_loss": 1.0,
+    "threshold_buy": 0.3936,
+    "threshold_sell": 0.4978,
+    "mincost": 8.0598,
+    "tx_fraction": 0.0220,
+    "max_fraction_when_confident": 0.5098,
+    "experiment_version": "v0"
+  },
+  "refresh_interval_seconds": 60
+}
