@@ -145,7 +145,7 @@ class SimulationService:
             self.output["config"] = self.core_config.to_dict()
 
             #TODO: mode simulation
-            sim_mode = "model"
+            sim_mode = "agent"
             gzip_name, sim_path, gzip_path = self.build_filename()
 
             if logs or plots or results:
@@ -169,9 +169,9 @@ class SimulationService:
                 "message": "Successfully retrieved simulation data",
                 #"model_logs_file": model_log_path,
                 #"agent_logs_file": agent_log_path,
-                "final_portfolio_value": self.output["model"]["metrics"]["final_portfolio_value"],
-                "sharpe_ratio": self.output["model"]["metrics"]["sharpe_ratio"],
-                "max_drawdown": self.output["model"]["metrics"]["max_drawdown"],
+                "final_portfolio_value": self.output["agent"]["metrics"]["final_portfolio_value"],
+                "sharpe_ratio": self.output["agent"]["metrics"]["sharpe_ratio"],
+                "max_drawdown": self.output["agent"]["metrics"]["max_drawdown"],
                 "portfolio_values": "portfolio_values",
                 "timestamp": datetime.now().isoformat()
             }
@@ -197,7 +197,6 @@ class SimulationService:
 
         for t in tqdm(range(self.num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
             self.engine.generate_decisions(t)
-            self.engine.wallet.update_history()
 
         crypto_ref_values = {}
 

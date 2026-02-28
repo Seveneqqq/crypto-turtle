@@ -1,7 +1,8 @@
 {
   "models": {
     "btcusdt": "btc_model_c_v1_1210_11.pkl",
-    "ethusdt": "eth_model_c_v1_1210_11.pkl"
+    "ethusdt": "eth_model_c_v1_1210_11.pkl",
+    "TESTUSDT": "eth_model_c_v1_1210_11.pkl"
   },
   "core_config":{
     "sim_mode": "ml",

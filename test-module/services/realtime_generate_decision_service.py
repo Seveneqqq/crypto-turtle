@@ -19,11 +19,11 @@ class RealtimeGenerateDecisionService:
         self._check_and_load_config()
 
 
-        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.data_dir = os.path.join(self.base_dir,"shared", "realtime_simulation")
+        current_time = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        self.data_dir = os.path.join(self.base_dir,"shared", "realtime_simulation", f"{current_time}")
         os.makedirs(self.data_dir, exist_ok=True)
-        self.data_file_path = os.path.join(self.data_dir, f"realtime_data_{current_time}.csv")
-        self.orders_file_path = os.path.join(self.data_dir, f"realtime_orders_{current_time}.csv")
+        self.data_file_path = os.path.join(self.data_dir, f"realtime_data.csv")
+        self.orders_file_path = os.path.join(self.data_dir, f"realtime_orders_logs.csv")
 
         self.models = {}
 
@@ -42,51 +42,50 @@ class RealtimeGenerateDecisionService:
         result=None,
     ):
         try:
-            # for result in results:
-            #     data = result["candles"][-1]
-            #     symbol = result["symbol"]
-            #     data["open_time"] = pd.to_datetime(data["open_time"], unit="ms")
-            #     print(symbol)
-            #
-            #     if symbol not in self.symbols:
-            #         self.models[symbol] = ModelSignal(model_name="eth_model_c_v1_1210_11.pkl", data=[],
-            #                                           base_dir=self.base_dir, realtime=True)
-            #         self.symbols.append(symbol)
-            #
-            #     self.models[symbol].generate_prediction(data)
-
             self._check_and_load_config()
 
-            data = result["candles"][-1]
-            symbol = result["symbol"]
-            data["open_time"] = pd.to_datetime(data["open_time"], unit="ms")
+            #TODO: Poprawne (niezdublowane) działanie przed wprowadzeniem streamingu wielu symboli - zakomentować linijkę : for result in results:
+            for result in results:
+                data = result["candles"][-1]
+                symbol = result["symbol"]
+                data["open_time"] = pd.to_datetime(data["open_time"], unit="ms")
+                data["close_time"] = pd.to_datetime(data["close_time"], unit="ms").round("min")
 
-            if symbol not in self.symbols:
-                self.models[symbol] = ModelSignal(model_name=self.model_paths[symbol], data=[],
-                                                  base_dir=self.base_dir, realtime=True)
-                self.symbols.append(symbol)
-                self.engine.wallet.initialize_symbol_and_holdings(symbol)
+                if symbol not in self.symbols:
+                    self.models[symbol] = ModelSignal(model_name=self.model_paths[symbol], data=[],
+                                                      base_dir=self.base_dir, realtime=True)
+                    self.symbols.append(symbol)
+                    self.engine.wallet.initialize_symbol_and_holdings(symbol)
 
-            self.models[symbol].generate_prediction(data)
+                self.models[symbol].generate_prediction(data)
 
             self.engine.generate_decisions(t=-1)
-            order = self.engine.wallet.update_history(logs=True)
 
-            df_to_save = pd.DataFrame([data])
-            order_to_save = pd.DataFrame([order])
+            current_ts = results[0]["candles"][-1]["close_time"]
 
+            last_t_orders = self.engine.wallet.get_last_t_logs(close_time=current_ts)
 
-            file_exists = os.path.isfile(self.data_file_path)
-            file_exists2 = os.path.isfile(self.data_file_path)
+            for symbol in self.symbols:
 
-            df_to_save.to_csv(self.data_file_path, mode='a', index=False, header=not file_exists)
-            order_to_save.to_csv(self.orders_file_path, mode='a', index=False, header=not file_exists2)
+                last_row = self.models[symbol].data[-1]
+
+                if last_row["close_time"] == current_ts:
+                    symbol_file_path = os.path.join(self.data_dir, f"{symbol}.csv")
+                    df_to_save = pd.DataFrame([last_row])
+
+                    file_exists = os.path.isfile(symbol_file_path)
+                    df_to_save.to_csv(symbol_file_path, mode='a', index=False, header=not file_exists)
+
+            if last_t_orders:
+                orders_df = pd.DataFrame([o for o in last_t_orders])
+                orders_file_exists = os.path.isfile(self.orders_file_path)
+                orders_df.to_csv(self.orders_file_path, mode='a', index=False, header=not orders_file_exists)
 
             return {
                 "rabbit_msg_id": rabbit_msg_id,
                 "result": "success",
                 "message": f"Successfully generate decision for timestamp: {datetime.now().isoformat()}",
-                "portfolio_values": "portfolio_values",
+                "order_logs": last_t_orders,
                 "timestamp": datetime.now().isoformat()
             }
 
@@ -98,9 +97,7 @@ class RealtimeGenerateDecisionService:
                 "rabbit_msg_id": rabbit_msg_id,
                 "result": "failed",
                 "message": str(e),
-                "logs_file": None,
-                "plot_file": None,
-                "portfolio_values": [],
+                "order_logs": None,
                 "timestamp": datetime.now().isoformat()
             }
 
