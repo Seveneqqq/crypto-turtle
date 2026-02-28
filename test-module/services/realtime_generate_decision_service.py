@@ -70,7 +70,7 @@ class RealtimeGenerateDecisionService:
                 last_row = self.models[symbol].data[-1]
 
                 if last_row["close_time"] == current_ts:
-                    symbol_file_path = os.path.join(self.data_dir, f"{symbol}.csv")
+                    symbol_file_path = os.path.join(self.data_dir, f"{symbol.upper()}.csv")
                     df_to_save = pd.DataFrame([last_row])
 
                     file_exists = os.path.isfile(symbol_file_path)

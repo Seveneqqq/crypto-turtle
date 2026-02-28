@@ -119,7 +119,7 @@ class RabbitMQRequestService:
                 }
                 #TODO: test_result - zaślepka, dla poprawnego (niezdublowanego) działania przed wprowadzeniem streamingu wielu symboli, podmienić results=results na result=result
                 test_result = {
-                    "symbol": "TESTUSDT",
+                    "symbol": "testusdt",
                     "interval": data.get("interval"),
                     "candles": data.get("data")
                 }
