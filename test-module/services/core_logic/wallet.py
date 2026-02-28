@@ -56,12 +56,27 @@ class Wallet:
         self.last_buy_price[symbol] = 0.0
         self.avg_buy_price[symbol] = 0.0
 
+    def get_last_t_logs(self, close_time):
 
-    def update_history(self, logs = False):
+        last_t_logs = [order for order in self.logs if order.timestamp == -1]
+
+        for order in last_t_logs:
+            order.timestamp = close_time
+
+        return last_t_logs
+
+    def update_history(self, current_orders, logs = False):
         """ Przygotowuje logi dla symulacji """
+
         total_value = self.total_value(self.current_prices_wallet)
         self.portfolio_values_history.append(round(total_value,1))
         self.portfolio_holdings_history.append(self.total_holdings(self.current_prices_wallet))
+        for order in current_orders:
+            order.total_portfolio_value = total_value
+            self.logs.append(order)
+            self.orders.remove(order)
+
+
         # print("Portfolio total",total_value)
         if logs:
             return self.logs[-1]
@@ -89,10 +104,10 @@ class Wallet:
             else:
                 if order.action == "buy":  self.buy(order)
                 if order.action == "sell": self.sell(order)
-            self.transaction_count += 1
-            order.total_portfolio_value = self.total_value(current_prices)
-            self.logs.append(order)
-            self.orders.remove(order)
+                if order.status != "rejected": self.transaction_count += 1
+
+        self.update_history(current_orders)
+
 
     def rl_config(self,scaled):
         pass

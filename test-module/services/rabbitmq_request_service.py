@@ -1,4 +1,5 @@
 from configuration.rabbitmq_queues import TEST_RESPONSE_QUEUE
+from configuration.rabbitmq_queues import XAI_REQUEST_QUEUE
 
 
 class RabbitMQRequestService:
@@ -105,19 +106,46 @@ class RabbitMQRequestService:
 
     def handle_realtime_request(self, data):
         print("Getting realtime request ...")
-        # print(data)
 
         match data.get("event"):
 
             case "processed_candles":
                 print("Processing realtime candles")
-                #print(data.get("symbol"))
+
                 result = {
                     "symbol": data.get("symbol"),
                     "interval": data.get("interval"),
                     "candles": data.get("data")
                 }
-                result2 = self.realtime_generate_decision_service.live_decision(result=result)
+                #TODO: test_result - zaślepka, dla poprawnego (niezdublowanego) działania przed wprowadzeniem streamingu wielu symboli, podmienić results=results na result=result
+                test_result = {
+                    "symbol": "TESTUSDT",
+                    "interval": data.get("interval"),
+                    "candles": data.get("data")
+                }
+                results = [result,test_result]
+
+                decisions_result = self.realtime_generate_decision_service.live_decision(results=results)
+
+                if decisions_result and decisions_result.get("result") == "success":
+                    print("Successfully processed realtime data")
+
+                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, decisions_result)
+                    self.rabbitmq_service.publish(XAI_REQUEST_QUEUE, decisions_result)
+
+                else:
+                    print("Failed to process realtime data")
+
+                    self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
+                        "result": "failed",
+                        "message": "Failed to process realtime data"
+                    })
+                    self.rabbitmq_service.publish(XAI_REQUEST_QUEUE, {
+                        "result": "failed",
+                        "message": "Failed to process realtime data"
+                    })
+
+                #TODO: Agregator dla streamingu wielu symboli + dorobić zwracanie do agregatora
                 # self.aggregator.add(
                 #     symbol=data.get("symbol"),
                 #     result={
@@ -126,28 +154,6 @@ class RabbitMQRequestService:
                 #         "candles": data.get("data")
                 #     }
                 # )
-
-
-
-
-
-                # # result = self.realtime_generate_decision_service.live_decision(result=result)
-                #
-                # print("Result from processing realtime data:")
-                # # print(result)
-                #
-                # if result and result.get("result") == "success":
-                #     print("Successfully processed realtime data")
-                #
-                #     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
-                #
-                # else:
-                #     print("Failed to process realtime data")
-                #
-                #     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
-                #         "result": "failed",
-                #         "message": "Failed to process realtime data"
-                #     })
 
                 #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance
 
