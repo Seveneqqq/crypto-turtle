@@ -1,14 +1,14 @@
 import joblib
 import numpy as np
 import os
-
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 #from .standalone_model import ModelPredictor
 from .model_package import ModelPredictor
 
 class ModelSignal:
-    def __init__(self, model_name, data, base_dir):
+    def __init__(self, model_name, data, base_dir, realtime = False):
         # base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "models")
 
@@ -26,18 +26,29 @@ class ModelSignal:
 
 
         self.model_name = model_name
-        self.model_path : str
+        self.model_path : str = ""
+        self.model_type = ""
         print(f"[Core_Logic] Obliczanie predykcji.")
+
+
+
         match self.check_model_type():
             case "sklearn":
                 self.model = joblib.load(self.model_path)
-                # self.dict_probs, self.predictions, self.classes = self.sklearn()
-                self.predictions, self.class_map = self.sklearn()
 
+                if realtime:
+                    self.features = self.model.feature_names_in_
+                    self.predictions = []
+                    self.class_map = ["buy", "hold", "sell"]
+                else:
+                    self.predictions, self.class_map = self.sklearn()
 
             case "lstm":
                 self.model = ModelPredictor(self.model_path)
                 self.predictions, self.class_map = self.lstm_price_predictor()
+
+            case _:
+                print("[ModelSignal][ERROR] Brak obsługi tego typu modelu.")
 
 
 
@@ -69,6 +80,14 @@ class ModelSignal:
         self.data['volatility'].fillna(0.0, inplace=True)
         self.volatility = self.data["volatility"].to_numpy()
 
+    def generate_prediction(self, data):
+        match self.model_type:
+            case "sklearn":
+                self.realtime_sklearn(data)
+            case _:
+                print("[ModelSignal][ERROR] Brak obsługi tego typu modelu.")
+
+
     def sklearn(self):
         features = self.model.feature_names_in_
         x = self.data[features].values
@@ -76,6 +95,27 @@ class ModelSignal:
         classes = [str(c) for c in self.model.classes_]
         class_map = {label: idx for idx, label in enumerate(classes)}
         return probs, class_map
+
+    def realtime_sklearn(self,df):
+
+        self.data.append(df)
+        features = self.model.feature_names_in_
+
+        df_row = pd.DataFrame([df])
+
+        x = df_row[features].values
+
+        prob = self.model.predict_proba(x)
+
+        self.predictions.append(prob[0])
+        self.open_times.append(df["open_time"])
+        self.close_prices.append(df["close"])
+
+        self.close.append(df["close"])
+        self.high.append(df["high"])
+        self.low.append(df["low"])
+        self.open.append(df["open"])
+
 
     def lstm_price_predictor(self):
         preds = self.model.predict_batch(
@@ -118,6 +158,7 @@ class ModelSignal:
             candidate_path = os.path.join(subfolder_path, self.model_name)
             if os.path.exists(candidate_path):
                 self.model_path = candidate_path
+                self.model_type = subfolder.lower()
                 return subfolder.lower()  # 'sklearn' lub 'lstm'
 
         raise ValueError(f"Nie znaleziono modelu '{self.model_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")

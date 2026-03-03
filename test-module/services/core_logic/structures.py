@@ -9,13 +9,17 @@ class Order:
     symbol: str
     action: str
     value: float
-    price: float
-    fraction: float = 0.0
-    reason: str = ""
+    buy_p: float = 0.0
+    hold_p: float = 0.0
+    sell_p: float = 0.0
+    price: float = 0.0
     rl_config: Any = None
+    fraction: float = 0.0
     qty: float = 0.0
     status: str = "created"
+    reason: str = ""
     slippage_price: float = 0.0
+    total_portfolio_value: float = 0.0
 
     # , "buy:0","hold":1, "sell:2"
     def rejected(self, reason: str):
@@ -24,7 +28,7 @@ class Order:
 
     def to_dict(self):
         d = asdict(self)
-        if hasattr(self.rl_config, "tolist"): # Jeśli to numpy array
+        if hasattr(self.rl_config, "tolist"):
             d['rl_config'] = self.rl_config.tolist()
         return d
 
