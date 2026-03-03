@@ -6,6 +6,7 @@ else:
     from services.rabbitmq_service import RabbitMQService
     from services.simulation_service import SimulationService
     from services.visualization_service import VisualizationService
+    from services.realtime_generate_decision_service import RealtimeGenerateDecisionService
     from services.data_quality_service import DataQualityService
     from services.rabbitmq_request_service import RabbitMQRequestService
     from configuration.rabbitmq_configuration import (
@@ -27,6 +28,8 @@ else:
     print("Initializing Visualization Service...")
     visualization_service = VisualizationService()
 
+    print("Initializing RealtimeGenerateDecision Service...")
+    realtime_generate_decision_service = RealtimeGenerateDecisionService()
 
     print("Initializing Data Quality Service...")
     data_quality_service = DataQualityService()
@@ -36,7 +39,8 @@ else:
         rabbitmq_service=rabbitmq_service,
         simulation_service=simulation_service,
         visualization_service=visualization_service,
-        data_quality_service=data_quality_service
+        data_quality_service=data_quality_service,
+        realtime_generate_decision_service=realtime_generate_decision_service,
     )
 
     rabbitmq_service.request_service = rabbitmq_request_service
