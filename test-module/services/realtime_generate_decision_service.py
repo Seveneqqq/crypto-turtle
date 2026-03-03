@@ -59,7 +59,16 @@ class RealtimeGenerateDecisionService:
 
                 self.models[symbol].generate_prediction(data)
 
+            # ── KROK 1: Sprawdź pending zlecenia z poprzedniej iteracji ──────
+            if hasattr(self.engine.wallet, "testnet_check_pending_orders"):
+                self.engine.wallet.testnet_check_pending_orders()
+
             self.engine.generate_decisions(t=-1)
+
+            if hasattr(self.engine.wallet, "testnet_sync_after_orders"):
+                self.engine.wallet.testnet_sync_after_orders(
+                    wait_seconds= 10.0
+                )
 
             current_ts = results[0]["candles"][-1]["close_time"]
 

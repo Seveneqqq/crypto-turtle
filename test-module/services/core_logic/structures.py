@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict, field
 from typing import Any, List, Optional
 import numpy as np
+import time
 
 
 @dataclass(slots=True)
@@ -21,6 +22,31 @@ class Order:
     slippage_price: float = 0.0
     total_portfolio_value: float = 0.0
 
+
+    # Stan portfela PRZED transakcją
+    local_before_balance: float = 0.0
+    local_before_holdings: float = 0.0
+    local_before_avg_buy_price: float = 0.0
+    # Stan po lokalnej egzekucji (przed korektą Binance)
+    local_after_balance: float = 0.0
+    local_after_holdings: float = 0.0
+    local_after_avg_buy_price: float = 0.0
+    # Wynik Binance
+    binance_status: str = ""
+    binance_qty: float = 0.0
+    binance_executed_price: float = 0.0
+    binance_transaction_value: float = 0.0
+    binance_order_id: str = ""
+    binance_message: str = ""
+    # Stan po korekcie (ground truth)
+    reconciled_balance: float = 0.0
+    reconciled_holdings: float = 0.0
+    reconciled_avg_buy_price: float = 0.0
+    # Drift local_after vs reconciled
+    drift_qty: float = 0.0
+    drift_value: float = 0.0
+
+
     # , "buy:0","hold":1, "sell:2"
     def rejected(self, reason: str):
         self.status = "rejected"
@@ -31,6 +57,26 @@ class Order:
         if hasattr(self.rl_config, "tolist"):
             d['rl_config'] = self.rl_config.tolist()
         return d
+
+@dataclass
+class PendingBinanceOrder:
+    """
+    Zlecenie wysłane do Binance czekające na potwierdzenie.
+    Przechowywane w pamięci serwisu między iteracjami pętli.
+    """
+    order_id: str                       # binance orderId
+    symbol: str
+    action: str                         # "buy" | "sell"
+    local_qty: float                    # qty odejęte/dodane lokalnie
+    local_price: float
+    local_balance_before: float         # snapshot do rollbacku
+    local_holdings_before: float
+    local_avg_buy_price_before: float
+    submitted_at: float = field(default_factory=time.time)
+
+    def age_seconds(self) -> float:
+        return time.time() - self.submitted_at
+
 
 @dataclass(slots=True)
 class PreviousEpoch:
