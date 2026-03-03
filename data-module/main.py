@@ -15,6 +15,11 @@ data_service = DataService()
 realtime_data_service = RealtimeDataService(rabbitmq_service=rabbitmq_service)
 
 
+
+# 🔹 inicjalizacja realtime service
+realtime_data_service = RealtimeDataService(rabbitmq_service=rabbitmq_service)
+
+
 @app.get("/")
 def root():
     return {"message": "Hello from data-module"}

@@ -1,123 +1,105 @@
-from stable_baselines3 import PPO
-from .rl.agent import TradingEnv
-from .rl.rl_ml_signal import ModelSignal
+from .rl.base_train_service import BaseTrainService
 import os
-import pandas as pd
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
+from stable_baselines3 import PPO
 import torch
 
+class TrainAgentPPOService(BaseTrainService):
+    """PPO-specific training service"""
 
-class TrainAgentPPOService:
-    def __init__(self):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.DATA_DIR = os.path.join(base_dir, "shared", "files", "processed_rlagent_data")
-        self.MODEL_DIR = os.path.join(base_dir, "shared", "models", "sklearn")
-        self.AGENT_DIR = os.path.join(base_dir, "shared", "agents", "ppo")
-        os.makedirs(self.AGENT_DIR, exist_ok=True)
+    def __init__(self, base_dir=None):
+        if base_dir is None:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        super().__init__(base_dir=base_dir, agent_type='ppo')
 
-
-    def train_agent_ppo(
-            self,
-            rabbitmq_msg_id=None,
-            model_files=None,
-            data_files=None,
-            total_timesteps= 10000,
-            learning_rate= 0.0003,
-            n_steps= 2048,
-            batch_size= 64,
-            gamma= 0.99,
-            ent_coef= 0.0):
-
+    def train_agent_ppo(self,
+                    rabbitmq_msg_id=None,
+                    model_files=None,
+                    data_files=None,
+                    total_timesteps=2_000_000,
+                    learning_rate=0.0003,
+                    n_steps=2048,
+                    batch_size=64,
+                    gamma=0.99,
+                    ent_coef=0.01,
+                    n_epochs=10,
+                    gae_lambda=0.95,
+                    clip_range=0.2,
+                    episode_timesteps=1024,
+                    ml_threshold=0.45,
+                    live_logging=True,
+                    experiment_version="v0"):
 
         try:
-            train_params = {
-                "total_timesteps": total_timesteps,
-                "learning_rate": learning_rate,
-                "n_steps": n_steps,
-                "batch_size": batch_size,
-                "gamma": gamma,
-                "ent_coef": ent_coef,
-                "n_epochs": 8,
-                "gae_lambda": 0.95,
-                "clip_range": 0.2
-            }
-            print("train_params:", train_params)
+            start_time = time.time()
+            if self.models == {}: self._load_data(model_files, data_files)
 
-            if train_params is None:
-                train_params = {}
-            total_timesteps = train_params.pop("total_timesteps", 10000)
+            env, callback = self._setup_env(
+                total_timesteps=total_timesteps,
+                base_dir=self.base_dir,
+                episode_timesteps=episode_timesteps,
+                live_logging=live_logging,
+                ml_threshold=ml_threshold,
+                num_envs=11,
+                gamma=gamma,
+                experiment_version=experiment_version,
+            )
 
-            models = {}
-            symbols = []
-            for symbol, filename in data_files.items():
-                filepath = os.path.join(self.DATA_DIR, filename)
-                if not os.path.exists(filepath):
-                    raise FileNotFoundError(f"Brak pliku: {filepath}")
-                df = pd.read_csv(filepath)
-                # --- Inicjalizacja modeli ---
-                models[symbol] = ModelSignal(model_name=model_files[symbol], data=df.copy())
-                symbols.append(symbol)
+            policy_kwargs = dict(
+                activation_fn=torch.nn.ReLU,
+                net_arch=[dict(pi=[64, 64], vf=[64, 64])]
+            )
 
-            env = TradingEnv(models, symbols)
+            agent = PPO(
+                policy="MlpPolicy",
+                env=env,
+                learning_rate=learning_rate,
+                n_steps=n_steps,
+                batch_size=batch_size,
+                gamma=gamma,
+                ent_coef=ent_coef,
+                n_epochs=n_epochs,
+                gae_lambda=gae_lambda,
+                clip_range=clip_range,
+                policy_kwargs=policy_kwargs,
+                verbose=1
+            )
 
-            progress_callback = ProgressBarCallback(total_timesteps=total_timesteps)
-            torch.set_num_threads(16)
-            agent = PPO("MlpPolicy", env, verbose=1, **train_params)
+            # Train
+            print(f"[TrainAgentPPO] Rozpoczynanie treningu...")
             agent.learn(
                 total_timesteps=total_timesteps,
-                callback=progress_callback,
+                callback=callback,
                 log_interval=10000
             )
 
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            filename = f"agent_ppo_{timestamp}.zip"
-            path = os.path.join(self.AGENT_DIR, filename)
-            agent.save(path)
+            agent_path, agent_file = self._save_agent(agent)
+            env.close()
+
+
+            elapsed = timedelta(seconds=time.time() - start_time)
+            print(f"[TrainAgentPPO] Trening zakończony ({elapsed}).")
 
             return {
                 "rabbit_msg_id": rabbitmq_msg_id,
                 "result": "success",
-                "message": "Successfully retrieved simulation data",
-                "agent_file": path,
+                "message": "PPO training completed successfully",
+                "agent_path": agent_path,
+                "agent_file": agent_file,
                 "timestamp": datetime.now().isoformat()
             }
 
         except Exception as e:
             import traceback
-            print("[TrainAgent][ERROR]", e)
+            print(f"[PPO][ERROR] {e}")
             traceback.print_exc()
+
             return {
                 "rabbit_msg_id": rabbitmq_msg_id,
                 "result": "failed",
                 "message": str(e),
                 "agent_file": None,
+                "agent_path": None,
                 "timestamp": datetime.now().isoformat()
             }
-
-import sys
-from stable_baselines3.common.callbacks import BaseCallback
-
-class ProgressBarCallback(BaseCallback):
-    def __init__(self, total_timesteps):
-        super().__init__()
-        self.total_timesteps = total_timesteps
-        self.progress_bar_length = 40  # ile znaków w pasku
-        self.last_progress = -1
-
-    def _on_step(self) -> bool:
-        progress = int((self.num_timesteps / self.total_timesteps) * 100)
-
-        # aktualizuj tylko jeśli się zmienił
-        if progress != self.last_progress:
-            bar_filled = int(self.progress_bar_length * progress / 100)
-            bar = '#' * bar_filled + '-' * (self.progress_bar_length - bar_filled)
-            sys.stdout.write(f"\rTraining PPO agent: [{bar}] {progress}%")
-
-            sys.stdout.flush()
-            self.last_progress = progress
-
-        # zakończenie
-        if self.num_timesteps >= self.total_timesteps:
-            print("\n✅ Training complete.")
-
-        return True
