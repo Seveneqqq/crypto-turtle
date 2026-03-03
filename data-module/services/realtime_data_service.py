@@ -20,7 +20,7 @@ class RealtimeDataService:
         self.candles_buffer = deque(maxlen=100)
         self.rest_url = "https://api.binance.com/api/v3"
 
-        self.log_dir = os.path.abspath(os.path.join("..", "realtime_data_logs"))
+        self.log_dir = os.path.abspath(os.path.join("..", "shared", "realtime_data_logs"))
         os.makedirs(self.log_dir, exist_ok=True)
 
         main_log_path = os.path.join(

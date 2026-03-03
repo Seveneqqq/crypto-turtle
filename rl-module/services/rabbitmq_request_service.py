@@ -52,10 +52,13 @@ class RabbitMQRequestService:
                 print("Result from processing realtime data:")
                 print(result)
 
+                #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance
+
                 # if result and result.get("result") == "success":
                 #     print("Successfully processed realtime data")
 
-                #     self.rabbitmq_service.publish(RL_RESPONSE_QUEUE, result)
+                #     self.rabbitmq_service.publish(XAI_REALTIME_QUEUE, result)
+                #     self.rabbitmq_service.publish(BINANCE_REALTIME_QUEUE, result)
 
                 # else:
                 #     print("Failed to process realtime data")
@@ -65,4 +68,4 @@ class RabbitMQRequestService:
                 #         "message": "Failed to process realtime data"
                 #     })
 
-                #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance
+                
