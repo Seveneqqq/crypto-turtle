@@ -13,7 +13,7 @@ def root():
 # ENDPOINTY BINANCE TESTNET
 # -------------------------
 
-from services.binance_testnet_service import BinanceTestnetService
+from services.core_logic.binance_testnet_service import BinanceTestnetService
 
 # Po realtime_data_service dodaj:
 binance_testnet_service = BinanceTestnetService()
