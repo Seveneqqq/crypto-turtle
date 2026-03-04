@@ -73,6 +73,8 @@ class Wallet:
         self.portfolio_holdings_history.append(self.total_holdings(self.current_prices_wallet))
         for order in current_orders:
             order.total_portfolio_value = total_value
+            order.actual_qty = self.holdings[order.symbol]
+            order.actual_usdt = self.balance
             self.logs.append(order)
             self.orders.remove(order)
 

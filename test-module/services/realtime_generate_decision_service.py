@@ -39,14 +39,12 @@ class RealtimeGenerateDecisionService:
         self,
         rabbit_msg_id=None,
         results=None,
-        result=None,
     ):
         try:
             self._check_and_load_config()
 
-            #TODO: Poprawne (niezdublowane) działanie przed wprowadzeniem streamingu wielu symboli - zakomentować linijkę : for result in results:
             for result in results:
-                data = result["candles"][-1]
+                data = result["data"]["realtime_data"][-1]
                 symbol = result["symbol"]
                 data["open_time"] = pd.to_datetime(data["open_time"], unit="ms")
                 data["close_time"] = pd.to_datetime(data["close_time"], unit="ms").round("min")
@@ -70,7 +68,7 @@ class RealtimeGenerateDecisionService:
                     wait_seconds= 10.0
                 )
 
-            current_ts = results[0]["candles"][-1]["close_time"]
+            current_ts = results[0]["data"]["realtime_data"][-1]["close_time"]
 
             last_t_orders = self.engine.wallet.get_last_t_logs(close_time=current_ts)
 

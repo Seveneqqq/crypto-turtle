@@ -20,6 +20,8 @@ class Order:
     status: str = "created"
     reason: str = ""
     slippage_price: float = 0.0
+    actual_qty: float = 0.0
+    actual_usdt: float = 0.0
     total_portfolio_value: float = 0.0
 
 
