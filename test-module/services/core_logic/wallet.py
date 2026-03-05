@@ -8,9 +8,12 @@ class Wallet:
         self.config = WalletConfig()
         if self.core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
 
-        self.holdings = {s: 0.0 for s in self.symbols}
-        self.last_buy_price = {s: 0.0 for s in self.symbols}
-        self.avg_buy_price = {s: 0.0 for s in self.symbols}
+        self.holdings = {}
+        self.last_buy_price = {}
+        self.avg_buy_price = {}
+
+        for symbol in self.symbols:
+            self.initialize_symbol_and_holdings(symbol)
 
         self.transaction_count = 0
         self.orders = []
@@ -46,15 +49,33 @@ class Wallet:
         self.logs.clear()
 
         for symbol in self.holdings:
-            self.holdings[symbol] = 0.0
-            self.last_buy_price[symbol] = 0.0
-            self.avg_buy_price[symbol] = 0.0
+            self.initialize_symbol_and_holdings(symbol)
 
-    def update_history(self):
+    def initialize_symbol_and_holdings(self, symbol):
+        self.holdings[symbol] = 0.0
+        self.last_buy_price[symbol] = 0.0
+        self.avg_buy_price[symbol] = 0.0
+
+    def get_last_t_logs(self, close_time):
+
+        last_t_logs = [order for order in self.logs if order.timestamp == -1]
+
+        for order in last_t_logs:
+            order.timestamp = close_time
+
+        return last_t_logs
+
+    def update_history(self, current_orders):
         """ Przygotowuje logi dla symulacji """
+
         total_value = self.total_value(self.current_prices_wallet)
         self.portfolio_values_history.append(round(total_value,1))
         self.portfolio_holdings_history.append(self.total_holdings(self.current_prices_wallet))
+        for order in current_orders:
+            order.total_portfolio_value = total_value
+            self.logs.append(order)
+            self.orders.remove(order)
+
 
     def execute_orders(self, t, current_prices):
         self.current_prices_wallet = current_prices
@@ -79,9 +100,10 @@ class Wallet:
             else:
                 if order.action == "buy":  self.buy(order)
                 if order.action == "sell": self.sell(order)
-            self.transaction_count += 1
-            self.logs.append(order)
-            self.orders.remove(order)
+                if order.status != "rejected": self.transaction_count += 1
+
+        self.update_history(current_orders)
+
 
     def rl_config(self,scaled):
         pass

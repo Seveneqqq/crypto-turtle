@@ -10,4 +10,3 @@ def root():
     return {"message": "Hello from rl-module"}
 
 rabbitmq_service.consume(queue=RL_REQUEST_QUEUE, callback = rabbitmq_service.handle_request)
-rabbitmq_service.consume(queue="decision_queue", callback = rabbitmq_service.handle_realtime_request)
