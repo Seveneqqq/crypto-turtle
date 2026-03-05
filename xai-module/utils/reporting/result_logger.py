@@ -1,0 +1,49 @@
+import json
+import os
+from datetime import datetime
+import pandas as pd
+
+
+class ResultLogger:
+
+    def __init__(self, dataset_name: str):
+
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        self.base_dir = f"results/experiments/{timestamp}"
+        self.dataset_name = dataset_name
+
+        os.makedirs(self.base_dir, exist_ok=True)
+        os.makedirs(f"{self.base_dir}/plots", exist_ok=True)
+
+        self.results = []
+
+    def log(self, result: dict):
+        self.results.append(result)
+
+    def save(self):
+
+        # JSON
+        json_path = f"{self.base_dir}/results.json"
+        with open(json_path, "w") as f:
+            json.dump(self.results, f, indent=4)
+
+        # CSV summary
+        rows = []
+
+        for r in self.results:
+
+            row = {
+                "dataset": r["dataset"],
+                "model": r["model"],
+                **r["model_metrics"]
+            }
+
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+
+        csv_path = f"{self.base_dir}/summary.csv"
+        df.to_csv(csv_path, index=False)
+
+        print(f"📁 Results saved to: {self.base_dir}")

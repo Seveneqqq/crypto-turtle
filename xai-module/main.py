@@ -21,7 +21,7 @@ def run_experiment_on_startup():
 
     print("🚀 Starting experiment pipeline...")
 
-    dataset_name = "crime"
+    dataset_name = "medical"
     config = EXPERIMENTS[dataset_name]
 
     # 🔥 możesz tu wrzucać dowolne modele
