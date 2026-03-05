@@ -2,25 +2,59 @@ import os
 import json
 import threading
 import logging
-import time
 import requests
 from datetime import datetime
 from collections import deque
+
 import websocket
+import pandas as pd
+import numpy as np
+import joblib
 
 
 class RealtimeDataService:
+
+    FEATURE_SETS = {
+        "lstm_set1": [
+            "ma_5", "ma_10", "ma_20",
+            "sma_10", "sma_30",
+            "cumvol", "volume_norm",
+            "std_20",
+        ],
+        "lstm_set2": ["RSI_14", "EMA_20", "EMA_50"],
+        "lstm_set3": ["BB_upper", "BB_lower", "Momentum_10", "ROC_10"],
+        "lstm_set4": ["ATR_14", "VWAP", "ROC_5"],
+        "sklearn_set1": [
+            "ret1", "ret1_lag1", "ret1_lag2", "ret1_lag5", "ret1_lag10",
+            "roll_mean_10", "roll_mean_50", "roll_std_10", "roll_std_50",
+            "macd", "macd_sig",
+        ],
+        "sklearn_set2": [
+            "ma_5", "ma_10", "ma_20",
+            "RSI_14", "EMA_20", "EMA_50",
+        ],
+    }
+
     def __init__(self, rabbitmq_service=None):
         self.rabbitmq_service = rabbitmq_service
-        self.ws = None
-        self.symbol = None
         self.interval = None
-        self.ws_url = None
         self.is_running = False
-        self.candles_buffer = deque(maxlen=100)
         self.rest_url = "https://api.binance.com/api/v3"
 
-        self.log_dir = os.path.abspath(os.path.join("..", "realtime_data_logs"))
+        self.symbol_configs = {}
+        self.models = {}
+        self.buffers = {}
+        self.latest_results = {}
+        self.ws_by_symbol = {}
+        self.ws_threads = {}
+
+        self.publish_lock = threading.Lock()
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+        self.BASE_MODEL_DIR = os.path.join(project_root, "shared", "models")
+
+        self.log_dir = os.path.abspath(os.path.join(project_root, "realtime_data_logs"))
         os.makedirs(self.log_dir, exist_ok=True)
 
         main_log_path = os.path.join(
@@ -28,16 +62,11 @@ class RealtimeDataService:
             f"realtime_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         )
 
-        buffer_log_path = os.path.join(
-            self.log_dir,
-            f"buffer_state_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        )
-
         self.logger = logging.Logger(f"RealtimeLogger_{id(self)}")
         self.logger.setLevel(logging.INFO)
 
-        main_file_handler = logging.FileHandler(main_log_path)
-        main_file_handler.setFormatter(
+        file_handler = logging.FileHandler(main_log_path, encoding="utf-8")
+        file_handler.setFormatter(
             logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
         )
 
@@ -46,176 +75,210 @@ class RealtimeDataService:
             logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
         )
 
-        self.logger.addHandler(main_file_handler)
+        self.logger.addHandler(file_handler)
         self.logger.addHandler(console_handler)
-
-        self.buffer_logger = logging.Logger(f"BufferLogger_{id(self)}")
-        self.buffer_logger.setLevel(logging.INFO)
-
-        buffer_file_handler = logging.FileHandler(buffer_log_path)
-        buffer_file_handler.setFormatter(
-            logging.Formatter("%(asctime)s %(message)s")
-        )
-
-        self.buffer_logger.addHandler(buffer_file_handler)
 
         self.logger.info("SERVICE INITIALIZED")
 
-    def load_initial_history(self):
+    # ============================================================
+    # START
+    # ============================================================
+
+    def start(self, symbols, interval="1m"):
+        self.interval = interval
+        self.is_running = True
+
+        for cfg in symbols:
+            symbol = str(cfg.symbol).lower()
+
+            self.symbol_configs[symbol] = {
+                "features": cfg.features,
+                "model": getattr(cfg, "model", None),
+            }
+
+            self.buffers[symbol] = deque(maxlen=250)
+
+            if cfg.features == "auto":
+                model_path = self._find_model(cfg.model)
+                self.models[symbol] = joblib.load(model_path)
+                self.logger.info(f"[{symbol}] MODEL LOADED")
+
+            self.load_initial_history(symbol)
+
+            t = threading.Thread(target=self.connect, args=(symbol,), daemon=True)
+            self.ws_threads[symbol] = t
+            t.start()
+
+    # ============================================================
+    # FEATURE EXPAND
+    # ============================================================
+
+    def _expand_features(self, features_cfg):
+        if features_cfg == "auto":
+            return "auto"
+
+        if isinstance(features_cfg, str):
+            if features_cfg in self.FEATURE_SETS:
+                return self.FEATURE_SETS[features_cfg]
+            return [features_cfg]
+
+        if isinstance(features_cfg, list):
+            if len(features_cfg) == 1 and features_cfg[0] in self.FEATURE_SETS:
+                return self.FEATURE_SETS[features_cfg[0]]
+            return features_cfg
+
+        return []
+
+    # ============================================================
+    # MODEL SEARCH
+    # ============================================================
+
+    def _find_model(self, model_name):
+        for subfolder in os.listdir(self.BASE_MODEL_DIR):
+            path = os.path.join(self.BASE_MODEL_DIR, subfolder, model_name)
+            if os.path.exists(path):
+                return path
+        raise ValueError("Model not found")
+
+    # ============================================================
+    # HISTORY
+    # ============================================================
+
+    def load_initial_history(self, symbol):
         url = f"{self.rest_url}/klines"
-        params = {
-            "symbol": self.symbol.upper(),
-            "interval": self.interval,
-            "limit": 100
-        }
+        params = {"symbol": symbol.upper(), "interval": self.interval, "limit": 250}
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
 
-        response = requests.get(url, params=params, timeout=10)
+        self.buffers[symbol].clear()
 
-        if response.status_code != 200:
-            self.logger.error(f"REST ERROR {response.text}")
-            raise Exception(response.text)
-
-        data = response.json()
-        self.candles_buffer.clear()
-
-        for k in data:
-            candle = {
+        for k in r.json():
+            self.buffers[symbol].append({
                 "open_time": k[0],
                 "close_time": k[6],
                 "open": float(k[1]),
                 "high": float(k[2]),
                 "low": float(k[3]),
                 "close": float(k[4]),
-                "volume": float(k[5])
-            }
-            self.candles_buffer.append(candle)
+                "volume": float(k[5]),
+            })
 
-        self.logger.info(f"INITIAL BUFFER SIZE {len(self.candles_buffer)}")
-        self.log_buffer_state("INITIAL LOAD")
+        self.logger.info(f"[{symbol}] HISTORY LOADED")
 
-    def on_open(self, ws):
-        self.logger.info(f"WS OPEN {self.symbol} {self.interval}")
+    # ============================================================
+    # COMPUTE FEATURES
+    # ============================================================
 
-    def on_message(self, ws, message):
+    def _compute_features_full(self, df):
+        close = df["close"]
+        volume = df["volume"]
+
+        df["ma_5"] = close.rolling(5).mean()
+        df["ma_10"] = close.rolling(10).mean()
+        df["ma_20"] = close.rolling(20).mean()
+
+        df["ret1"] = np.log(close).diff()
+        for k in [1, 2, 5, 10]:
+            df[f"ret1_lag{k}"] = df["ret1"].shift(k)
+
+        df["macd"] = close.ewm(span=12).mean() - close.ewm(span=26).mean()
+        df["macd_sig"] = df["macd"].ewm(span=9).mean()
+
+        df["RSI_14"] = 100 - (
+            100 / (
+                1 + (
+                    close.diff().clip(lower=0).rolling(14).mean() /
+                    (close.diff().clip(upper=0).abs().rolling(14).mean() + 1e-9)
+                )
+            )
+        )
+
+        df["EMA_20"] = close.ewm(span=20).mean()
+        df["EMA_50"] = close.ewm(span=50).mean()
+
+        df["cumvol"] = volume.cumsum()
+        df["volume_norm"] = (volume - volume.min()) / (volume.max() - volume.min() + 1e-9)
+
+        df.fillna(0.0, inplace=True)
+        return df
+
+    # ============================================================
+    # WS
+    # ============================================================
+
+    def connect(self, symbol):
+        ws_url = f"wss://stream.binance.com:9443/ws/{symbol}@kline_{self.interval}"
+        ws = websocket.WebSocketApp(
+            ws_url,
+            on_message=lambda ws_, msg: self.on_message(ws_, msg, symbol),
+        )
+        ws.run_forever()
+
+    # ============================================================
+    # MAIN MESSAGE
+    # ============================================================
+
+    def on_message(self, ws, message, symbol):
         data = json.loads(message)
 
-        if data.get("e") == "kline":
-            kline = data["k"]
-
-            current_price = float(kline["c"])
-            current_volume = float(kline["v"])
-            is_closed = kline["x"]
-
-            self.logger.info(
-                f"LIVE UPDATE | price={current_price} | volume={current_volume} | closed={is_closed}"
-            )
-
-            if is_closed:
-                new_candle = {
-                    "open_time": kline["t"],
-                    "close_time": kline["T"],
-                    "open": float(kline["o"]),
-                    "high": float(kline["h"]),
-                    "low": float(kline["l"]),
-                    "close": current_price,
-                    "volume": current_volume
-                }
-
-                self.candles_buffer.append(new_candle)
-
-                self.logger.info("========== CANDLE CLOSED ==========")
-                for key, value in new_candle.items():
-                    self.logger.info(f"{key}: {value}")
-                self.logger.info(f"BUFFER SIZE: {len(self.candles_buffer)}")
-                self.logger.info("===================================")
-
-                candles_snapshot = list(self.candles_buffer)
-
-                # ============================================================
-                # 🔥 TUTAJ PODŁĄCZASZ SWÓJ SERWIS FEATURE PROCESSING
-                # np:
-                # processed_data = your_feature_service.process(candles_snapshot)
-                #
-                # NA RAZIE JEST ZAŚLEPKA:
-                processed_data = candles_snapshot
-                # ============================================================
-
-                if self.rabbitmq_service:
-                    payload = {
-                        "event": "processed_candles",
-                        "symbol": self.symbol,
-                        "interval": self.interval,
-                        "data": processed_data
-                    }
-
-                    self.rabbitmq_service.publish(
-                        queue="decision_queue",
-                        message=payload
-                    )
-
-                    self.logger.info("PUBLISHED PROCESSED DATA TO decision_queue")
-
-                self.log_buffer_state("AFTER UPDATE")
-
-    def log_buffer_state(self, label):
-        if not self.candles_buffer:
+        if data.get("e") != "kline":
             return
 
-        oldest = self.candles_buffer[0]
-        newest = self.candles_buffer[-1]
+        kline = data["k"]
+        if not kline["x"]:
+            return
 
-        oldest_dt = datetime.fromtimestamp(oldest["open_time"] / 1000)
-        newest_dt = datetime.fromtimestamp(newest["open_time"] / 1000)
+        self.buffers[symbol].append({
+            "open_time": kline["t"],
+            "close_time": kline["T"],
+            "open": float(kline["o"]),
+            "high": float(kline["h"]),
+            "low": float(kline["l"]),
+            "close": float(kline["c"]),
+            "volume": float(kline["v"]),
+        })
 
-        self.buffer_logger.info(
-            f"{label} | SIZE={len(self.candles_buffer)} | "
-            f"OLDEST={oldest_dt} | NEWEST={newest_dt}"
-        )
+        df = pd.DataFrame(list(self.buffers[symbol]))
+        df = self._compute_features_full(df)
 
-    def on_error(self, ws, error):
-        self.logger.error(f"WS ERROR {error}")
+        cfg = self.symbol_configs[symbol]
+        expanded = self._expand_features(cfg["features"])
 
-    def on_close(self, ws, close_status_code, close_msg):
-        self.logger.warning(f"WS CLOSED {close_status_code} {close_msg}")
-        if self.is_running:
-            self.reconnect()
+        if expanded == "auto":
+            model = self.models[symbol]
+            selected_features = [f for f in model.feature_names_in_ if f != "target"]
+        else:
+            selected_features = expanded
 
-    def connect(self):
-        self.logger.info(f"WS CONNECT {self.ws_url}")
+        base_columns = [
+            "open_time", "close_time",
+            "open", "high", "low", "close", "volume"
+        ]
 
-        self.ws = websocket.WebSocketApp(
-            self.ws_url,
-            on_open=self.on_open,
-            on_message=self.on_message,
-            on_error=self.on_error,
-            on_close=self.on_close
-        )
+        final_columns = base_columns + selected_features
+        final_columns = [c for c in final_columns if c in df.columns]
 
-        self.ws.run_forever(ping_interval=20, ping_timeout=10)
+        df_last = df.tail(100)[final_columns].copy()
 
-    def start(self, symbol: str, interval: str = "1m"):
-        self.symbol = symbol.lower()
-        self.interval = interval
-        self.ws_url = f"wss://stream.binance.com:9443/ws/{self.symbol}@kline_{self.interval}"
-        self.is_running = True
+        self.latest_results[symbol] = {
+            "features_used": selected_features,
+            "realtime_data": df_last.to_dict(orient="records"),
+        }
 
-        self.logger.info(f"START {self.symbol} {self.interval}")
+        payload = {
+            "result": [
+                {"symbol": s, "data": self.latest_results[s]}
+                for s in sorted(self.latest_results.keys())
+            ]
+        }
 
-        self.load_initial_history()
+        with self.publish_lock:
+            if self.rabbitmq_service:
+                self.rabbitmq_service.publish(
+                    queue="decision_queue",
+                    message=payload
+                )
 
-        thread = threading.Thread(target=self.connect)
-        thread.daemon = True
-        thread.start()
-
-    def stop(self):
-        self.logger.info("STOP CALLED")
-        self.is_running = False
-        if self.ws:
-            self.ws.close()
-        self.logger.info("STREAM STOPPED")
-
-    def reconnect(self):
-        self.logger.info("RECONNECT START")
-        time.sleep(5)
-        self.load_initial_history()
-        self.connect()
+            self.logger.info(
+                f"[{symbol}] PAYLOAD SENT | candles=100 | features={selected_features}"
+            )
