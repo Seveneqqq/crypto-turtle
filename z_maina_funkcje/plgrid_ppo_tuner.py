@@ -1,4 +1,4 @@
-from module_loader import block_ppo_tuner
+from z_maina_funkcje.module_loader import block_ppo_tuner
 
 if __name__ == "__main__":
 

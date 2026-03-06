@@ -2,7 +2,7 @@ import importlib
 import os
 
 os.environ["SKIP_INIT"] = "1"
-base_dir = os.path.dirname(os.path.abspath(__file__))
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def load(name: str, attr: str):
     module = importlib.import_module(name)
     return getattr(module, attr)

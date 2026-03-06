@@ -1,4 +1,4 @@
-from module_loader import block_train_ppo
+from z_maina_funkcje.module_loader import block_train_ppo
 
 if __name__ == "__main__":
 
