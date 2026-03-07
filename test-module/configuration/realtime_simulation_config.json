@@ -25,7 +25,7 @@
     "threshold_sell": 0.4869,
     "mincost": 5.1645,
     "tx_fraction": 0.0855,
-    "max_fraction_when_confident": 0.2770,
+    "max_fraction_when_confident": 0.2771,
     "experiment_version": "v0"
   },
   "refresh_interval_seconds": 60
