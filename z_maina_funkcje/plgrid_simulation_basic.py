@@ -5,17 +5,17 @@ if __name__ == "__main__":
     block_simulation().run_simulation(
         rabbit_msg_id=None,
         model_paths={
-            "BTC": "btc_model_c_v1_1210_11.pkl",
+            #"BTC": "btc_model_c_v1_1210_11.pkl",
             #"BTC": "L003_btc_model_B001_1512",
-            #"ETH": "eth_model_c_v1_1210_11.pkl",
+            "ETH": "eth_model_c_v1_1210_11.pkl",
             #"ETH": "eth_model_c_v1_0603_0.pkl"
             #"ETH": "eth_model_fe_2_c_v1_0910_ref.pkl"
             #"ETH": "eth_model_c_v1_2202_3.pkl"
         },
         data_files={
-            "BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv",
+            #"BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv",
             #"ETH": "realtime_data111.csv"
-            #"ETH": "processed_ROBUST_set4_ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv",
+            "ETH": "processed_ROBUST_set4_ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv",
             #"ETH": "fe_v2_eth_test_20251009_ref.csv"
             #"ETH": "ETHUSDT_1m_6m_2026-02-22_22cc9313-e635-4c2c-9a8e-2360745d150d.csv"
             #"BTC": "processed_ROBUST_set4_BTCUSDT_1s_2m_2026-01-11_9d42fe9e-b4ad-413f-ad84-aaaaaf53705c.csv"
@@ -40,6 +40,7 @@ if __name__ == "__main__":
         # logs=True,
         # results=True,
         # experiment_version="v0"
+
         # ETH new
         agent_rl="agent_ppo_2026-02-24_23-06-08.zip",
         balance_start=1000.0,

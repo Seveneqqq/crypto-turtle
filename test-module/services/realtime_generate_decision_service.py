@@ -45,7 +45,7 @@ class RealtimeGenerateDecisionService:
 
             for result in results:
                 data = result["data"]["realtime_data"][-1]
-                symbol = result["symbol"]
+                symbol = result["symbol"].upper()
                 data["open_time"] = pd.to_datetime(data["open_time"], unit="ms")
                 data["close_time"] = pd.to_datetime(data["close_time"], unit="ms").round("min")
 
@@ -115,19 +115,23 @@ class RealtimeGenerateDecisionService:
                 return
 
             current_mtime = os.path.getmtime(self.config_path)
-
             if current_mtime <= self._last_config_mtime:
                 return
 
             print(f"[RealtimeGenerateDecision] Wykryto zmianę w konfiguracji. Przeładowuję...")
             with open(self.config_path, 'r') as f:
                 config_data = json.load(f)
-                self.model_paths = config_data.get("models", {})
-                self.load_models()
 
-                raw_core = config_data.get("core_config", {})
-                if raw_core:
-                    self.load_core_config(raw_core)
+            self.model_paths = {
+                symbol.upper(): cfg.get("model")
+                for symbol, cfg in config_data.get("symbols", {}).items()
+                if cfg.get("model")
+            }
+            self.load_models()
+
+            raw_core = config_data.get("core_config", {})
+            if raw_core:
+                self.load_core_config(raw_core)
 
             self._last_config_mtime = current_mtime
 
@@ -136,7 +140,12 @@ class RealtimeGenerateDecisionService:
 
     def load_models(self):
         for symbol in self.symbols:
-            self.models[symbol].model_name = self.model_paths[symbol]
+            symbol_upper = symbol.upper()
+            model_name = self.model_paths.get(symbol_upper)
+            if not model_name:
+                print(f"[RealtimeGenerateDecision] Brak modelu dla {symbol_upper} w configu — pomijam")
+                continue
+            self.models[symbol].model_name = model_name
             self.models[symbol].check_model_type()
 
     def load_core_config(self, raw_core):

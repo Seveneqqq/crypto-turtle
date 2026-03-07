@@ -12,7 +12,7 @@ if __name__ == "__main__":
             #"BTC": "btc_model_c_v1_1210_11.pkl",
             #"BTC": "L003_btc_model_B001_1512",
             #"BTC": "L004_crypto_model_UNKNOWN_0603",
-            "ETH": "btc_model_simple_c_v1_0603_0.pkl"
+            "ETH": "btc_model_simple_c_v1_0603_1.pkl"
             #"ETH": "eth_model_c_v1_1210_11.pkl"
             #"ETH": "eth_model_c_v1_0603_0.pkl",
             #"ETH": "eth_model_fe_2_c_v1_0910_ref.pkl"

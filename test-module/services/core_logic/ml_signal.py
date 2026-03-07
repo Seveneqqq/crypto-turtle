@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 #from .standalone_model import ModelPredictor
-from .model_package import ModelPredictor
+from .model_package import ModelPredictor, ProbabilisticSignalGenerator
 
 class ModelSignal:
     def __init__(self, model_name, data, base_dir, realtime = False):
@@ -90,7 +90,10 @@ class ModelSignal:
 
     def sklearn(self):
         features = self.model.feature_names_in_
+        # print(features)
+        # self.data["target"] = 0
         x = self.data[features].values
+
         probs = self.model.predict_proba(x)
         classes = [str(c) for c in self.model.classes_]
         class_map = {label: idx for idx, label in enumerate(classes)}
@@ -123,14 +126,22 @@ class ModelSignal:
             batch_size=256,
             include_signals=True # ← Wyłącz sygnały techniczne!
         )
+        signal_model = ProbabilisticSignalGenerator(threshold=0.002)
+
 
         # Prosty fallback - oblicz z price_change
         signals = []
         prices = []
         for p in preds:
-            buy = p["signals"]["buy_signal"]
+
+            result = signal_model.generate_signal(
+            current_price=p["current_price"],
+            predicted_price=p["predicted_price"],
+            price_series=self.data["close"]
+            )
+            buy = result["p_buy"]
             hold = 0.0
-            sell = p["signals"]["sell_signal"]
+            sell = result["p_sell"]
             signals.append([buy, hold, sell])
             # log_ret = np.log(predicted / current)
             # conf = min(abs(log_ret) * 50, 1.0)
