@@ -156,7 +156,7 @@ class CoreConfig:
     mincost: float = 0.0
     tx_fraction: float = 0.0
     max_fraction_when_confident: float = 0.0
-    experiment_version: str = ""
+    experiment_version: str = "v0"
 
     def to_dict(self):
         d = asdict(self)
@@ -179,6 +179,7 @@ class DecisionConfig:
         self.max_fraction_when_confident = output_config.max_fraction_when_confident
         #print(output_config)
 
+@dataclass(slots=True)
 class WalletConfig:
     wallet_percentage_limit: float = 0.9
     mincost: float = 1.0

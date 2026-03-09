@@ -3,7 +3,7 @@ import numpy as np
 import types
 from stable_baselines3 import PPO, SAC
 from .version_registry import EXPERIMENTS
-from .structures import Order, DecisionConfig, CoreConfig
+from .structures import Order, DecisionConfig, CoreConfig, WalletConfig
 from .wallet import Wallet
 
 class DecisionEngine:
@@ -13,8 +13,12 @@ class DecisionEngine:
         self.agent_path = ""
         self.core_mode = core_mode
         self.core_config = core_config
-        self.config = DecisionConfig()
-        if core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
+
+        self.symbols = self.core_config.symbols
+        self.config = {}
+        for symbol in self.symbols:
+            self.config[symbol] = DecisionConfig()
+            if core_mode in ("sim_rl","sim_ml"):  self.config[symbol].set(core_config)
 
         self.models = models
 
@@ -26,7 +30,6 @@ class DecisionEngine:
         self.n_params_per_symbol = 0
         self.wallet = Wallet(self.core_mode, core_config)
 
-        self.symbols = core_config.symbols
         self.rlagent_deterministic = core_config.rlagent_deterministic
         self.agent = None
         self.BUY_IDX = 0  #TODO: np. pobrane z class_map
@@ -43,8 +46,17 @@ class DecisionEngine:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
         self.apply_experiment_version()
 
+    def init_local_configs(self, symbol):
+        self.config[symbol] = DecisionConfig()
+        self.config[symbol].set(self.core_config)
+        self.wallet.config[symbol] = WalletConfig()
+        self.wallet.config[symbol].set(self.core_config)
+
     def reset(self):
-        self.config = DecisionConfig()
+        self.config = {}
+        for symbol in self.symbols:
+            self.config[symbol] = DecisionConfig()
+            if self.core_mode in ("sim_rl", "sim_ml"):  self.config[symbol].set(self.core_config)
         self.prev_value = self.core_config.balance_start
         self.current_value = self.core_config.balance_start
 
@@ -78,13 +90,13 @@ class DecisionEngine:
         # print(f"  - Decision methods: {list(exp['decision_methods'].keys())}")
         # print(f"  - Wallet methods: {list(exp['wallet_methods'].keys())}")
 
-    def _normalize_model_value(self, mv):
-        if mv is None:
-            return 0.0
-        mv = float(mv)
-        if self.config.clamp_model_value:
-            mv = max(0.0, min(1.0, mv))
-        return mv
+    # def _normalize_model_value(self, mv):
+    #     if mv is None:
+    #         return 0.0
+    #     mv = float(mv)
+    #     if self.config["ETHUSDT"].clamp_model_value:
+    #         mv = max(0.0, min(1.0, mv))
+    #     return mv
 
     def check_agent_type(self):
         for subfolder in os.listdir(self.BASE_MODEL_DIR):
@@ -99,22 +111,23 @@ class DecisionEngine:
 
         raise ValueError(f"Nie znaleziono agenta '{self.agent_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")
 
-    def rl_config(self, scaled):
+    def rl_config(self, scaled_dict):
+        for symbol in self.symbols:
+            scaled = scaled_dict[symbol]
+            thr_low, thr_high = 0.25, 0.85
+            threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
+            threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
 
-        thr_low, thr_high = 0.25, 0.85
-        threshold_buy = thr_low + scaled[0] * (thr_high - thr_low)
-        threshold_sell = thr_low + scaled[1] * (thr_high - thr_low)
+            tx_min, tx_max = 0.01, 1.0
+            tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
 
-        tx_min, tx_max = 0.01, 1.0
-        tx_fraction = tx_min + scaled[2] * (tx_max - tx_min)
+            tx_min2, tx_max2 = 0.45, 1.0
+            tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
 
-        tx_min2, tx_max2 = 0.45, 1.0
-        tx_max_fraction = tx_min2 + scaled[3] * (tx_max2 - tx_min2)
-
-        self.config.threshold_buy = float(round(threshold_buy,2))
-        self.config.threshold_sell = float(round(threshold_sell,2))
-        self.config.tx_fraction = float(round(tx_fraction,2))
-        self.config.max_fraction_when_confident = float(round(tx_max_fraction,2))
+            self.config[symbol].threshold_buy = float(round(threshold_buy,2))
+            self.config[symbol].threshold_sell = float(round(threshold_sell,2))
+            self.config[symbol].tx_fraction = float(round(tx_fraction,2))
+            self.config[symbol].max_fraction_when_confident = float(round(tx_max_fraction,2))
 
     def t_data(self, t):
         for symbol in self.symbols:
@@ -134,22 +147,23 @@ class DecisionEngine:
         if self.core_mode == "sim_rl":
             scaled = self.get_obs(t)
 
+        if self.core_mode in ("train_rl", "sim_rl"):
+            self.rl_config(scaled)
+
         for symbol in self.symbols:
             # Pobieramy prawdopodobieństwa z modelu ML
             probs = self.current_probs[symbol]
             buy_prob = probs[self.BUY_IDX]
             sell_prob = probs[self.SELL_IDX]
 
-            if self.core_mode in ("train_rl", "sim_rl"):
-                self.rl_config(scaled[symbol])
 
-            buy_diff_prob = buy_prob - self.config.threshold_buy
-            sell_diff_prob = sell_prob - self.config.threshold_sell
+            buy_diff_prob = buy_prob - self.config[symbol].threshold_buy
+            sell_diff_prob = sell_prob - self.config[symbol].threshold_sell
 
-            if sell_diff_prob >= buy_diff_prob and sell_prob >= self.config.threshold_sell:
+            if sell_diff_prob >= buy_diff_prob and sell_prob >= self.config[symbol].threshold_sell:
                 action = "sell"
                 value = sell_prob
-            elif buy_diff_prob > sell_diff_prob and buy_prob >= self.config.threshold_buy:
+            elif buy_diff_prob > sell_diff_prob and buy_prob >= self.config[symbol].threshold_buy:
                 action = "buy"
                 value = buy_prob
             else:
@@ -187,15 +201,15 @@ class DecisionEngine:
         self.wallet.execute_orders(t, self.current_prices)
 
     def calculate_fraction(self, order):
-
+        symbol = order.symbol
         if order.action == "buy":
-              threshold = self.config.threshold_buy
-        else: threshold = self.config.threshold_sell
+              threshold = self.config[symbol].threshold_buy
+        else: threshold = self.config[symbol].threshold_sell
 
         denom = max(1.0 - threshold, 1e-12)
         norm_signal = max(0.0, min(1.0, (order.value - threshold) / denom))
 
-        frac = self.config.tx_fraction + norm_signal * (self.config.max_fraction_when_confident - self.config.tx_fraction)
+        frac = self.config[symbol].tx_fraction + norm_signal * (self.config[symbol].max_fraction_when_confident - self.config[symbol].tx_fraction)
         frac = max(0.0, min(1.0, frac))
         order.fraction = round(frac,4)
 

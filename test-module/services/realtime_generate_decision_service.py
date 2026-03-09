@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from .core_logic.ml_signal import ModelSignal
 from .core_logic.decision import DecisionEngine
-from .core_logic.structures import CoreConfig, Order
+from .core_logic.structures import CoreConfig, Order, DecisionConfig, WalletConfig
 
 class RealtimeGenerateDecisionService:
     def __init__(self, base_dir = None):
@@ -16,8 +16,6 @@ class RealtimeGenerateDecisionService:
 
         self.config_path = "/app/configuration/realtime_simulation_config.json"
         self._last_config_mtime = 0
-        self._check_and_load_config()
-
 
         current_time = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
         self.data_dir = os.path.join(self.base_dir,"shared", "realtime_simulation", f"{current_time}")
@@ -26,7 +24,7 @@ class RealtimeGenerateDecisionService:
         self.orders_file_path = os.path.join(self.data_dir, f"realtime_orders_logs.csv")
 
         self.models = {}
-
+        self.core_config.symbols = self.symbols
         self.engine = DecisionEngine(
             agent_name=None,
             models=self.models,
@@ -41,23 +39,34 @@ class RealtimeGenerateDecisionService:
         results=None,
     ):
         try:
-            self._check_and_load_config()
 
+            self._check_and_load_config()
             for result in results:
                 data = result["data"]["realtime_data"][-1]
                 symbol = result["symbol"].upper()
+                print(symbol, "czas: ",datetime.now().isoformat())
                 data["open_time"] = pd.to_datetime(data["open_time"], unit="ms")
                 data["close_time"] = pd.to_datetime(data["close_time"], unit="ms").round("min")
-
+                print(self.symbols, "przed if ",datetime.now().isoformat())
                 if symbol not in self.symbols:
-                    self.models[symbol] = ModelSignal(model_name=self.model_paths[symbol], data=[],
-                                                      base_dir=self.base_dir, realtime=True)
                     self.symbols.append(symbol)
+                    self.models[symbol] = ModelSignal(
+                        model_name=self.model_paths[symbol],
+                        data=[],
+                        base_dir=self.base_dir,
+                        realtime=True
+                    )
+
+                    self.engine.init_local_configs(symbol)
+
+                    with open(self.config_path, "r") as f:
+                        symbols_cfg = json.load(f).get("symbols", {})
+                    self.load_modified_params(symbols_cfg)
+
                     self.engine.wallet.initialize_symbol_and_holdings(symbol)
 
                 self.models[symbol].generate_prediction(data)
 
-            # ── KROK 1: Sprawdź pending zlecenia z poprzedniej iteracji ──────
             if hasattr(self.engine.wallet, "testnet_check_pending_orders"):
                 self.engine.wallet.testnet_check_pending_orders()
 
@@ -132,6 +141,7 @@ class RealtimeGenerateDecisionService:
             raw_core = config_data.get("core_config", {})
             if raw_core:
                 self.load_core_config(raw_core)
+                self.load_modified_params(config_data.get("symbols", {}))
 
             self._last_config_mtime = current_mtime
 
@@ -149,16 +159,24 @@ class RealtimeGenerateDecisionService:
             self.models[symbol].check_model_type()
 
     def load_core_config(self, raw_core):
+        for field_name, value in raw_core.items():
+            if field_name != "symbols" and hasattr(self.core_config, field_name):
+                setattr(self.core_config, field_name, value)
 
-        new_core = CoreConfig(**raw_core)
-        new_core.symbols = self.symbols
-        self.core_config = new_core
         if self.engine:
-            self.engine.config.set(self.core_config)
-
             self.engine.experiment_version = self.core_config.experiment_version
             self.engine.apply_experiment_version()
+            #Szybka łatka - do poprawy
+            if self.engine.wallet.balance == 0.0:
+                self.engine.wallet.balance = self.core_config.balance_start
 
-            if hasattr(self.engine, 'wallet'):
-                self.engine.wallet.config.set(self.core_config)
-        else: pass
+    def load_modified_params(self,symbols_cfg: dict):
+        for symbol in self.symbols:
+            overrides = symbols_cfg.get(symbol, {}).get("modified_params", {})
+            if overrides is not {}:
+                for field_name, value in overrides.items():
+                    if hasattr(self.engine.config[symbol], field_name):
+                        setattr(self.engine.config[symbol], field_name, value)
+                    if hasattr(self.engine.wallet.config[symbol], field_name):
+                        setattr(self.engine.wallet.config[symbol], field_name, value)
+                print(f"[RealtimeGenerateDecision] Załadowano modyfikacje DecisionConfig i WalletConfig")

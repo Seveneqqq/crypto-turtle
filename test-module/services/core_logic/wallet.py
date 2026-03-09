@@ -2,11 +2,16 @@ from .structures import WalletConfig, CoreConfig
 
 class Wallet:
     def __init__(self, core_mode = "sim_ml", core_config: CoreConfig = None):
-        self.balance = core_config.balance_start
-        self.symbols = core_config.symbols
+        self.core_config = core_config
+        self.balance = self.core_config.balance_start
+
         self.core_mode = core_mode
-        self.config = WalletConfig()
-        if self.core_mode in ("sim_rl","sim_ml"):  self.config.set(core_config)
+
+        self.symbols = self.core_config.symbols
+        self.config = {}
+        for symbol in self.symbols:
+            self.config[symbol] = WalletConfig()
+            if core_mode in ("sim_rl", "sim_ml"):  self.config[symbol].set(core_config)
 
         self.holdings = {}
         self.last_buy_price = {}
@@ -41,7 +46,10 @@ class Wallet:
         self.buys_count = 0
         self.sells_count = 0
 
-        self.config = WalletConfig()
+        self.config = {}
+        for symbol in self.symbols:
+            self.config[symbol] = WalletConfig()
+            if self.core_mode in ("sim_rl", "sim_ml"):  self.config[symbol].set(self.core_config)
         self.current_prices_wallet.clear()
         self.portfolio_values_history.clear()
         self.portfolio_holdings_history.clear()
@@ -91,8 +99,8 @@ class Wallet:
 
                 if order.action == "buy":  self.calculate_quantity_buy(order, current_prices)
                 if order.action == "sell": self.calculate_quantity_sell(order)
-
-        current_orders = [o for o in self.orders if o.timestamp == t - self.config.slippage]
+        #TODO: poprawka
+        current_orders = [o for o in self.orders if o.timestamp == t - self.core_config.slippage]
         if not current_orders:
             return
 
@@ -127,7 +135,7 @@ class Wallet:
         symbol = order.symbol
 
         usd_value = qty * current_price
-        transaction_value = usd_value * (1 + self.config.fee)
+        transaction_value = usd_value * (1 + self.config[symbol].fee)
 
         if transaction_value > self.balance:
             order.rejected("no_balance")
@@ -162,7 +170,7 @@ class Wallet:
             return
         else:
             usd_value = order.qty * order.price
-            transaction_value = usd_value * (1 - self.config.fee)
+            transaction_value = usd_value * (1 - self.config[symbol].fee)
             self.holdings[order.symbol] -= order.qty
             self.balance += transaction_value
             self.sells_count += 1
@@ -175,12 +183,13 @@ class Wallet:
     def calculate_quantity_buy(self, order, prices):
 
         price = order.price
-
-        available_cash = self.balance * self.config.wallet_percentage_limit
+        symbol = order.symbol
+        available_cash = self.balance * self.config[symbol].wallet_percentage_limit
         usd_amount = available_cash * order.fraction
 
-        if usd_amount < self.config.mincost:
+        if usd_amount < self.config[symbol].mincost:
             order.rejected("lower_than_mincost")
+            print("lower_than_mincost", usd_amount, symbol)
             return
 
         qty = usd_amount / price
@@ -195,8 +204,8 @@ class Wallet:
             new_holding_value = current_holding_value + qty * price
             current_crypto_percentage = new_holding_value / portfolio_value
             order.qty = qty
-            if current_crypto_percentage > self.config.max_wallet_percentage_crypto:
-                max_allowed_holding_value = self.config.max_wallet_percentage_crypto * portfolio_value
+            if current_crypto_percentage > self.config[symbol].max_wallet_percentage_crypto:
+                max_allowed_holding_value = self.config[symbol].max_wallet_percentage_crypto * portfolio_value
                 max_allowed_qty = (max_allowed_holding_value - current_holding_value) / price
 
                 qty = max(0.0, min(qty, max_allowed_qty))
@@ -204,7 +213,7 @@ class Wallet:
                 if qty == 0.0:
                     order.rejected("limit_max_wallet_percentage_crypto")
                     return
-                if max_allowed_qty * price < self.config.mincost:
+                if max_allowed_qty * price < self.config[symbol].mincost:
                     order.rejected("lower_than_mincost")
                     return
         order.qty = qty
@@ -216,7 +225,7 @@ class Wallet:
             qty = crypto_qty * order.fraction
 
             usd_value = qty * order.price
-            if usd_value < self.config.mincost:
+            if usd_value < self.config[order.symbol].mincost:
                 order.rejected("lower_than_mincost")
                 return
             order.qty = qty
