@@ -1,13 +1,15 @@
 from configuration.rabbitmq_queues import TEST_RESPONSE_QUEUE
+from configuration.rabbitmq_queues import XAI_REQUEST_QUEUE
 
-
+from datetime import datetime
 class RabbitMQRequestService:
-    def __init__(self, rabbitmq_service, simulation_service, visualization_service, data_quality_service):
+    def __init__(self, rabbitmq_service, simulation_service, visualization_service, data_quality_service, realtime_generate_decision_service):
 
         self.rabbitmq_service = rabbitmq_service
         self.simulation_service = simulation_service
         self.visualization_service = visualization_service
         self.data_quality_service = data_quality_service
+        self.realtime_generate_decision_service = realtime_generate_decision_service
 
     def handle_request(self, data):
         print(data)
@@ -77,4 +79,30 @@ class RabbitMQRequestService:
                     print("Failed to calculate data quality")
                     self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, result)
 
-                    
+
+    def handle_realtime_request(self, data):
+        print("Getting realtime request ...")
+
+        decisions_result = self.realtime_generate_decision_service.live_decision(results=data.get("result"))
+
+        if decisions_result and decisions_result.get("result") == "success":
+            print("Successfully processed realtime data")
+
+            self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, decisions_result)
+            self.rabbitmq_service.publish(XAI_REQUEST_QUEUE, decisions_result)
+
+        else:
+            print("Failed to process realtime data")
+
+            self.rabbitmq_service.publish(TEST_RESPONSE_QUEUE, {
+                "result": "failed",
+                "message": "Failed to process realtime data"
+            })
+            self.rabbitmq_service.publish(XAI_REQUEST_QUEUE, {
+                "result": "failed",
+                "message": "Failed to process realtime data"
+            })
+
+
+                #Tutaj bedzie publikowanie danych z decision engine wraz z danymi ktore przyszly do xai i do serwisu ktory bedzie wykonywal operacje na binance
+

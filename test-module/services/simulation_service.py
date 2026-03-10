@@ -197,7 +197,6 @@ class SimulationService:
 
         for t in tqdm(range(self.num_ticks), file=sys.stdout, dynamic_ncols=True, leave=True):
             self.engine.generate_decisions(t)
-            self.engine.wallet.update_history()
 
         crypto_ref_values = {}
 

@@ -1129,3 +1129,98 @@ def load_model(model_dir: str,
         result = predictor.predict(df)
     """
     return ModelPredictor(model_dir, analyzer_config=analyzer_config)
+
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+
+class ProbabilisticSignalGenerator:
+    """
+    Converts predicted price from model into probabilistic BUY/SELL signal
+    using log-return and normal distribution assumption.
+
+    log_return ~ N(mu, sigma^2)
+
+    where:
+        mu    = predicted log return
+        sigma = rolling volatility
+    """
+
+    def __init__(self, threshold: float = 0.002, vol_window: int = 50):
+        """
+        Parameters
+        ----------
+        threshold : float
+            minimal log-return considered meaningful signal
+        vol_window : int
+            rolling window used to estimate volatility
+        """
+
+        self.threshold = threshold
+        self.vol_window = vol_window
+
+    def compute_log_return(self, current_price: float, predicted_price: float) -> float:
+        """
+        Convert predicted price to log return
+        """
+
+        if current_price <= 0 or predicted_price <= 0:
+            return 0.0
+
+        return float(np.log(predicted_price / current_price))
+
+    def compute_rolling_volatility(self, prices: pd.Series) -> float:
+        """
+        Estimate volatility from historical prices
+        """
+
+        log_returns = np.log(prices / prices.shift(1)).dropna()
+
+        if len(log_returns) < 2:
+            return 1e-8
+
+        sigma = log_returns.tail(self.vol_window).std()
+
+        if sigma == 0 or np.isnan(sigma):
+            sigma = 1e-8
+
+        return float(sigma)
+
+    def compute_probabilities(self, mu: float, sigma: float):
+        """
+        Compute BUY and SELL probabilities
+        """
+
+        p_buy = 1 - norm.cdf((self.threshold - mu) / sigma)
+        p_sell = norm.cdf((-self.threshold - mu) / sigma)
+
+        return float(p_buy), float(p_sell)
+
+    def generate_signal(
+            self,
+            current_price: float,
+            predicted_price: float,
+            price_series: pd.Series,
+    ):
+        """
+        Main function returning probabilities and discrete signal
+        """
+
+        mu = self.compute_log_return(current_price, predicted_price)
+        sigma = self.compute_rolling_volatility(price_series)
+
+        p_buy, p_sell = self.compute_probabilities(mu, sigma)
+
+        signal = 0
+        if p_buy > 0.5:
+            signal = 1
+        elif p_sell > 0.5:
+            signal = -1
+
+        return {
+            "mu": mu,
+            "sigma": sigma,
+            "p_buy": p_buy,
+            "p_sell": p_sell,
+            "signal": signal,
+        }

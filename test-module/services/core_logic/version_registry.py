@@ -1,3 +1,11 @@
+from .binance_integration import (
+    testnet_wallet_init,
+    testnet_wallet_buy,
+    testnet_wallet_sell,
+    testnet_check_pending_orders,
+    testnet_sync_after_orders,
+)
+
 # ============================================================================
 # DECISION ENGINE METHODS
 # ============================================================================
@@ -63,6 +71,20 @@ EXPERIMENTS = {
 
         "wallet_methods": {},
 
+        "env_methods": {}
+    },
+
+    "testnet_v0": {
+        "description": "Lokalna logika + Binance Testnet market orders z reconciliation i pending tracking.",
+        "n_params_per_symbol": 4,
+        "decision_methods": {},
+        "wallet_methods": {
+            "buy": testnet_wallet_buy,
+            "sell": testnet_wallet_sell,
+            "testnet_wallet_init": testnet_wallet_init,
+            "testnet_check_pending_orders": testnet_check_pending_orders,
+            "testnet_sync_after_orders": testnet_sync_after_orders,
+        },
         "env_methods": {}
     },
 }

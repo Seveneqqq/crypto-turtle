@@ -21,7 +21,7 @@ import joblib
 from tqdm import tqdm
 
 from feature_engineering import prepare_features, select_features
-from lstm_train_price import CryptoDataset, set_seed
+from lstm_train_price import CryptoDataset, set_seed, _ALL_FEATURE_SETS, _read_use_log_prices
 from common.data_utils import create_sequences
 from common.id_utils import get_next_optuna_id, extract_data_id_from_path
 from common.visualization import plot_optuna_results
@@ -53,21 +53,22 @@ class TuningConfig:
 
 
 def suggest_hyperparameters(trial, is_prepared, prepared_metadata):
-    """Define hyperparameter search space"""
+    """Define hyperparameter search space."""
     params = {
-        'hidden_size': trial.suggest_categorical('hidden_size', [32, 64, 96, 128, 192, 256]),
-        'num_layers': trial.suggest_int('num_layers', 1, 3),
-        'dropout': trial.suggest_float('dropout', 0.0, 0.5, step=0.05),
-        'learning_rate': trial.suggest_float('learning_rate', 1e-4, 1e-2, log=True),
-        'batch_size': trial.suggest_categorical('batch_size', TuningConfig.BATCH_SIZE_OPTIONS),
-        'weight_decay': trial.suggest_float('weight_decay', 1e-6, 1e-3, log=True),
+        'hidden_size':    trial.suggest_categorical('hidden_size', [32, 64, 96, 128, 192, 256]),
+        'num_layers':     trial.suggest_int('num_layers', 1, 3),
+        'dropout':        trial.suggest_float('dropout', 0.0, 0.5, step=0.05),
+        'learning_rate':  trial.suggest_float('learning_rate', 1e-4, 1e-2, log=True),
+        'batch_size':     trial.suggest_categorical('batch_size', TuningConfig.BATCH_SIZE_OPTIONS),
+        'weight_decay':   trial.suggest_float('weight_decay', 1e-6, 1e-3, log=True),
         'scheduler_type': trial.suggest_categorical('scheduler_type', ['cosine', 'plateau', 'none']),
-        'use_batch_norm': trial.suggest_categorical('use_batch_norm', [True, False])
+        'use_batch_norm': trial.suggest_categorical('use_batch_norm', [True, False]),
     }
 
     if is_prepared and prepared_metadata:
+        # Lookback/horizon are fixed by the prepared data — do not tune them
         params['lookback'] = prepared_metadata['lookback']
-        params['horizon'] = prepared_metadata['horizon']
+        params['horizon']  = prepared_metadata['horizon']
     else:
         params['lookback'] = trial.suggest_categorical('lookback', [12, 24, 36, 48, 72])
         if TuningConfig.FIXED_HORIZON is None:
@@ -79,28 +80,28 @@ def suggest_hyperparameters(trial, is_prepared, prepared_metadata):
 
 
 class LSTMTunable(nn.Module):
-    def __init__(self, input_size, hidden_size=64, num_layers=1, dropout=0.1, use_batch_norm=True):
+    def __init__(self, input_size, hidden_size=64, num_layers=1,
+                 dropout=0.1, use_batch_norm=True):
         super(LSTMTunable, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True,
-                           dropout=dropout if num_layers > 1 else 0)
+                            dropout=dropout if num_layers > 1 else 0)
         self.fc1 = nn.Linear(hidden_size, hidden_size // 2)
         self.use_batch_norm = use_batch_norm
         if use_batch_norm:
             self.bn1 = nn.BatchNorm1d(hidden_size // 2)
-        self.relu = nn.ReLU()
+        self.relu    = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
-        self.fc2 = nn.Linear(hidden_size // 2, 1)
+        self.fc2     = nn.Linear(hidden_size // 2, 1)
 
     def forward(self, x):
-        lstm_out, _ = self.lstm(x)
-        out = lstm_out[:, -1, :]
+        out, _ = self.lstm(x)
+        out = out[:, -1, :]
         out = self.fc1(out)
         if self.use_batch_norm:
             out = self.bn1(out)
         out = self.relu(out)
         out = self.dropout(out)
-        out = self.fc2(out)
-        return out
+        return self.fc2(out)
 
 
 def objective(trial):
@@ -112,25 +113,36 @@ def objective(trial):
         data, is_prepared, metadata = load_data(
             TuningConfig.TRAIN_PATH,
             TuningConfig.USE_SUBSET,
-            TuningConfig.SUBSET_SIZE
+            TuningConfig.SUBSET_SIZE,
         )
 
         params = suggest_hyperparameters(trial, is_prepared, metadata)
 
         if params['scheduler_type'] == 'cosine':
-            params['scheduler_t0'] = trial.suggest_int('scheduler_t0', 5, 15)
+            params['scheduler_t0']   = trial.suggest_int('scheduler_t0', 5, 15)
             params['scheduler_mult'] = trial.suggest_int('scheduler_mult', 1, 2)
         elif params['scheduler_type'] == 'plateau':
             params['scheduler_patience'] = trial.suggest_int('scheduler_patience', 3, 8)
-            params['scheduler_factor'] = trial.suggest_float('scheduler_factor', 0.3, 0.7)
+            params['scheduler_factor']   = trial.suggest_float('scheduler_factor', 0.3, 0.7)
 
+        # ---------------------------------------------------------------- #
+        # Data path A: prepared NPY directory
+        # ---------------------------------------------------------------- #
         if is_prepared:
             X_train = data['X_train']
             y_train = data['y_train']
-            X_val = data['X_val']
-            y_val = data['y_val']
+            X_val   = data['X_val']     # X_test_3d.npy used as validation
+            y_val   = data['y_val']
             features = metadata['features']
 
+            # Log info once (trial 0)
+            if trial.number == 0:
+                print(f"\n[Tuning] Prepared data: {X_train.shape[0]:,} train / "
+                      f"{X_val.shape[0]:,} val sequences, {len(features)} features")
+
+        # ---------------------------------------------------------------- #
+        # Data path B: raw CSV — generate features + scale on-the-fly
+        # ---------------------------------------------------------------- #
         else:
             df = data
 
@@ -139,11 +151,14 @@ def objective(trial):
 
             df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
+            has_buy_pressure = 'buy_pressure' in df.columns
+
             features = select_features(
                 df,
                 feature_set=TuningConfig.FEATURE_SET,
                 custom_features=TuningConfig.CUSTOM_FEATURES,
-                validate=TuningConfig.VALIDATE_FEATURES
+                validate=TuningConfig.VALIDATE_FEATURES,
+                include_buy_pressure=has_buy_pressure,
             )
             features = [f for f in features if f != 'close']
 
@@ -151,43 +166,57 @@ def objective(trial):
                 raise ValueError(f"Too few features: {len(features)}")
 
             if TuningConfig.USE_TIME_SERIES_SPLIT:
-                tscv = TimeSeriesSplit(n_splits=TuningConfig.N_SPLITS)
+                tscv   = TimeSeriesSplit(n_splits=TuningConfig.N_SPLITS)
                 splits = list(tscv.split(df))
                 train_idx, val_idx = splits[-1]
                 train_df = df.iloc[train_idx].copy()
-                val_df = df.iloc[val_idx].copy()
+                val_df   = df.iloc[val_idx].copy()
             else:
                 split_idx = int(len(df) * (1 - TuningConfig.VAL_SPLIT))
-                train_df = df.iloc[:split_idx].copy()
-                val_df = df.iloc[split_idx:].copy()
+                train_df  = df.iloc[:split_idx].copy()
+                val_df    = df.iloc[split_idx:].copy()
 
             feature_scaler = StandardScaler()
             train_df[features] = feature_scaler.fit_transform(train_df[features])
-            val_df[features] = feature_scaler.transform(val_df[features])
+            val_df[features]   = feature_scaler.transform(val_df[features])
 
             train_df['close'] = np.log(train_df['close'])
-            val_df['close'] = np.log(val_df['close'])
+            val_df['close']   = np.log(val_df['close'])
 
             price_scaler = StandardScaler()
-            train_df['close'] = price_scaler.fit_transform(train_df['close'].values.reshape(-1, 1)).flatten()
-            val_df['close'] = price_scaler.transform(val_df['close'].values.reshape(-1, 1)).flatten()
+            train_df['close'] = price_scaler.fit_transform(
+                train_df['close'].values.reshape(-1, 1)).flatten()
+            val_df['close'] = price_scaler.transform(
+                val_df['close'].values.reshape(-1, 1)).flatten()
 
-            X_train, y_train, _ = create_sequences(train_df, features, params['lookback'], params['horizon'])
-            X_val, y_val, _ = create_sequences(val_df, features, params['lookback'], params['horizon'])
+            X_train, y_train, _ = create_sequences(
+                train_df, features, params['lookback'], params['horizon'])
+            X_val, y_val, _     = create_sequences(
+                val_df,   features, params['lookback'], params['horizon'])
 
         if len(X_train) < 100 or len(X_val) < 50:
-            raise optuna.TrialPruned("Insufficient data")
+            raise optuna.TrialPruned("Insufficient data for sequences")
 
-        train_loader = DataLoader(CryptoDataset(X_train, y_train), batch_size=params['batch_size'],
-                                  shuffle=True, drop_last=True)
-        val_loader = DataLoader(CryptoDataset(X_val, y_val), batch_size=params['batch_size'], shuffle=False)
+        train_loader = DataLoader(
+            CryptoDataset(X_train, y_train),
+            batch_size=params['batch_size'], shuffle=True, drop_last=True,
+        )
+        val_loader = DataLoader(
+            CryptoDataset(X_val, y_val),
+            batch_size=params['batch_size'], shuffle=False,
+        )
 
-        model = LSTMTunable(len(features), params['hidden_size'], params['num_layers'],
-                           params['dropout'], params['use_batch_norm']).to(device)
+        model = LSTMTunable(
+            len(features), params['hidden_size'], params['num_layers'],
+            params['dropout'], params['use_batch_norm'],
+        ).to(device)
 
         criterion = nn.MSELoss()
-        optimizer = torch.optim.AdamW(model.parameters(), lr=params['learning_rate'],
-                                     weight_decay=params['weight_decay'])
+        optimizer = torch.optim.AdamW(
+            model.parameters(),
+            lr=params['learning_rate'],
+            weight_decay=params['weight_decay'],
+        )
 
         scheduler = None
         if params['scheduler_type'] == 'cosine':
@@ -203,37 +232,28 @@ def objective(trial):
 
         for epoch in range(TuningConfig.MAX_EPOCHS):
             model.train()
-            train_loss = 0
-
+            train_loss = 0.0
             for X_batch, y_batch in train_loader:
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 optimizer.zero_grad()
-                outputs = model(X_batch).squeeze()
-                loss = criterion(outputs, y_batch)
+                loss = criterion(model(X_batch).squeeze(), y_batch)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
                 train_loss += loss.item()
-
             train_loss /= len(train_loader)
 
             model.eval()
-            val_loss = 0
-
+            val_loss = 0.0
             with torch.no_grad():
                 for X_batch, y_batch in val_loader:
                     X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-                    outputs = model(X_batch).squeeze()
-                    loss = criterion(outputs, y_batch)
-                    val_loss += loss.item()
-
+                    val_loss += criterion(model(X_batch).squeeze(), y_batch).item()
             val_loss /= len(val_loader)
 
             if scheduler is not None:
-                if params['scheduler_type'] == 'plateau':
-                    scheduler.step(val_loss)
-                else:
-                    scheduler.step()
+                scheduler.step(val_loss) if params['scheduler_type'] == 'plateau' \
+                    else scheduler.step()
 
             trial.report(val_loss, epoch)
 
@@ -258,7 +278,7 @@ def objective(trial):
     except optuna.TrialPruned:
         raise
     except Exception as e:
-        print(f"Trial failed: {e}")
+        print(f"Trial {trial.number} failed: {e}")
         raise optuna.TrialPruned()
 
 
@@ -270,13 +290,13 @@ class ProgressCallback:
     def __call__(self, study, trial):
         if self.pbar is None:
             self.pbar = tqdm(total=TuningConfig.N_TRIALS, desc="Trials")
-
         self.pbar.update(1)
 
         if trial.state == TrialState.COMPLETE:
             if trial.value < self.best_value:
                 self.best_value = trial.value
-                self.pbar.set_postfix({'best': f'{self.best_value:.6f}', 'trial': trial.number})
+                self.pbar.set_postfix(
+                    {'best': f'{self.best_value:.6f}', 'trial': trial.number})
         elif trial.state == TrialState.PRUNED:
             self.pbar.set_postfix({'status': 'PRUNED', 'trial': trial.number})
 
@@ -288,12 +308,11 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
     if timeout is None:
         timeout = TuningConfig.TIMEOUT
 
-    data_id = extract_data_id_from_path(TuningConfig.TRAIN_PATH)
-
+    data_id  = extract_data_id_from_path(TuningConfig.TRAIN_PATH)
     base_dir = 'lstm_data'
     os.makedirs(base_dir, exist_ok=True)
 
-    optuna_id = get_next_optuna_id(base_dir)
+    optuna_id  = get_next_optuna_id(base_dir)
     date_short = datetime.now().strftime('%d%m')
 
     if study_name is None:
@@ -307,9 +326,9 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler(os.path.join(output_dir, 'tuning.log'), encoding='utf-8'),
-            logging.StreamHandler()
+            logging.StreamHandler(),
         ],
-        force=True
+        force=True,
     )
     logger = logging.getLogger(__name__)
 
@@ -325,14 +344,14 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
     logger.info(f"Device:    {'CUDA' if torch.cuda.is_available() else 'CPU'}")
 
     sampler = TPESampler(seed=TuningConfig.SEED)
-    pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=TuningConfig.PRUNING_WARMUP) \
-             if TuningConfig.ENABLE_PRUNING else None
+    pruner  = (MedianPruner(n_startup_trials=5, n_warmup_steps=TuningConfig.PRUNING_WARMUP)
+               if TuningConfig.ENABLE_PRUNING else None)
 
     study = optuna.create_study(
         study_name=study_name,
         direction='minimize',
         sampler=sampler,
-        pruner=pruner
+        pruner=pruner,
     )
 
     logger.info("\n" + "=" * 80)
@@ -349,7 +368,7 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
             timeout=timeout,
             callbacks=[progress],
             n_jobs=TuningConfig.N_JOBS,
-            show_progress_bar=True
+            show_progress_bar=True,
         )
     except KeyboardInterrupt:
         logger.info("\nInterrupted by user")
@@ -362,13 +381,13 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
     logger.info("=" * 80)
 
     completed = [t for t in study.trials if t.state == TrialState.COMPLETE]
-    pruned = [t for t in study.trials if t.state == TrialState.PRUNED]
+    pruned    = [t for t in study.trials if t.state == TrialState.PRUNED]
 
     logger.info(f"\nTotal trials:    {len(study.trials)}")
     logger.info(f"Complete trials: {len(completed)}")
     logger.info(f"Pruned trials:   {len(pruned)}")
 
-    if len(completed) == 0:
+    if not completed:
         logger.error("\nNo trials completed successfully!")
         return None, None
 
@@ -379,33 +398,34 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
     logger.info(f"\nTrial:     {best.number}")
     logger.info(f"Val loss:  {best.value:.6f}")
     logger.info("\nParameters:")
-    for key, value in best.params.items():
-        logger.info(f"  {key:20s}: {value}")
+    for k, v in best.params.items():
+        logger.info(f"  {k:20s}: {v}")
 
     logger.info("\n" + "=" * 80)
     logger.info("SAVING RESULTS")
     logger.info("=" * 80)
 
     sorted_trials = sorted(completed, key=lambda t: t.value)
-    top_trials = sorted_trials[:min(3, len(sorted_trials))]
-    trial_names = ['best', 'second_best', 'third_best']
+    top_trials    = sorted_trials[:min(3, len(sorted_trials))]
+    trial_names   = ['best', 'second_best', 'third_best']
 
     for idx, (trial, name) in enumerate(zip(top_trials, trial_names[:len(top_trials)])):
         params_to_save = trial.params.copy()
         params_to_save['_metadata'] = {
-            'rank': idx + 1,
-            'optuna_id': optuna_id,
-            'data_id': data_id,
-            'best_value': float(trial.value),
-            'trial_number': trial.number,
-            'timestamp': datetime.now().strftime('%Y%m%d_%H%M%S'),
-            'feature_set': TuningConfig.FEATURE_SET,
-            'custom_features': TuningConfig.CUSTOM_FEATURES,
-            'validate_features': TuningConfig.VALIDATE_FEATURES,
-            'generate_features': TuningConfig.GENERATE_FEATURES,
-            'train_path': TuningConfig.TRAIN_PATH,
-            'fixed_horizon': TuningConfig.FIXED_HORIZON,
-            'validation_strategy': 'TimeSeriesSplit' if TuningConfig.USE_TIME_SERIES_SPLIT else 'Chronological'
+            'rank':                idx + 1,
+            'optuna_id':           optuna_id,
+            'data_id':             data_id,
+            'best_value':          float(trial.value),
+            'trial_number':        trial.number,
+            'timestamp':           datetime.now().strftime('%Y%m%d_%H%M%S'),
+            'feature_set':         TuningConfig.FEATURE_SET,
+            'custom_features':     TuningConfig.CUSTOM_FEATURES,
+            'validate_features':   TuningConfig.VALIDATE_FEATURES,
+            'generate_features':   TuningConfig.GENERATE_FEATURES,
+            'train_path':          TuningConfig.TRAIN_PATH,
+            'fixed_horizon':       TuningConfig.FIXED_HORIZON,
+            'validation_strategy': ('TimeSeriesSplit' if TuningConfig.USE_TIME_SERIES_SPLIT
+                                    else 'Chronological'),
         }
 
         params_path = os.path.join(output_dir, f'{name}_params.json')
@@ -414,10 +434,10 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
         logger.info(f"  ✓ {name}_params.json (trial {trial.number}, loss: {trial.value:.6f})")
 
     joblib.dump(study, os.path.join(output_dir, 'study.pkl'))
-    logger.info(f"  ✓ study.pkl")
+    logger.info("  ✓ study.pkl")
 
     study.trials_dataframe().to_csv(os.path.join(output_dir, 'trials.csv'), index=False)
-    logger.info(f"  ✓ trials.csv")
+    logger.info("  ✓ trials.csv")
 
     plot_optuna_results(study, output_dir)
 
@@ -440,9 +460,9 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
             f.write(f"   Trial:    {trial.number}\n")
             f.write(f"   Val loss: {trial.value:.6f}\n")
             f.write("   Parameters:\n")
-            for key, value in trial.params.items():
-                f.write(f"     {key:20s}: {value}\n")
-    logger.info(f"  ✓ summary.txt")
+            for k, v in trial.params.items():
+                f.write(f"     {k:20s}: {v}\n")
+    logger.info("  ✓ summary.txt")
 
     logger.info("\n" + "=" * 80)
     logger.info("NEXT STEPS")
@@ -451,10 +471,8 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
     logger.info(f"  python lstm_train_price.py --load_optuna_params {output_dir}/best_params.json")
     logger.info("\nTrain all top 3 models:")
     logger.info(f"  python lstm_train_price.py --load_optuna_dir {output_dir} --train_all_top")
-
     if TuningConfig.FEATURE_SET:
         logger.info(f"  (Feature set '{TuningConfig.FEATURE_SET}' will be loaded from metadata)")
-
     logger.info("\n" + "=" * 80)
 
     return study, best
@@ -464,38 +482,29 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n_trials', type=int, default=None)
-    parser.add_argument('--timeout', type=int, default=None)
-    parser.add_argument('--study_name', type=str, default=None)
-    parser.add_argument('--subset_size', type=int, default=None)
-    parser.add_argument('--feature_set', type=str, default=None,
-                       choices=['minimal', 'technical', 'full', 'returns_only',
-                               'no_time', 'momentum', 'volatility_focused'])
-    parser.add_argument('--custom_features', type=str, nargs='+', default=None)
+    parser.add_argument('--n_trials',         type=int,   default=None)
+    parser.add_argument('--timeout',          type=int,   default=None)
+    parser.add_argument('--study_name',       type=str,   default=None)
+    parser.add_argument('--subset_size',      type=int,   default=None)
+    parser.add_argument('--feature_set',      type=str,   default=None, choices=_ALL_FEATURE_SETS)
+    parser.add_argument('--custom_features',  type=str,   nargs='+', default=None)
     parser.add_argument('--no_validate_features', action='store_true')
     parser.add_argument('--no_generate_features', action='store_true')
-    parser.add_argument('--train_path', type=str, default=None)
-    parser.add_argument('--fixed_horizon', type=int, default=None)
+    parser.add_argument('--train_path',       type=str,   default=None)
+    parser.add_argument('--fixed_horizon',    type=int,   default=None)
 
     args = parser.parse_args()
 
-    if args.subset_size:
-        TuningConfig.SUBSET_SIZE = args.subset_size
-    if args.feature_set:
-        TuningConfig.FEATURE_SET = args.feature_set
-    if args.custom_features:
-        TuningConfig.CUSTOM_FEATURES = args.custom_features
-    if args.no_validate_features:
-        TuningConfig.VALIDATE_FEATURES = False
-    if args.no_generate_features:
-        TuningConfig.GENERATE_FEATURES = False
-    if args.train_path:
-        TuningConfig.TRAIN_PATH = args.train_path
-    if args.fixed_horizon is not None:
-        TuningConfig.FIXED_HORIZON = args.fixed_horizon
+    if args.subset_size:        TuningConfig.SUBSET_SIZE     = args.subset_size
+    if args.feature_set:        TuningConfig.FEATURE_SET     = args.feature_set
+    if args.custom_features:    TuningConfig.CUSTOM_FEATURES = args.custom_features
+    if args.no_validate_features: TuningConfig.VALIDATE_FEATURES = False
+    if args.no_generate_features: TuningConfig.GENERATE_FEATURES = False
+    if args.train_path:         TuningConfig.TRAIN_PATH      = args.train_path
+    if args.fixed_horizon is not None: TuningConfig.FIXED_HORIZON = args.fixed_horizon
 
-    study, best = run_tuning(
+    run_tuning(
         n_trials=args.n_trials,
         timeout=args.timeout,
-        study_name=args.study_name
+        study_name=args.study_name,
     )
