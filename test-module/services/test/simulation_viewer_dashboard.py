@@ -655,4 +655,4 @@ def update_tab_content_theme(theme_name, current_card_styles, current_figures, c
 
 
 if __name__ == '__main__':
-    app.run(debug=False, port=8051)
+    app.run(debug=False, port=8052)

@@ -22,6 +22,18 @@ from common.visualization import plot_training_curves
 
 warnings.filterwarnings('ignore')
 
+# All feature set names available in universal FE_
+_ALL_FEATURE_SETS = [
+    # Universal
+    'full', 'technical', 'technical_bp', 'minimal',
+    # LSTM-dedicated
+    'lstm_momentum', 'lstm_volatility', 'lstm_price',
+    # XGBoost-dedicated (available but not recommended for LSTM)
+    'xgb_momentum', 'xgb_volatility', 'xgb_returns',
+    # Placeholders
+    'k_set1', 'k_set2', 'k_set3',
+]
+
 
 def set_seed(seed=42):
     np.random.seed(seed)
@@ -93,6 +105,23 @@ def get_scheduler(optimizer, scheduler_type, **kwargs):
     return None
 
 
+def _read_use_log_prices(metadata):
+    """
+    Read use_log_prices from metadata — handles both formats:
+      - Universal (new):  metadata['scalers']['use_log_prices']
+      - Legacy (old):     metadata['use_log_prices']
+    Defaults to True when key is absent.
+    """
+    # New universal format
+    scalers = metadata.get('scalers')
+    if isinstance(scalers, dict) and 'use_log_prices' in scalers:
+        return scalers['use_log_prices']
+    # Legacy format
+    if 'use_log_prices' in metadata:
+        return metadata['use_log_prices']
+    return True
+
+
 def _train_single_model(
         train_path, lookback, horizon, hidden_size, num_layers, dropout,
         epochs, batch_size, lr, weight_decay, use_subset, subset_size,
@@ -144,23 +173,35 @@ def _train_single_model(
 
     if is_prepared:
         logger.info("Mode: PREPARED DATA (NPY)")
-        logger.info(f"Source: {metadata['source_file']}")
+
+        # --- Metadata keys: handle universal vs legacy format ---
+        # Universal: metadata has 'symbol', no 'source_file'
+        # Legacy:    metadata has 'source_file'
+        source_label = metadata.get('source_file') or metadata.get('symbol', 'unknown').upper()
+        logger.info(f"Source: {source_label}")
 
         X_train = data['X_train']
         y_train = data['y_train']
-        X_val = data['X_val']
-        y_val = data['y_val']
+        X_val   = data['X_val']
+        y_val   = data['y_val']
         feature_scaler = data['feature_scaler']
-        price_scaler = data['price_scaler']
+        price_scaler   = data['price_scaler']
 
-        features = metadata['features']
-        lookback = metadata['lookback']
-        horizon = metadata['horizon']
-        use_log_prices = metadata['use_log_prices']
+        # Read params locked in the prepared data
+        features       = metadata['features']
+        lookback       = metadata['lookback']
+        horizon        = metadata['horizon']
+        use_log_prices = _read_use_log_prices(metadata)
+        has_buy_pressure = metadata.get('has_buy_pressure',
+                                        'buy_pressure' in features)
 
-        logger.info(f"Train: {len(X_train)} sequences")
-        logger.info(f"Val:   {len(X_val)} sequences")
-        logger.info(f"Features: {len(features)}")
+        logger.info(f"Train:        {len(X_train):,} sequences  {X_train.shape}")
+        logger.info(f"Val (test):   {len(X_val):,} sequences  {X_val.shape}")
+        logger.info(f"Features:     {len(features)}")
+        logger.info(f"Lookback:     {lookback}")
+        logger.info(f"Horizon:      t+{horizon}")
+        logger.info(f"Log prices:   {use_log_prices}")
+        logger.info(f"buy_pressure: {'included' if has_buy_pressure else 'excluded'}")
 
     else:
         logger.info("Mode: RAW DATA (CSV)")
@@ -173,47 +214,58 @@ def _train_single_model(
         df = df.replace([np.inf, -np.inf], np.nan).dropna()
         logger.info(f"Dataset size: {len(df)}")
 
-        features = select_features(df, feature_set=feature_set,
-                                   custom_features=custom_features,
-                                   validate=validate_features_flag)
-        features = [f for f in features if f != 'close']
+        # Auto-detect buy_pressure availability
+        has_buy_pressure = 'buy_pressure' in df.columns
+        if has_buy_pressure:
+            logger.info("buy_pressure: included (taker_buy column detected)")
+        else:
+            logger.info("buy_pressure: excluded (no taker_buy column)")
 
+        features = select_features(
+            df,
+            feature_set=feature_set,
+            custom_features=custom_features,
+            validate=validate_features_flag,
+            include_buy_pressure=has_buy_pressure,
+        )
+        features = [f for f in features if f != 'close']
         logger.info(f"Features: {len(features)}")
 
         split_idx = int(len(df) * 0.8)
         train_df = df.iloc[:split_idx].copy()
-        val_df = df.iloc[split_idx:].copy()
-
+        val_df   = df.iloc[split_idx:].copy()
         logger.info(f"Train: {len(train_df)}, Val: {len(val_df)}")
 
         feature_scaler = StandardScaler()
         train_df[features] = feature_scaler.fit_transform(train_df[features])
-        val_df[features] = feature_scaler.transform(val_df[features])
+        val_df[features]   = feature_scaler.transform(val_df[features])
 
         if use_log_prices:
             train_df['close'] = np.log(train_df['close'])
-            val_df['close'] = np.log(val_df['close'])
-            price_scaler = StandardScaler()
-            train_df['close'] = price_scaler.fit_transform(
-                train_df['close'].values.reshape(-1, 1)).flatten()
-            val_df['close'] = price_scaler.transform(
-                val_df['close'].values.reshape(-1, 1)).flatten()
-        else:
-            price_scaler = StandardScaler()
-            train_df['close'] = price_scaler.fit_transform(
-                train_df['close'].values.reshape(-1, 1)).flatten()
-            val_df['close'] = price_scaler.transform(
-                val_df['close'].values.reshape(-1, 1)).flatten()
+            val_df['close']   = np.log(val_df['close'])
+
+        price_scaler = StandardScaler()
+        train_df['close'] = price_scaler.fit_transform(
+            train_df['close'].values.reshape(-1, 1)).flatten()
+        val_df['close'] = price_scaler.transform(
+            val_df['close'].values.reshape(-1, 1)).flatten()
 
         X_train, y_train, _ = create_sequences(train_df, features, lookback, horizon)
-        X_val, y_val, _ = create_sequences(val_df, features, lookback, horizon)
+        X_val,   y_val,   _ = create_sequences(val_df,   features, lookback, horizon)
 
-    train_loader = DataLoader(CryptoDataset(X_train, y_train), batch_size=batch_size,
-                              shuffle=True, drop_last=True, num_workers=0,
-                              pin_memory=device.type == 'cuda')
-    val_loader = DataLoader(CryptoDataset(X_val, y_val), batch_size=batch_size,
-                            shuffle=False, num_workers=0,
-                            pin_memory=device.type == 'cuda')
+    # ------------------------------------------------------------------ #
+    # DataLoaders
+    # ------------------------------------------------------------------ #
+    train_loader = DataLoader(
+        CryptoDataset(X_train, y_train), batch_size=batch_size,
+        shuffle=True, drop_last=True, num_workers=0,
+        pin_memory=device.type == 'cuda',
+    )
+    val_loader = DataLoader(
+        CryptoDataset(X_val, y_val), batch_size=batch_size,
+        shuffle=False, num_workers=0,
+        pin_memory=device.type == 'cuda',
+    )
 
     model = LSTMPriceModel(len(features), hidden_size, num_layers, dropout).to(device)
 
@@ -229,7 +281,7 @@ def _train_single_model(
     best_val_loss = float('inf')
     patience = 0
     train_losses = []
-    val_losses = []
+    val_losses   = []
 
     logger.info("\n" + "=" * 80)
     logger.info("TRAINING START")
@@ -282,8 +334,7 @@ def _train_single_model(
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             patience = 0
-            model_path = os.path.join(run_dir, 'lstm_price_model.pth')
-            torch.save(model.state_dict(), model_path)
+            torch.save(model.state_dict(), os.path.join(run_dir, 'lstm_price_model.pth'))
             logger.info(f"  >> NEW BEST")
         else:
             patience += 1
@@ -294,37 +345,38 @@ def _train_single_model(
     logger.info("\nSaving model package...")
 
     joblib.dump(feature_scaler, os.path.join(run_dir, 'feature_scaler.pkl'))
-    joblib.dump(price_scaler, os.path.join(run_dir, 'price_scaler.pkl'))
+    joblib.dump(price_scaler,   os.path.join(run_dir, 'price_scaler.pkl'))
 
     config = {
-        'model_id': model_id,
-        'data_id': data_id,
-        'features': features,
-        'lookback': lookback,
-        'horizon': horizon,
-        'hidden_size': hidden_size,
-        'num_layers': num_layers,
-        'dropout': dropout,
-        'feature_set': feature_set,
-        'custom_features': custom_features,
-        'validate_features': validate_features_flag,
-        'generate_features': generate_features,
-        'use_log_prices': use_log_prices,
-        'model_type': 'price_prediction',
-        'symbol': symbol,
-        'timestamp': datetime.now().strftime('%Y%m%d_%H%M%S'),
-        'best_val_loss': best_val_loss,
-        'train_path': train_path,
-        'scheduler_type': scheduler_type,
-        'data_source': 'prepared_npy' if is_prepared else 'raw_csv',
-        'prepared_metadata': metadata if is_prepared else None,
-        'optuna_config': optuna_config_name,
-        'output_dir': run_dir
+        'model_id':            model_id,
+        'data_id':             data_id,
+        'features':            features,
+        'lookback':            lookback,
+        'horizon':             horizon,
+        'hidden_size':         hidden_size,
+        'num_layers':          num_layers,
+        'dropout':             dropout,
+        'feature_set':         feature_set,
+        'custom_features':     custom_features,
+        'validate_features':   validate_features_flag,
+        'generate_features':   generate_features,
+        'use_log_prices':      use_log_prices,
+        'has_buy_pressure':    has_buy_pressure,
+        'model_type':          'price_prediction',
+        'symbol':              symbol,
+        'timestamp':           datetime.now().strftime('%Y%m%d_%H%M%S'),
+        'best_val_loss':       best_val_loss,
+        'train_path':          train_path,
+        'scheduler_type':      scheduler_type,
+        'data_source':         'prepared_npy' if is_prepared else 'raw_csv',
+        'prepared_metadata':   metadata if is_prepared else None,
+        'optuna_config':       optuna_config_name,
+        'output_dir':          run_dir,
     }
     joblib.dump(config, os.path.join(run_dir, 'model_config.pkl'))
 
     plot_training_curves(train_losses, val_losses, best_val_loss,
-                        os.path.join(run_dir, 'training_curves.png'))
+                         os.path.join(run_dir, 'training_curves.png'))
 
     logger.info(f"Model ID: {model_id}, Best val loss: {best_val_loss:.6f}")
     logger.info(f"Output: {run_dir}")
@@ -344,7 +396,7 @@ def train_model(
         load_optuna_params=None, load_optuna_dir=None, train_all_top=False,
         seed=42
 ):
-    """Train LSTM for cryptocurrency price prediction"""
+    """Train LSTM for cryptocurrency price prediction."""
     set_seed(seed)
 
     if scheduler_params is None:
@@ -355,101 +407,82 @@ def train_model(
     if load_optuna_params is not None:
         with open(load_optuna_params, 'r') as f:
             optuna_params = json.load(f)
-
         metadata = optuna_params.pop('_metadata', None)
-        optuna_configs.append({
-            'params': optuna_params,
-            'metadata': metadata,
-            'name': 'single'
-        })
+        optuna_configs.append({'params': optuna_params, 'metadata': metadata, 'name': 'single'})
 
     elif load_optuna_dir is not None:
-        if not os.path.sep in load_optuna_dir and not os.path.exists(load_optuna_dir):
+        if os.path.sep not in load_optuna_dir and not os.path.exists(load_optuna_dir):
             load_optuna_dir = os.path.join('lstm_data', load_optuna_dir)
-
         if not os.path.exists(load_optuna_dir):
             raise FileNotFoundError(f"Optuna directory not found: {load_optuna_dir}")
 
-        if train_all_top:
-            param_files = ['best_params.json', 'second_best_params.json', 'third_best_params.json']
-            names = ['best', 'second_best', 'third_best']
-        else:
-            param_files = ['best_params.json']
-            names = ['best']
+        param_files = (['best_params.json', 'second_best_params.json', 'third_best_params.json']
+                       if train_all_top else ['best_params.json'])
+        names = ['best', 'second_best', 'third_best']
 
         for param_file, name in zip(param_files, names):
             param_path = os.path.join(load_optuna_dir, param_file)
             if os.path.exists(param_path):
                 with open(param_path, 'r') as f:
                     optuna_params = json.load(f)
-
                 metadata = optuna_params.pop('_metadata', None)
-                optuna_configs.append({
-                    'params': optuna_params,
-                    'metadata': metadata,
-                    'name': name
-                })
+                optuna_configs.append({'params': optuna_params, 'metadata': metadata, 'name': name})
 
     if len(optuna_configs) > 1:
         results = []
-        for idx, config in enumerate(optuna_configs):
+        for idx, cfg in enumerate(optuna_configs):
             print(f"\n{'#' * 80}")
-            print(f"# TRAINING MODEL {idx + 1}/{len(optuna_configs)}: {config['name'].upper()}")
+            print(f"# TRAINING MODEL {idx + 1}/{len(optuna_configs)}: {cfg['name'].upper()}")
             print(f"{'#' * 80}\n")
-
-            optuna_params = config['params']
-            metadata = config['metadata']
-
+            op = cfg['params']
+            md = cfg['metadata']
             result = _train_single_model(
                 train_path=train_path,
-                lookback=optuna_params.get('lookback', lookback),
-                horizon=optuna_params.get('horizon', horizon),
-                hidden_size=optuna_params.get('hidden_size', hidden_size),
-                num_layers=optuna_params.get('num_layers', num_layers),
-                dropout=optuna_params.get('dropout', dropout),
+                lookback=op.get('lookback', lookback),
+                horizon=op.get('horizon', horizon),
+                hidden_size=op.get('hidden_size', hidden_size),
+                num_layers=op.get('num_layers', num_layers),
+                dropout=op.get('dropout', dropout),
                 epochs=epochs,
-                batch_size=optuna_params.get('batch_size', batch_size),
-                lr=optuna_params.get('learning_rate', lr),
-                weight_decay=optuna_params.get('weight_decay', weight_decay),
+                batch_size=op.get('batch_size', batch_size),
+                lr=op.get('learning_rate', lr),
+                weight_decay=op.get('weight_decay', weight_decay),
                 use_subset=use_subset,
                 subset_size=subset_size,
-                feature_set=metadata.get('feature_set') if metadata else feature_set,
-                custom_features=metadata.get('custom_features') if metadata else custom_features,
+                feature_set=md.get('feature_set') if md else feature_set,
+                custom_features=md.get('custom_features') if md else custom_features,
                 validate_features_flag=validate_features_flag,
                 generate_features=generate_features,
-                scheduler_type=optuna_params.get('scheduler_type', scheduler_type),
+                scheduler_type=op.get('scheduler_type', scheduler_type),
                 scheduler_params=scheduler_params,
                 use_log_prices=use_log_prices,
                 early_stopping_patience=early_stopping_patience,
                 seed=seed,
-                optuna_config_name=config['name']
+                optuna_config_name=cfg['name'],
             )
             results.append(result)
 
         print(f"\n{'#' * 80}")
         print(f"# TRAINED {len(results)} MODELS SUCCESSFULLY")
         print(f"{'#' * 80}\n")
-
         return results
 
     if optuna_configs:
-        config = optuna_configs[0]
-        optuna_params = config['params']
-        metadata = config['metadata']
-
-        lookback = optuna_params.get('lookback', lookback)
-        horizon = optuna_params.get('horizon', horizon)
-        hidden_size = optuna_params.get('hidden_size', hidden_size)
-        num_layers = optuna_params.get('num_layers', num_layers)
-        dropout = optuna_params.get('dropout', dropout)
-        batch_size = optuna_params.get('batch_size', batch_size)
-        lr = optuna_params.get('learning_rate', lr)
-        weight_decay = optuna_params.get('weight_decay', weight_decay)
-        scheduler_type = optuna_params.get('scheduler_type', scheduler_type)
-
-        if metadata:
-            feature_set = metadata.get('feature_set', feature_set)
-            custom_features = metadata.get('custom_features', custom_features)
+        cfg = optuna_configs[0]
+        op  = cfg['params']
+        md  = cfg['metadata']
+        lookback      = op.get('lookback', lookback)
+        horizon       = op.get('horizon', horizon)
+        hidden_size   = op.get('hidden_size', hidden_size)
+        num_layers    = op.get('num_layers', num_layers)
+        dropout       = op.get('dropout', dropout)
+        batch_size    = op.get('batch_size', batch_size)
+        lr            = op.get('learning_rate', lr)
+        weight_decay  = op.get('weight_decay', weight_decay)
+        scheduler_type = op.get('scheduler_type', scheduler_type)
+        if md:
+            feature_set     = md.get('feature_set', feature_set)
+            custom_features = md.get('custom_features', custom_features)
 
     return _train_single_model(
         train_path, lookback, horizon, hidden_size, num_layers, dropout,
@@ -476,9 +509,7 @@ if __name__ == "__main__":
     parser.add_argument('--weight_decay', type=float, default=1e-5)
     parser.add_argument('--use_subset', action='store_true')
     parser.add_argument('--subset_size', type=int, default=100000)
-    parser.add_argument('--feature_set', type=str, default=None,
-                        choices=['minimal', 'technical', 'full', 'returns_only',
-                                 'no_time', 'momentum', 'volatility_focused'])
+    parser.add_argument('--feature_set', type=str, default=None, choices=_ALL_FEATURE_SETS)
     parser.add_argument('--custom_features', type=str, nargs='+', default=None)
     parser.add_argument('--no_validate_features', action='store_true')
     parser.add_argument('--no_generate_features', action='store_true')
@@ -515,5 +546,5 @@ if __name__ == "__main__":
         load_optuna_params=args.load_optuna_params,
         load_optuna_dir=args.load_optuna_dir,
         train_all_top=args.train_all_top,
-        seed=args.seed
+        seed=args.seed,
     )

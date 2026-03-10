@@ -2,10 +2,11 @@ from configuration.rabbitmq_queues import DATA_RESPONSE_QUEUE
 
 
 class RabbitMQRequestService:
-    def __init__(self, binance_service, rabbitmq_service, data_service, optuna_service, data_lstm_prepare_service, lstm_optuna_service):
+    def __init__(self, binance_service, rabbitmq_service, data_service,data_service_plus, optuna_service, data_lstm_prepare_service, lstm_optuna_service):
         self.binance_service = binance_service
         self.rabbitmq_service = rabbitmq_service
         self.data_service = data_service
+        self.data_service_plus = data_service_plus
         self.optuna_service = optuna_service
         self.lstm_optuna_service = lstm_optuna_service
         self.data_lstm_prepare_service = data_lstm_prepare_service
@@ -29,6 +30,7 @@ class RabbitMQRequestService:
 
             case "tune_lstm":
                 print("Tuning LSTM model & data")
+                print(data)
                 result = self.lstm_optuna_service.run_optimization(data)
             
                 if result.get("result") == "success":

@@ -29,7 +29,8 @@ class DecisionEngine:
         self.symbols = core_config.symbols
         self.rlagent_deterministic = core_config.rlagent_deterministic
         self.agent = None
-        self.BUY_IDX = 0  # np. pobrane z class_map
+        self.BUY_IDX = 0  #TODO: np. pobrane z class_map
+        self.HOLD_IDX = 1
         self.SELL_IDX = 2
         if self.agent_name:
             agent_type = self.check_agent_type()
@@ -40,14 +41,14 @@ class DecisionEngine:
                     self.agent = SAC.load(self.agent_path, env=None)
                 case _:
                     raise ValueError(f"Unsupported agent type: {agent_type}")
-        self._apply_experiment_version()
+        self.apply_experiment_version()
 
     def reset(self):
         self.config = DecisionConfig()
         self.prev_value = self.core_config.balance_start
         self.current_value = self.core_config.balance_start
 
-    def _apply_experiment_version(self):
+    def apply_experiment_version(self):
         """Binduje custom methods z experiment registry"""
 
 
@@ -157,12 +158,15 @@ class DecisionEngine:
                 fraction = 0.0
 
             order = Order(
-                timestamp=t,
-                symbol=symbol,
-                action=action,
-                value=value,
-                price=self.current_prices[symbol],
-                rl_config=scaled[symbol] if scaled is not None else "Brak"
+                timestamp = t,
+                symbol = symbol,
+                action = action,
+                value  = round(value,4),
+                buy_p  = round(buy_prob,4),
+                hold_p = round(probs[self.HOLD_IDX],4) if self.HOLD_IDX else 0.0,
+                sell_p = round(sell_prob,4),
+                price  = self.current_prices[symbol],
+                rl_config = scaled[symbol] if scaled is not None else "-",
             )
             if order.action == "hold":
                 order.rejected("lower_than_thresholds")
