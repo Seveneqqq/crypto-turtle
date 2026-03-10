@@ -53,9 +53,12 @@ class OptunaService:
                 feature_combo=list(feature_combo)
             )
 
-            df = pd.read_csv(csv_path).dropna(subset=["target"])
+            df = pd.read_csv(csv_path)
 
-            # tylko feature numeryczne
+            # tworzymy target lokalnie
+            df["target"] = (df["close"].shift(-horizon) > df["close"]).astype(int)
+            df = df.dropna(subset=["target"])
+
             feature_cols = [c for c in feature_combo if c in df.columns]
             X = df[feature_cols]
             y = df["target"].astype(int)
@@ -64,7 +67,9 @@ class OptunaService:
 
             model = LogisticRegression(max_iter=1000)
             model.fit(X_train, y_train)
-            acc = accuracy_score(y_val, model.predict(X_val))
+
+            preds = model.predict(X_val)
+            acc = accuracy_score(y_val, preds)
 
             trials_log.append({
                 "trial": trial.number,
@@ -75,19 +80,23 @@ class OptunaService:
                 "horizon": horizon,
                 "filename": filename
             })
+
             return acc
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=request["n_trials"])
 
         best = sorted(trials_log, key=lambda x:x["accuracy"], reverse=True)
+
         result = {
+            "result":"success",
             "best_accuracy": study.best_value,
             "top_trials": best[:request.get("top_k_combinations",5)]
         }
 
         ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         log_path = os.path.join(self.log_dir,f"optuna_{ts}.json")
+
         with open(log_path,"w") as f:
             json.dump(result,f,indent=2)
 

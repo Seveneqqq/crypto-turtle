@@ -24,7 +24,7 @@ function LeftSidebar({ children }) {
 
   const menuItems = [
     { title: "Dashboard", icon: Home, submenu: ["Home", "Dashboard"] },
-    { title: "Data", icon: Inbox, submenu: ["Historical data", "Process data"] },
+    { title: "Data", icon: Inbox, submenu: ["Historical data", "Process data", "Pipeline data"] },
     { title: "Machine learning", icon: Calendar, submenu: ["Training", "Preparing features", "Test models"] },
     { title: "Reinforcement learning", icon: Search, submenu: ["Training PPO", "Training DQN"] },
     { title: "Tests", icon: Settings, submenu: ["Tests", "Simulation", "Accuracy"] },

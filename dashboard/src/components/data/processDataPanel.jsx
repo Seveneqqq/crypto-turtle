@@ -29,53 +29,76 @@ export default function ProcessDataPanel() {
   const [filename, setFilename] = useState("")
 
   const availableSteps = ["load_data", "make_features", "add_technical_indicators"]
-  const [steps, setSteps] = useState(availableSteps) // zostają tylko te 3
+  const [steps, setSteps] = useState(availableSteps)
 
   const availableMethods = ["RAW", "Z-SCORE", "ROBUST", "MINMAX", "ROLLING_Z"]
   const [preprocessingMethod, setPreprocessingMethod] = useState("RAW")
 
-  const availableFolders = ["trainmodel", "testmodel", "rlagent", "simulation"]
+  const availableFolders = ["processed_trainmodel_data", "processed_testmodel_data", "processed_rlagent_data", "processed_simulation_data"]
   const [outputFolder, setOutputFolder] = useState("trainmodel")
 
   const availableSets = [
-  "set1",
-  "set2",
-  "set3",
-  "set4",
-  "set_all",
+    "set1",
+    "set2",
+    "set3",
+    "set4",
 
-  "set_ma_5",
-  "set_ma_10",
-  "set_ma_20",
-  "set_sma_10",
-  "set_sma_30",
-  "set_cumvol",
-  "set_volume_norm",
-  "set_std_20",
+    "ma_5",
+    "ma_10",
+    "ma_20",
+    "sma_10",
+    "sma_30",
+    "cumvol",
+    "volume_norm",
+    "std_20",
 
-  "set_RSI_14",
-  "set_EMA_20",
-  "set_EMA_50",
+    "RSI_14",
+    "EMA_20",
+    "EMA_50",
 
-  "set_BB_upper",
-  "set_BB_lower",
-  "set_Momentum_10",
-  "set_ROC_10",
+    "BB_upper",
+    "BB_lower",
+    "Momentum_10",
+    "ROC_10",
 
-  "set_ATR_14",
-  "set_VWAP",
-  "set_ROC_5",
-]
+    "ATR_14",
+    "VWAP",
+    "ROC_5",
+  ]
 
-  const [technicalIndicatorsSet, setTechnicalIndicatorsSet] = useState("set1")
+  const [technicalIndicatorsSets, setTechnicalIndicatorsSets] = useState([["set1"]])
 
   const removeStep = (index) => setSteps(steps.filter((_, i) => i !== index))
+
   const moveStep = (index, direction) => {
     const newSteps = [...steps]
     const swapIndex = direction === "up" ? index - 1 : index + 1
     if (swapIndex < 0 || swapIndex >= newSteps.length) return
     ;[newSteps[index], newSteps[swapIndex]] = [newSteps[swapIndex], newSteps[index]]
     setSteps(newSteps)
+  }
+
+  const toggleTechnicalSet = (groupIndex, setName) => {
+    setTechnicalIndicatorsSets((prev) => {
+      const newSets = [...prev]
+      const group = newSets[groupIndex]
+
+      if (group.includes(setName)) {
+        newSets[groupIndex] = group.filter((s) => s !== setName)
+      } else {
+        newSets[groupIndex] = [...group, setName]
+      }
+
+      return newSets
+    })
+  }
+
+  const addFeatureSet = () => {
+    setTechnicalIndicatorsSets((prev) => [...prev, []])
+  }
+
+  const removeFeatureSet = (index) => {
+    setTechnicalIndicatorsSets((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = () => {
@@ -87,9 +110,11 @@ export default function ProcessDataPanel() {
       steps,
       preprocessing_method: preprocessingMethod,
       output_folders: [outputFolder],
-      technical_indicators_set: technicalIndicatorsSet, 
+      feature_sets: technicalIndicatorsSets,
     }
+
     fetch("http://localhost:8000/data/process-data", {
+      method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -108,10 +133,16 @@ export default function ProcessDataPanel() {
   return (
     <Card className="px-6 py-4 max-w-3xl space-y-6 bg-gray-900 text-gray-100">
       <CardContent className="space-y-6">
+
         {/* FILE */}
         <div>
           <Label className="mb-3">Select File</Label>
-          <FileSelect filesKey="binance_raw" value={filename} onChange={setFilename} placeholder="Select file" />
+          <FileSelect
+            filesKey="binance_raw"
+            value={filename}
+            onChange={setFilename}
+            placeholder="Select file"
+          />
         </div>
 
         {/* STEPS */}
@@ -132,22 +163,54 @@ export default function ProcessDataPanel() {
           </div>
         </div>
 
-        {/* TECHNICAL INDICATORS SET */}
+        {/* TECHNICAL INDICATORS SETS */}
         <div>
-          <Label>Technical Indicators Set</Label>
-          <div className="mt-2 w-64">
-            <Select value={technicalIndicatorsSet} onValueChange={setTechnicalIndicatorsSet}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Select set..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableSets.map((set) => (
-                  <SelectItem key={set} value={set}>
-                    {set}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Label>Technical Indicators Sets</Label>
+
+          <div className="space-y-4 mt-2">
+
+            {technicalIndicatorsSets.map((setGroup, groupIndex) => (
+
+              <div key={groupIndex} className="border border-gray-700 rounded-md p-3 bg-gray-800">
+
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium">
+                    Feature Set {groupIndex + 1}
+                  </span>
+
+                  {technicalIndicatorsSets.length > 1 && (
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      onClick={() => removeFeatureSet(groupIndex)}
+                    >
+                      -
+                    </Button>
+                  )}
+                </div>
+
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {availableSets.map((set) => (
+                    <label key={set} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={setGroup.includes(set)}
+                        onChange={() => toggleTechnicalSet(groupIndex, set)}
+                        className="w-4 h-4 accent-blue-500"
+                      />
+                      {set}
+                    </label>
+                  ))}
+                </div>
+
+              </div>
+
+            ))}
+
+            <Button variant="outline" onClick={addFeatureSet}>
+              + Add Feature Set
+            </Button>
+
           </div>
         </div>
 
@@ -170,7 +233,7 @@ export default function ProcessDataPanel() {
           </div>
         </div>
 
-        {/* FOLDERY (RADIO) */}
+        {/* OUTPUT FOLDER */}
         <div>
           <Label>Output Folder</Label>
           <div className="flex flex-col gap-2 mt-2">
@@ -197,6 +260,7 @@ export default function ProcessDataPanel() {
         <Button className="w-full mt-4" onClick={handleSubmit}>
           🚀 Process Data
         </Button>
+
       </CardContent>
     </Card>
   )

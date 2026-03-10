@@ -9,6 +9,11 @@ from utils.explainers.shap_explainer import ShapExplainer
 from utils.explainers.permutation_explainer import PermutationExplainer
 from utils.experiments.experiment_pipeline import ExperimentPipeline
 
+import matplotlib
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+
 app = FastAPI()
 
 import time
@@ -18,14 +23,15 @@ import numpy as np
 
 @app.on_event("startup")
 def run_experiment_on_startup():
-
     print("🚀 Starting experiment pipeline...")
 
-    dataset_name = "crime"
+    dataset_name = "medical"  # "medical", "crime", "finance"
     config = EXPERIMENTS[dataset_name]
 
-    # 🔥 możesz tu wrzucać dowolne modele
-    models = ["rf", "logreg", "xgb"]
+    if config["task"] == "classification":
+        models = ["rf", "logreg", "xgb", "dt"] # "mlp"
+    else:
+        models = ["linreg", "rf", "xgb"]
 
     pipeline = ExperimentPipeline(config, models)
     results = pipeline.run()
