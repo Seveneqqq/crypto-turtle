@@ -5,7 +5,7 @@ from typing import Dict, List, Any
 import optuna
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
-from module_loader import block_simulation
+from z_maina_funkcje.module_loader import block_simulation
 
 class BaseTunerService:
 

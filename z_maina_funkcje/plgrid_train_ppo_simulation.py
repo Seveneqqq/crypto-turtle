@@ -1,4 +1,4 @@
-from module_loader import block_train_ppo, block_simulation
+from z_maina_funkcje.module_loader import block_train_ppo, block_simulation
 
 if __name__ == "__main__":
     # Pliki ml

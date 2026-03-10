@@ -12,6 +12,7 @@ from configuration.rabbitmq_configuration import (
 from configuration.configuration import BINANCE_API_KEY, BINANCE_API_URL
 
 from services.data_service import DataService
+from services.data_service_plus import DataServicePlus
 
 print("Initializing RabbitMQ Service...")
 rabbitmq_service = RabbitMQService(
@@ -27,6 +28,8 @@ binance_service = BinanceService(api_key=BINANCE_API_KEY, api_url=BINANCE_API_UR
 
 print("Initializing Data Service...")
 data_service = DataService()
+print("Initializing Data Service Plus...")
+data_service_plus = DataServicePlus()
 
 print("Initializing Data LSTM Prepare Service...")
 data_lstm_prepare_service = DataLSTMPrepareService()
@@ -47,6 +50,7 @@ rabbitmq_request_service = RabbitMQRequestService(
     rabbitmq_service=rabbitmq_service,
     binance_service=binance_service,
     data_service=data_service,
+    data_service_plus=data_service_plus,
     optuna_service=optuna_service,
     data_lstm_prepare_service=data_lstm_prepare_service,
     lstm_optuna_service=lstm_optuna_service
