@@ -23,6 +23,7 @@ venv/
 */models/sklearn*.*
 shared/models/sklearn/*
 shared/files/*
+*/results/experiments/*
 # ============================
 # Logs
 # ============================

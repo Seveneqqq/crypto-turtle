@@ -16,6 +16,7 @@ import TestModelsPage from "./pages/machineLearning/TestModelsPage.jsx"
 import TrainingPpoPage from "./pages/reinforcementLearning/TrainingPpoPage.jsx"
 import TrainingDqnPage from "./pages/reinforcementLearning/TrainingDqnPage.jsx"
 import AccuracyPage from "./pages/data/AccuracyPage.jsx"
+import PipelineDataPage from "./pages/data/PipelineDataPage.jsx"
 
 const MotionButton = motion(Button)
 
@@ -75,6 +76,7 @@ export default function App() {
         {/* /home dostępne tylko dla zalogowanego */}
         <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" replace />} />
         <Route path="/historical-data" element={user ? <HistoricalDataPage /> : <Navigate to="/" replace />} />
+        <Route path="/pipeline-data" element={user ? <PipelineDataPage /> : <Navigate to="/" replace />} />
         <Route path="/simulation" element={user ? <SimulationPage /> : <Navigate to="/" replace />} />
         <Route path="/process-data" element={user ? <ProcessingDataPage /> : <Navigate to="/" replace />} />
         <Route path="/accuracy" element={user ? <AccuracyPage /> : <Navigate to="/" replace />} />

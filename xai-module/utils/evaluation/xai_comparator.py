@@ -1,0 +1,43 @@
+import pandas as pd
+from scipy.stats import spearmanr
+
+
+class XaiComparator:
+
+    @staticmethod
+    def rank_features(importance_dict):
+
+        sorted_items = sorted(
+            importance_dict.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        return [k for k, v in sorted_items]
+
+    @staticmethod
+    def spearman(imp1, imp2):
+
+        df = pd.DataFrame({
+            "f": list(set(imp1) | set(imp2))
+        })
+
+        df["r1"] = df["f"].map(imp1).fillna(0)
+        df["r2"] = df["f"].map(imp2).fillna(0)
+
+        corr, _ = spearmanr(df["r1"], df["r2"])
+
+        return corr
+
+    @staticmethod
+    def top_k_overlap(imp1, imp2, k=10):
+
+        top1 = set(
+            sorted(imp1, key=imp1.get, reverse=True)[:k]
+        )
+
+        top2 = set(
+            sorted(imp2, key=imp2.get, reverse=True)[:k]
+        )
+
+        return len(top1 & top2) / k
