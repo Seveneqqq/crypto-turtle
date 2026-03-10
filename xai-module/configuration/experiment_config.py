@@ -20,7 +20,7 @@ EXPERIMENTS = {
 
     "finance": {
         "dataset_name": "finance",
-        "data_path": "utils/data/raw/finance/BTCUSDT-model_1m_6m_2025-10-11.csv",
+        "data_path": "utils/data/raw/finance/BTCUSDT-model_1m_6m_2025-10-11_97f5b9c9-a08e-4a75-a0b6-efca2b5f3192.csv",
         "target": "target",
         "task": "regression",
         "split_type": "time",

@@ -5,12 +5,10 @@ import pandas as pd
 
 
 class ResultLogger:
-
     def __init__(self, dataset_name: str):
-
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        self.base_dir = f"results/experiments/{timestamp}"
+        self.base_dir = f"results/experiments/{dataset_name}_{timestamp}"
         self.dataset_name = dataset_name
 
         os.makedirs(self.base_dir, exist_ok=True)
@@ -22,27 +20,21 @@ class ResultLogger:
         self.results.append(result)
 
     def save(self):
-
-        # JSON
         json_path = f"{self.base_dir}/results.json"
-        with open(json_path, "w") as f:
-            json.dump(self.results, f, indent=4)
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(self.results, f, indent=4, ensure_ascii=False)
 
-        # CSV summary
         rows = []
 
         for r in self.results:
-
             row = {
                 "dataset": r["dataset"],
                 "model": r["model"],
                 **r["model_metrics"]
             }
-
             rows.append(row)
 
         df = pd.DataFrame(rows)
-
         csv_path = f"{self.base_dir}/summary.csv"
         df.to_csv(csv_path, index=False)
 

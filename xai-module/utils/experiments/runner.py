@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.pipeline import Pipeline
 
-from xgboost import XGBClassifier, XGBRegressor
+from xgboost import XGBClassifier
 
 from utils.data.loaders.generic_loader import GenericDataLoader
 from utils.preprocessing.pipeline_preprocessor import GenericPreprocessor
@@ -13,13 +13,11 @@ from utils.evaluation.metrics import (
 
 
 class ExperimentRunner:
-
     def __init__(self, config: dict, model_name: str):
         self.config = config
         self.model_name = model_name
 
     def run(self):
-
         loader = GenericDataLoader(self.config)
         df = loader.load()
 
@@ -37,9 +35,6 @@ class ExperimentRunner:
             task=self.config["task"]
         )
 
-        # =========================
-        # 🔥 XGBOOST: dynamiczne ustawienie objective/num_class
-        # =========================
         if self.config["task"] == "classification" and (
             isinstance(model, XGBClassifier) or self.model_name == "xgb"
         ):
@@ -47,51 +42,37 @@ class ExperimentRunner:
             n_classes = int(len(classes))
 
             if n_classes == 0:
-                raise RuntimeError(
-                    "XGBoost: n_classes == 0. y_train jest puste. Sprawdź split/preprocessing."
-                )
+                raise RuntimeError("XGBoost: n_classes == 0. y_train jest puste.")
 
             if n_classes == 1:
                 raise RuntimeError(
-                    f"XGBoost: w y_train jest tylko jedna klasa ({classes[0]}). "
-                    "Nie da się trenować klasyfikatora. Zmień split/test_size albo dane."
+                    f"XGBoost: w y_train jest tylko jedna klasa ({classes[0]})."
                 )
 
             if n_classes == 2:
-                # binary classification
                 model.set_params(
                     objective="binary:logistic",
                     eval_metric="logloss"
                 )
-                # usuń num_class jeśli był wcześniej ustawiony
                 try:
                     model.set_params(num_class=None)
                 except Exception:
                     pass
-
             else:
-                # multi-class classification
                 model.set_params(
                     objective="multi:softprob",
                     num_class=n_classes,
                     eval_metric="mlogloss"
                 )
 
-        # =========================
-        # PIPELINE
-        # =========================
         pipeline = Pipeline([
             ("preprocessing", transformer),
             ("model", model)
         ])
 
         pipeline.fit(X_train, y_train)
-
         y_pred = pipeline.predict(X_test)
 
-        # =========================
-        # EWALUACJA
-        # =========================
         if self.config["task"] == "classification":
             metrics = evaluate_classification(y_test, y_pred)
         else:
@@ -105,5 +86,6 @@ class ExperimentRunner:
             "X_test": X_test,
             "y_test": y_test,
             "X_train": X_train,
-            "y_train": y_train
+            "y_train": y_train,
+            "y_pred": y_pred
         }

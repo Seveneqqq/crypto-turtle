@@ -4,10 +4,8 @@ from utils.explainers.lime_explainer import LimeExplainer
 
 
 class XaiFactory:
-
     @staticmethod
-    def create(method: str, pipeline, X_train=None):
-
+    def create(method: str, pipeline, X_train=None, task="classification"):
         if method == "shap":
             return ShapExplainer(pipeline)
 
@@ -15,6 +13,6 @@ class XaiFactory:
             return PermutationExplainer(pipeline)
 
         if method == "lime":
-            return LimeExplainer(pipeline, X_train)
+            return LimeExplainer(pipeline, X_train, task=task)
 
         raise ValueError(f"Unknown XAI method: {method}")
