@@ -29,6 +29,7 @@ class RabbitMQRequestService:
 
             case "tune_lstm":
                 print("Tuning LSTM model & data")
+                print(data)
                 result = self.lstm_optuna_service.run_optimization(data)
             
                 if result.get("result") == "success":

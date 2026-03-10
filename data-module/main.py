@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, model_validator
 from typing import List, Union, Optional
 
@@ -6,18 +8,52 @@ from configuration.rabbitmq_queues import DATA_REQUEST_QUEUE
 from services import rabbitmq_service
 from services.realtime_data_service import RealtimeDataService
 from services.data_service import DataService
+from services.operation_history_service import OperationHistoryService
+from services.operation_file_logger_service import OperationFileLoggerService
+
+# NOWE IMPORTY
+from services.optuna_dashboard_service import OptunaDashboardService
+from services.optuna_results_loader_service import OptunaResultsLoaderService
 
 
 app = FastAPI()
+
+# ============================================================
+# CORS
+# ============================================================
+
+origins = [
+    "http://localhost:5173",
+    "http://localhost:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ============================================================
+# STATIC FILES (REPORTS)
+# ============================================================
+
+app.mount(
+    "/shared/files",
+    StaticFiles(directory="shared/files"),
+    name="shared-files"
+)
+
 data_service = DataService()
+operation_history_service = OperationHistoryService()
+operation_file_logger_service = OperationFileLoggerService()
 
-# 🔹 inicjalizacja realtime service
 realtime_data_service = RealtimeDataService(rabbitmq_service=rabbitmq_service)
 
-
-
-# 🔹 inicjalizacja realtime service
-realtime_data_service = RealtimeDataService(rabbitmq_service=rabbitmq_service)
+# NOWA INICJALIZACJA
+optuna_dashboard_service = OptunaDashboardService()
+optuna_results_loader_service = OptunaResultsLoaderService()
 
 
 @app.get("/")
@@ -25,47 +61,63 @@ def root():
     return {"message": "Hello from data-module"}
 
 
-# =====================================================
-# KONFIGURACJA DO WALIDACJI
-# =====================================================
-
-LSTM_SETS = {"set1", "set2", "set3", "set4"}
-SKLEARN_SETS = {"set1", "set2"}
+LSTM_SETS = {"lstm_set1", "lstm_set2", "lstm_set3", "lstm_set4"}
+SKLEARN_SETS = {"sklearn_set1", "sklearn_set2"}
 ALL_SETS = LSTM_SETS | SKLEARN_SETS
 
 
-# =====================================================
-# MODEL REQUESTU
-# =====================================================
+@app.get("/history/operations")
+def get_operations(
+        service_name: str | None = None,
+        operation_name: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0
+):
+
+    rows = operation_history_service.list_operations(
+        service_name=service_name,
+        operation_name=operation_name,
+        status=status,
+        limit=limit,
+        offset=offset
+    )
+
+    total = operation_history_service.count_operations(
+        service_name=service_name,
+        operation_name=operation_name,
+        status=status
+    )
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "data": rows
+    }
+
 
 class SymbolConfig(BaseModel):
     symbol: str
-    features: Union[List[str], str]  # lista feature / set / "auto"
+    features: Union[List[str], str]
     model: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_logic(self):
-
-        # ---------------- AUTO ----------------
         if self.features == "auto":
             if not self.model:
                 raise ValueError("Model must be provided when features='auto'")
             return self
 
-        # ---------------- JEŻELI NIE AUTO ----------------
         if self.model is not None:
             raise ValueError("Model can only be used when features='auto'")
 
-        # ---------------- LISTA ----------------
         if isinstance(self.features, list):
-
             sets_in_list = [f for f in self.features if f in ALL_SETS]
 
-            # tylko jeden set
             if len(sets_in_list) > 1:
                 raise ValueError("Only one feature set can be provided")
 
-            # brak mieszania set + pojedyncze feature
             if len(sets_in_list) == 1 and len(self.features) > 1:
                 raise ValueError("Feature set cannot be mixed with single features")
 
@@ -76,10 +128,6 @@ class RealtimeRequest(BaseModel):
     symbols: List[SymbolConfig]
     interval: str = "1m"
 
-
-# =====================================================
-# ENDPOINT START STREAM
-# =====================================================
 
 @app.post("/realtime/start")
 def start_realtime_stream(request: RealtimeRequest):
@@ -99,10 +147,6 @@ def start_realtime_stream(request: RealtimeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# =====================================================
-# FEATURES LIST
-# =====================================================
 
 @app.get("/realtime/features-list")
 def get_features_list():
@@ -196,9 +240,65 @@ def get_features_list():
     }
 
 
-# =====================================================
-# RabbitMQ Consumer
-# =====================================================
+# ============================================================
+# NOWE ENDPOINTY ANALITYCZNE OPTUNA
+# ============================================================
+
+@app.post("/analytics/optuna/dashboard")
+def generate_optuna_dashboard():
+    """
+    Generuje wykresy i raport z eksperymentów Optuna
+    """
+    try:
+        result = optuna_dashboard_service.generate_dashboard()
+
+        return {
+            "status": "success",
+            "message": "Optuna dashboard generated",
+            "data": result
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/analytics/optuna/data")
+def get_optuna_data():
+    try:
+
+        df = optuna_results_loader_service.load_all_results()
+
+        df = df.replace({float("nan"): None})
+
+        return {
+            "rows": df.to_dict(orient="records"),
+            "total": len(df)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/analytics/optuna/reports")
+def list_optuna_reports():
+    """
+    Lista wygenerowanych raportów
+    """
+    import os
+
+    reports_dir = "shared/files/optuna_reports"
+
+    if not os.path.exists(reports_dir):
+        return {"reports": []}
+
+    return {
+        "reports": os.listdir(reports_dir)
+    }
+
+
+# ============================================================
+# RABBITMQ CONSUMER
+# ============================================================
 
 rabbitmq_service.consume(
     queue=DATA_REQUEST_QUEUE,
