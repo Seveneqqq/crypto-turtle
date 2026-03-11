@@ -5,14 +5,16 @@ if __name__ == "__main__":
     block_simulation_tuner().run_tuning(
         eval_data_files = {
             #"BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv",
-            "ETH": "processed_ROBUST_set4_ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv"
+            #"ETH": "processed_ROBUST_set4_ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv"
+            "ETH": "xgb_eth_raw8_short.csv"
             #"ETH": "fe_v2_eth_test_20251009_ref.csv"
         },
         model_files = {
             #"BTC": "btc_model_c_v1_1210_11.pkl",
             #"BTC": "L003_btc_model_B001_1512",
             #"BTC": "L004_crypto_model_UNKNOWN_0603",
-            "ETH": "btc_model_simple_c_v1_0603_1.pkl"
+            #"ETH": "btc_model_simple_c_v1_0603_1.pkl"
+            "ETH": "X065_eth_xgb_model_E103_0903"
             #"ETH": "eth_model_c_v1_1210_11.pkl"
             #"ETH": "eth_model_c_v1_0603_0.pkl",
             #"ETH": "eth_model_fe_2_c_v1_0910_ref.pkl"

@@ -189,7 +189,7 @@ class Wallet:
 
         if usd_amount < self.config[symbol].mincost:
             order.rejected("lower_than_mincost")
-            print("lower_than_mincost", usd_amount, symbol)
+            # print("lower_than_mincost", usd_amount, symbol)
             return
 
         qty = usd_amount / price
