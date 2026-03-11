@@ -6,11 +6,16 @@ from sklearn.preprocessing import StandardScaler
 
 #from .standalone_model import ModelPredictor
 from .model_package import ModelPredictor, ProbabilisticSignalGenerator
+# from .xgb_model_package import XGBModelPackage, SignalConfig
+from shared.models.xgb_model_package import XGBModelPackage,SignalConfig
 
 class ModelSignal:
     def __init__(self, model_name, data, base_dir, realtime = False):
         # base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.BASE_MODEL_DIR = os.path.join(base_dir, "shared", "models")
+        os.makedirs(os.path.join(self.BASE_MODEL_DIR, "sklearn"), exist_ok=True)
+        os.makedirs(os.path.join(self.BASE_MODEL_DIR, "lstm"), exist_ok=True)
+        os.makedirs(os.path.join(self.BASE_MODEL_DIR, "xgboost"), exist_ok=True)
 
         self.data = data
         self.close_prices = []
@@ -23,8 +28,7 @@ class ModelSignal:
         self.close = []
         self.predicted_prices = []
 
-
-
+        self.xgb_timestamps = None
         self.model_name = model_name
         self.model_path : str = ""
         self.model_type = ""
@@ -45,7 +49,22 @@ class ModelSignal:
 
             case "lstm":
                 self.model = ModelPredictor(self.model_path)
-                self.predictions, self.class_map = self.lstm_price_predictor()
+
+                if realtime:
+                    print("[ModelSignal][ERROR] Brak obsługi tego typu modelu w realtime.")
+                else:
+                    self.predictions, self.class_map = self.lstm_price_predictor()
+
+
+
+            case "xgboost":
+                # self.model = joblib.load(self.model_path)
+
+                if realtime:
+                    print("[ModelSignal][ERROR] Brak obsługi tego typu modelu w realtime.")
+                else:
+                    self.predictions, self.class_map = self.xgboost()
+
 
             case _:
                 print("[ModelSignal][ERROR] Brak obsługi tego typu modelu.")
@@ -55,7 +74,14 @@ class ModelSignal:
 
     def process_models_data(self, num_ticks):
         print(f"[Core_Logic] Ekstrakcja danych.")
-        self.data = self.data.iloc[-num_ticks:].reset_index(drop=True)
+
+        if self.model_type == "xgboost":
+            valid_timestamps = self.xgb_timestamps[-num_ticks:]
+            mask = self.data['open_time'].isin(valid_timestamps)
+            self.data = self.data[mask].reset_index(drop=True)
+        else:
+            self.data = self.data.iloc[-num_ticks:].reset_index(drop=True)
+
         self.open_times = self.data["open_time"].to_numpy()
         self.close_prices = self.data["close"].to_numpy()
 
@@ -157,10 +183,26 @@ class ModelSignal:
         self.predicted_prices = prices
         return np.array(signals), classes
 
+    def xgboost(self):
 
+        cfg = SignalConfig(threshold=0.001, window_sigma=100)
+        pkg = XGBModelPackage(self.model_path, signal_config=cfg)
+        df_signals = pkg.predict_batch(df=self.data,data_mode='auto')
+
+        self.xgb_timestamps = df_signals['timestamp'].to_numpy()
+
+        p_buy = (df_signals['signal_buy'] / 100.0).to_numpy()
+        p_sell = (df_signals['signal_sell'] / 100.0).to_numpy()
+        p_hold = np.clip(1.0 - p_buy - p_sell, 0.0, 1.0)
+
+        predictions = np.column_stack([p_buy, p_hold, p_sell])
+        class_map = {"buy": 0, "hold": 1, "sell": 2}
+        return predictions, class_map
 
 
     def check_model_type(self):
+        """ Wyszukuje model w podfolderach katalogu models i zwraca typ modelu oraz pełną ścieżkę."""
+
         for subfolder in os.listdir(self.BASE_MODEL_DIR):
             subfolder_path = os.path.join(self.BASE_MODEL_DIR, subfolder)
             if not os.path.isdir(subfolder_path):
@@ -170,6 +212,6 @@ class ModelSignal:
             if os.path.exists(candidate_path):
                 self.model_path = candidate_path
                 self.model_type = subfolder.lower()
-                return subfolder.lower()  # 'sklearn' lub 'lstm'
+                return subfolder.lower()  # 'sklearn' lub 'lstm' lub 'xgboost'
 
         raise ValueError(f"Nie znaleziono modelu '{self.model_name}' w żadnym z podfolderów {os.listdir(self.BASE_MODEL_DIR)}")

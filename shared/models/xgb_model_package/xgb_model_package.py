@@ -554,6 +554,7 @@ class XGBModelPackage:
                 os.path.join(self._model_dir, '..', '..', train_path),
                 os.path.join(self._model_dir, '..', train_path),
                 os.path.join(os.path.dirname(self._model_dir), train_path),
+                os.path.join(self._model_dir),
             ]
             for base in candidates:
                 meta_path = os.path.normpath(os.path.join(base, 'metadata.json'))
@@ -571,7 +572,7 @@ class XGBModelPackage:
         model_feats = self._config.get('features', [])
         if len(model_feats) == n:
             return model_feats
-
+        print("[XGBModelPackage][ERROR] w modelu jest inna liczba features niż w skalerze oraz nie znaleziono zapasowego pliku metadata.json")
         # 3. Cannot determine
         return None
 

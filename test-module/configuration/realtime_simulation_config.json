@@ -3,12 +3,26 @@
     "BTCUSDT": {
       "model": "btc_model_c_v1_1210_11.pkl",
       "features": "auto",
-      "preprocessing": "ROBUST"
+      "preprocessing": "ROBUST",
+      "modified_params": {
+        "threshold_buy": 0.5387,
+        "threshold_sell": 0.5524,
+        "mincost": 1.013,
+        "tx_fraction": 0.1156,
+        "max_fraction_when_confident": 0.9646
+      }
     },
     "ETHUSDT": {
       "model": "eth_model_c_v1_1210_11.pkl",
       "features": "auto",
-      "preprocessing": "ROBUST"
+      "preprocessing": "ROBUST",
+      "modified_params": {
+        "threshold_buy": 0.5193,
+        "threshold_sell": 0.5208,
+        "mincost": 1.3578,
+        "tx_fraction": 0.0893,
+        "max_fraction_when_confident": 0.9163
+      }
     }
   },
 
@@ -18,7 +32,7 @@
     "add_fee": true,
     "rlagent_deterministic": false,
     "slippage": 0,
-    "wallet_percentage_limit": 0.7921,
+    "wallet_percentage_limit": 0.7920,
     "max_wallet_percentage_crypto": 0.8278,
     "stop_loss": 1.0,
     "threshold_buy": 0.5338,

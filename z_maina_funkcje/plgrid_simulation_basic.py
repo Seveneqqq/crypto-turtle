@@ -7,7 +7,10 @@ if __name__ == "__main__":
         model_paths={
             #"BTC": "btc_model_c_v1_1210_11.pkl",
             #"BTC": "L003_btc_model_B001_1512",
-            "ETH": "eth_model_c_v1_1210_11.pkl",
+            #"ETH": "eth_model_c_v1_1210_11.pkl",
+            "ETH": "X065_eth_xgb_model_E103_0903"
+            #"ETH":"X063_eth_xgb_model_E102_0903"
+            #"BTC": "X067_btc_xgb_model_B103_0903"
             #"ETH": "eth_model_c_v1_0603_0.pkl"
             #"ETH": "eth_model_fe_2_c_v1_0910_ref.pkl"
             #"ETH": "eth_model_c_v1_2202_3.pkl"
@@ -15,7 +18,9 @@ if __name__ == "__main__":
         data_files={
             #"BTC": "processed_ROBUST_set4_BTCUSDT-simulation_1m_2m_2025-10-11_8a076fe5-6d3c-4b1c-a490-9be3a3174517.csv",
             #"ETH": "realtime_data111.csv"
-            "ETH": "processed_ROBUST_set4_ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv",
+            #"ETH": "processed_ROBUST_set4_ETHUSDT-simulation_1m_2m_2025-10-11_ebb1db90-7ab0-4351-b9a4-908f0da5b244.csv",
+            "ETH":  "xgb_eth_raw8_short.csv"
+            #"BTC": "btc_eth_raw8_short.csv"
             #"ETH": "fe_v2_eth_test_20251009_ref.csv"
             #"ETH": "ETHUSDT_1m_6m_2026-02-22_22cc9313-e635-4c2c-9a8e-2360745d150d.csv"
             #"BTC": "processed_ROBUST_set4_BTCUSDT_1s_2m_2026-01-11_9d42fe9e-b4ad-413f-ad84-aaaaaf53705c.csv"
@@ -41,25 +46,47 @@ if __name__ == "__main__":
         # results=True,
         # experiment_version="v0"
 
-        # ETH new
+        #ETH XGB
+
         agent_rl="agent_ppo_2026-02-24_23-06-08.zip",
         balance_start=1000.0,
         add_fee=True,
         sim_mode="ml",
         rlagent_deterministic=True,
         slippage=0,
-        wallet_percentage_limit=0.6439158996392444,
-        max_wallet_percentage_crypto=0.8739489383305068,
+        wallet_percentage_limit=0.959,
+        max_wallet_percentage_crypto=0.967,
         stop_loss=1.0,
-        threshold_buy=0.5470628217105851,
-        threshold_sell= 0.6200350636580595,
-        mincost=1.0022504036489839,
-        tx_fraction=0.015397748926383079,
-        max_fraction_when_confident=0.6648443549617613,
+        threshold_buy=0.6,
+        threshold_sell=0.6,
+        mincost=4.30,
+        tx_fraction=0.0113,
+        max_fraction_when_confident=0.369,
         plots=True,
         logs=True,
         results=True,
         experiment_version="v0"
+
+
+        # # ETH new
+        # agent_rl="agent_ppo_2026-02-24_23-06-08.zip",
+        # balance_start=1000.0,
+        # add_fee=True,
+        # sim_mode="ml",
+        # rlagent_deterministic=True,
+        # slippage=0,
+        # wallet_percentage_limit=0.6439158996392444,
+        # max_wallet_percentage_crypto=0.8739489383305068,
+        # stop_loss=1.0,
+        # threshold_buy=0.5470628217105851,
+        # threshold_sell= 0.6200350636580595,
+        # mincost=1.0022504036489839,
+        # tx_fraction=0.015397748926383079,
+        # max_fraction_when_confident=0.6648443549617613,
+        # plots=True,
+        # logs=True,
+        # results=True,
+        # experiment_version="v0"
 
         #ETH BEST
         # agent_rl="agent_ppo_2026-02-24_23-06-08.zip",

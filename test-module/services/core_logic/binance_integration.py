@@ -207,7 +207,7 @@ def testnet_wallet_buy(self: "Wallet", order: "Order"):
     qty = order.qty
     price = order.price
     order.slippage_price = price
-    transaction_value = qty * price * (1 + self.config.fee)
+    transaction_value = qty * price * (1 + self.config[order.symbol].fee)
 
     if transaction_value > self.balance:
         order.rejected("no_balance")
@@ -294,7 +294,7 @@ def testnet_wallet_sell(self: "Wallet", order: "Order"):
         _annotate_skipped(order, "local_rejected_not_enough_holdings", snap)
         return
 
-    transaction_value = order.qty * order.price * (1 - self.config.fee)
+    transaction_value = order.qty * order.price * (1 - self.config[order.symbol].fee)
     self.holdings[symbol] -= order.qty
     self.balance += transaction_value
     self.sells_count += 1
@@ -424,7 +424,7 @@ def _reconcile_buy(wallet: "Wallet", order: "Order", snap: dict):
     wallet.holdings[symbol] = snap["holdings"]
     wallet.avg_buy_price[symbol] = snap["avg_buy_price"]
 
-    tv = bqty * bprice * (1 + wallet.config.fee)
+    tv = bqty * bprice * (1 + wallet.config[symbol].fee)
     current_qty = snap["holdings"]
     current_avg = snap["avg_buy_price"]
     if current_qty > 0:
@@ -454,7 +454,7 @@ def _reconcile_sell(wallet: "Wallet", order: "Order", snap: dict):
     wallet.holdings[symbol] = snap["holdings"]
     wallet.avg_buy_price[symbol] = snap["avg_buy_price"]
 
-    tv = bqty * bprice * (1 - wallet.config.fee)
+    tv = bqty * bprice * (1 - wallet.config[symbol].fee)
     wallet.holdings[symbol] -= bqty
     wallet.balance += tv
     if wallet.holdings[symbol] <= 1e-9:
