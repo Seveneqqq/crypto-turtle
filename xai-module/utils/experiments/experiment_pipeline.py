@@ -12,14 +12,15 @@ from utils.evaluation.xai_fidelity import XaiFidelity
 from utils.evaluation.xai_local import XaiLocal
 from utils.evaluation.xai_debugger import XaiDebugger
 from utils.evaluation.xai_ranking import XaiRanking
+from utils.evaluation.model_interpretability_analysis import ModelInterpretabilityAnalysis
 
 from utils.reporting.feature_importance_report import FeatureImportanceReport
 from utils.reporting.feature_comparison import FeatureComparison
 
 from utils.visualization.xai_heatmap import XaiHeatmap
 from utils.visualization.feature_importance_plot import FeatureImportancePlot
+from utils.visualization.model_tradeoff_plot import ModelTradeoffPlot
 
-# 🔵 DODANE
 from utils.explanations.human_xai_explainer import HumanXaiExplainer
 
 
@@ -451,5 +452,19 @@ class ExperimentPipeline:
 
         print("\n📊 XAI SUMMARY")
         print(summary)
+
+        analysis = ModelInterpretabilityAnalysis.build_table(results)
+
+        analysis.to_csv(
+            f"{logger.base_dir}/accuracy_vs_interpretability.csv",
+            index=False
+        )
+        
+        print("\nAccuracy vs Interpretability:")
+        print(analysis)
+
+        # 🔵 DODANE – GENEROWANIE WYKRESU TRADE-OFF
+        tradeoff_path = f"{logger.base_dir}/accuracy_vs_interpretability.png"
+        ModelTradeoffPlot.plot(analysis, tradeoff_path)
 
         return results
