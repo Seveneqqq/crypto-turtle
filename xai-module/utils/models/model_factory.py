@@ -20,7 +20,7 @@ class ModelFactory:
                 # =========================
                 "logreg": LogisticRegression(
                     max_iter=1000,
-                    solver="lbfgs",          # obsługa multinomial
+                    solver="lbfgs",          
                     multi_class="multinomial",
                     n_jobs=-1
                 ),
@@ -63,7 +63,7 @@ class ModelFactory:
                     subsample=0.8,
                     colsample_bytree=0.8,
                     random_state=42,
-                    objective="multi:softprob",  # 🔥 KLUCZOWE
+                    objective="multi:softprob",  
                     eval_metric="mlogloss",
                     use_label_encoder=False,
                     n_jobs=-1

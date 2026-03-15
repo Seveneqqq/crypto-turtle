@@ -9,13 +9,11 @@ def generic_feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         col_lower = col.lower()
 
-        # tylko kolumny typu object (string) potencjalnie zawierające datę
         if df[col].dtype == "object" and (
             "date" in col_lower or "time" in col_lower
         ):
             converted = pd.to_datetime(df[col], errors="coerce")
 
-            # jeżeli konwersja faktycznie coś dała (nie same NaT)
             if converted.notna().sum() > 0:
                 df[col] = converted
 
@@ -26,7 +24,6 @@ def generic_feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
 
                 datetime_cols.append(col)
 
-    # usuń tylko prawdziwe datetime64
     df = df.drop(columns=datetime_cols)
 
     return df

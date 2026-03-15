@@ -463,7 +463,6 @@ class ExperimentPipeline:
         print("\nAccuracy vs Interpretability:")
         print(analysis)
 
-        # 🔵 DODANE – GENEROWANIE WYKRESU TRADE-OFF
         tradeoff_path = f"{logger.base_dir}/accuracy_vs_interpretability.png"
         ModelTradeoffPlot.plot(analysis, tradeoff_path)
 

@@ -24,10 +24,8 @@ class XaiRanking:
             if method in agreement_scores and len(agreement_scores[method]) > 0:
                 agreement = sum(agreement_scores[method]) / len(agreement_scores[method])
 
-            # im większy runtime, tym gorzej
             speed_score = 1 / (1 + runtime)
 
-            # dla fidelity: większy drop = bardziej explanation wpływa na model
             final_score = (
                 0.35 * stability +
                 0.35 * fidelity +
