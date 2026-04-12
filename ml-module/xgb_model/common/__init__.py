@@ -30,6 +30,14 @@ from .data_utils import (
     create_log_return_target,
 )
 
+from .sample_weighting import (
+    compute_sample_weights,
+    apply_misdir_penalty,
+    make_custom_objective,
+    make_dead_zone_objective,
+    resolve_signal_threshold,
+)
+
 __all__ = [
     'get_next_model_id',
     'get_next_optuna_id',
@@ -47,4 +55,10 @@ __all__ = [
     'load_data',
     'flatten_features',
     'create_log_return_target',
+    'compute_sample_weights',
+    'apply_misdir_penalty',
+    'make_custom_objective',
+    'make_dead_zone_objective',
+    'resolve_signal_threshold',
 ]
+

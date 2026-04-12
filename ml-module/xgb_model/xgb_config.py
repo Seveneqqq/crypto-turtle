@@ -8,18 +8,33 @@ import argparse
 
 class XGBConfig:
     """Configuration for XGBoost model"""
-
+    # -------------------------------------------------------------------------
     # DATA PREPARATION
+    # -------------------------------------------------------------------------
     DEFAULT_LOOKBACK = 48
     DEFAULT_HORIZON = 12
-    DEFAULT_FLATTENING = 'agg'
-    DEFAULT_FEATURE_SET = 'full'
+    DEFAULT_FLATTENING = 'hybrid'
+    DEFAULT_FEATURE_SET = 'technical'
 
+    # -------------------------------------------------------------------------
+    # TRAINING
+    # -------------------------------------------------------------------------
+    EARLY_STOPPING_ROUNDS = 1000
+    VERBOSE_EVAL = 60
+    # USE_BEST_ITERATION:
+    #   False (default) - save model from last iteration (all n_estimators trees)
+    #   True            - save model from best_iteration (early stopping checkpoint)
+    USE_BEST_ITERATION = False
+
+    # -------------------------------------------------------------------------
     # TARGET SCALING
+    # -------------------------------------------------------------------------
     SCALE_TARGET = True
     TARGET_SCALER_TYPE = 'robust'               # 'standard' | 'robust'
 
+    # -------------------------------------------------------------------------
     # TARGET WINSORISATION
+    # -------------------------------------------------------------------------
     # Clips extreme log-return targets to [p, 1-p] percentile range computed
     # on the TRAINING set only. Val/test are clipped with the same bounds
     # (no leakage). Set WINSORIZE_TARGET = False to disable entirely.
@@ -30,7 +45,9 @@ class XGBConfig:
     WINSORIZE_TARGET = False
     WINSORIZE_PERCENTILE = 99.0                 # e.g. 99.0 → clips at [0.5%, 99.5%]
 
+    # -------------------------------------------------------------------------
     # OPTUNA OPTIMIZATION TARGET
+    # -------------------------------------------------------------------------
     # Controls which dataset Optuna uses to compute the loss it minimises.
     #   'val'   - minimise loss on validation set (default, recommended)
     #             → selects params that generalise best
@@ -38,9 +55,127 @@ class XGBConfig:
     #             → useful to diagnose underfitting, not recommended for production
     # The loss function used is always the one defined by OBJECTIVE above
     # (e.g. Pseudo-Huber), NOT sklearn MAE.
-    OPTUNA_OPTIMIZE_TARGET = 'train'          # 'val' | 'train'
+    OPTUNA_OPTIMIZE_TARGET = 'val'          # 'val' | 'train'
+    OPTUNA_OPTIMIZE_METRIC = 't_dir_acc'          # 'mae' | 'rmse' | 'pseudo_huber'
+                                            # 't_mae' | 't_rmse' | 't_pseudo_huber' | 't_dir_acc'
+                                            # prefiks t_ = metryki liczone na próbkach |y| >= threshold
 
+    # -------------------------------------------------------------------------
+    # SIGNAL THRESHOLD — próg sygnałowy
+    # -------------------------------------------------------------------------
+    # SIGNAL_THRESHOLD_ENABLED:
+    #   False (domyślne) — próg nieaktywny, brak metryk progowych
+    #   True             — próg aktywny: metryki progowe (t_mae, t_dir_acc, ...)
+    #                      w train, test, tuning. Penalties kontrolowane osobno
+    #                      przez USE_THRESHOLD_PENALTIES.
+    #
+    # Centralny próg sygnałowy — wartości |log_return| poniżej tego progu
+    # są traktowane jako „szum" (brak realnego zysku po opłatach).
+    # Używany w metrykach (Thresholded Dir Acc, Thresholded MAE, ...)
+    # i opcjonalnie w karach objective / sample weights.
+    #
+    # SIGNAL_THRESHOLD_MODE:
+    #   'fixed'      — stała wartość SIGNAL_THRESHOLD_VALUE
+    #   'empirical'  — obliczana z |y_train| jako percentyl
+    #                  SIGNAL_THRESHOLD_PERCENTILE (np. 50.0 = mediana |y|)
+    #
+    # USE_THRESHOLD_PENALTIES:
+    #   False (domyślne) — próg używany tylko do metryk
+    #   True             — próg wpływa na kary w objective / sample weights
+    #
+    # THRESHOLD_SMOOTH_TRANSITION:
+    #   False — twarde odcięcie: w=1.0 powyżej, w=DEAD_ZONE_WEIGHT poniżej
+    #   True  — sigmoid: gładkie przejście wokół progu
+    SIGNAL_THRESHOLD_ENABLED     = True          # master switch (jak REWEIGHT_MISDIR)
+    SIGNAL_THRESHOLD_MODE        = 'fixed'        # 'fixed' | 'empirical'
+    SIGNAL_THRESHOLD_VALUE       = 0.001          # log-return threshold (fixed mode)
+    SIGNAL_THRESHOLD_PERCENTILE  = 50.0           # percentyl |y_train| (empirical mode)
+    USE_THRESHOLD_PENALTIES      = True          # próg wpływa na penalties
+    THRESHOLD_SMOOTH_TRANSITION  = False          # gładkie przejście sigmoid
+    THRESHOLD_SMOOTH_WIDTH       = 2.0            # szerokość sigmoidy (1=ostry, 5=łagodny)
+
+    # -------------------------------------------------------------------------
+    # SAMPLE WEIGHTS — podejście A (natywne DMatrix weight)
+    # -------------------------------------------------------------------------
+    # Wagi per-próbka obliczane z |log_return| i przekazywane do
+    # xgb.DMatrix(weight=...). XGBoost mnoży hessjan każdej próbki przez
+    # jej wagę, co zwiększa wpływ próbek z dużymi ruchami na budowę drzew.
+    # Wagi obliczane z surowego (nieskalowanego) y_train.
+    #
+    # SAMPLE_WEIGHT_MODE:  None        -- brak ważenia (domyślne XGBoost)
+    #                      'abs'       -- w = |y|^alpha
+    #                      'abs_clip'  -- w = clip(|y|^alpha, floor, inf)
+    #                      'rank'      -- w = rank(|y|) / N (scale-free)
+    #                      'percentile'-- w = 1.0 if |y| >= pct else low_w
+    SAMPLE_WEIGHT_MODE       = None#'percentile'          # domyslnie wylaczone
+    SAMPLE_WEIGHT_ALPHA      = 1.0           # wykladnik dla 'abs' / 'abs_clip'
+    SAMPLE_WEIGHT_MIN_W      = 0.1           # floor fraction dla 'abs_clip'
+    SAMPLE_WEIGHT_PERCENTILE = 70.0          # prog percentyla dla 'percentile'
+    SAMPLE_WEIGHT_LOW_W      = 0.1           # waga ponizej progu dla 'percentile'
+
+    # -------------------------------------------------------------------------
+    # MISDIR PENALTY — podejście A (drugi trening z zaktualizowanymi wagami)
+    # -------------------------------------------------------------------------
+    # Po pierwszym treningu identyfikuje próbki gdzie model przewidział zly
+    # kierunek dla duzych ruchow (|y| >= MISDIR_MIN_QUANTILE). Tym probkom
+    # podnosi wagi przez MISDIR_PENALTY, nastepnie trenuje ponownie.
+    #
+    # MISDIR_APPROACH_A_VARIANT:
+    #   'retrain' -- pelny restart od zera z nowymi wagami (czas x2)
+    #   'boost'   -- kontynuacja od checkpointu (xgb_model=model),
+    #               nowe drzewa dodawane z korekta mis-directional
+    REWEIGHT_MISDIR            = False        # domyslnie wylaczone
+    MISDIR_APPROACH_A_VARIANT  = 'boost'    # 'retrain' | 'boost'
+    MISDIR_PENALTY             = 2.0          # mnoznik dla mis-directional probek
+    MISDIR_MIN_QUANTILE        = 0.7          # prog |y| kwalifikujacy do kary
+
+    # -------------------------------------------------------------------------
+    # CUSTOM OBJECTIVE -- podejście B
+    # -------------------------------------------------------------------------
+    # Zastepuje standardowy params['objective'] -- XGBoost ignoruje
+    # 'objective' w params gdy obj= jest podane w xgb.train().
+    #
+    # Parametry use_sample_weights i use_misdir_penalty sa niezalezne,
+    # co umozliwia porownanie skutecznosci kazdego mechanizmu osobno:
+    #
+    #   CUSTOM_OBJ_SAMPLE_WEIGHTS=True,  CUSTOM_OBJ_MISDIR_PENALTY=False
+    #       -> samo wazenie probek przez |y_raw|
+    #
+    #   CUSTOM_OBJ_SAMPLE_WEIGHTS=False, CUSTOM_OBJ_MISDIR_PENALTY=True
+    #       -> sama kara za mis-direction
+    #
+    #   CUSTOM_OBJ_SAMPLE_WEIGHTS=True,  CUSTOM_OBJ_MISDIR_PENALTY=True
+    #       -> laczone (domyslne gdy USE_CUSTOM_OBJECTIVE=True)
+    #
+    # Parametry wag i misdir w custom obj sa wspoldzielone z podejsciem A
+    # (SAMPLE_WEIGHT_* i MISDIR_*) -- nie duplikujemy konfiguracji.
+    # Jedyny dodatkowy parametr to CUSTOM_OBJ_HUBER_DELTA (delta pseudo-Hubera
+    # uzywana w custom obj zamiast XGBoost-natywnego huber_slope).
+    USE_CUSTOM_OBJECTIVE       = True        # False = standard obj string (etap 1)
+    CUSTOM_OBJ_SAMPLE_WEIGHTS  = True         # skladnik wag w custom obj
+    CUSTOM_OBJ_MISDIR_PENALTY  = True         # skladnik misdir w custom obj
+    CUSTOM_OBJ_HUBER_DELTA     = 'auto'        # 'auto' = oblicz z danych gdy brak scalera
+                                              # float  = konkretna wartosc (1.0 ok dla skalowanych)
+                                              # (oddzielna od HUBER_SLOPE ktory
+                                              #  dotyczy natywnego XGBoost obj)
+
+    # -------------------------------------------------------------------------
+    # DEAD-ZONE OBJECTIVE — alternatywna funkcja celu
+    # -------------------------------------------------------------------------
+    # Tłumi gradienty dla próbek poniżej progu sygnałowego.
+    # Model uczy się tych wartości, ale z niskim priorytetem.
+    # Powyżej progu: pełny gradient + opcjonalne kary misdir.
+    #
+    # CUSTOM_OBJ_TYPE:
+    #   'weighted_huber' — obecna implementacja (Pseudo-Huber + wagi + misdir)
+    #   'dead_zone'      — Pseudo-Huber z dead-zone poniżej progu
+    CUSTOM_OBJ_TYPE              = 'weighted_huber'   # 'weighted_huber' | 'dead_zone'
+    DEAD_ZONE_WEIGHT             = 0.1                # mnożnik gradientu |y| < threshold
+
+
+    # -------------------------------------------------------------------------
     # OBJECTIVE FUNCTION
+    # -------------------------------------------------------------------------
     # Compatible options (log-return targets, values can be negative):
     #   'reg:pseudohubererror'          - Pseudo-Huber (default, robust to outliers)
     #   'reg:pseudohubererror_large'    - Pseudo-Huber with large delta (huber_slope=10, closer to MSE)
@@ -56,56 +191,40 @@ class XGBConfig:
     # Larger value = more MSE-like behaviour, better at capturing extremes
     HUBER_SLOPE = 10.0
 
-    @classmethod
-    def get_xgb_objective(cls):
-        """
-        Returns (objective_str, extra_params_dict).
-        'reg:pseudohubererror_large' is a virtual name handled here —
-        XGBoost receives 'reg:pseudohubererror' + huber_slope kwarg.
-        """
-        if cls.OBJECTIVE == 'reg:pseudohubererror_large':
-            return 'reg:pseudohubererror', {'huber_slope': cls.HUBER_SLOPE}
-        return cls.OBJECTIVE, {}
 
-    # XGBOOST HYPERPARAMETERS
-    DEFAULT_PARAMS = {
-        'n_estimators': 2222,
-        'learning_rate': 0.05,
-        'max_depth': 6,
-        'subsample': 0.8,
-        'colsample_bytree': 0.8,
-        'colsample_bylevel': 0.8,
-        'min_child_weight': 3,
-        'gamma': 0.0,
-        'reg_alpha': 0.0,
-        'reg_lambda': 1,
-        'random_state': 42,
-        'n_jobs': -1,
-        'tree_method': 'hist',
-    }
+    # -------------------------------------------------------------------------
+    # ZABEZPIECZENIE PRZED DUBLOWANIEM PODEJSC
+    # -------------------------------------------------------------------------
+    # Blokuje jednoczesne uzycie podejscia A i B dla tego samego mechanizmu.
+    # Ustaw ALLOW_COMBINED_APPROACHES=True aby pominac zabezpieczenie
+    # (przydatne do eksperymentowania i porownan).
+    ALLOW_COMBINED_APPROACHES  = False
 
-    # TRAINING
-    EARLY_STOPPING_ROUNDS = 20000
-    VERBOSE_EVAL = 60
-    # USE_BEST_ITERATION:
-    #   False (default) - save model from last iteration (all n_estimators trees)
-    #   True            - save model from best_iteration (early stopping checkpoint)
-    USE_BEST_ITERATION = False
 
+    # =========================================================================
+    # FIXED / SYSTEM SETTINGS (RARELY MODIFIED)
+    # =========================================================================
+
+    # -------------------------------------------------------------------------
     # PATHS
+    # -------------------------------------------------------------------------
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     PREPARED_DATA_DIR = os.path.join(BASE_DIR, 'prepared_data')
     RAW_DATA_DIR = os.path.join(BASE_DIR, 'data')
     MODELS_DIR = os.path.join(BASE_DIR, 'xgb_models')
     LOGS_DIR = os.path.join(BASE_DIR, 'xgb_data')
 
+    # -------------------------------------------------------------------------
     # ID PREFIXES
+    # -------------------------------------------------------------------------
     DATA_ID_PREFIX = 'XB'
     MODEL_ID_PREFIX = 'X'
     OPTUNA_ID_PREFIX = 'XO'
     TEST_ID_PREFIX = 'XT'
 
+    # -------------------------------------------------------------------------
     # FEATURE SETS
+    # -------------------------------------------------------------------------
     # Aligned with universal feature_engineering.py get_feature_sets().
     # 'full': None means "use all features returned by get_feature_columns()"
     # — the actual list is resolved at runtime by data_utils.load_prepared_data.
@@ -135,10 +254,92 @@ class XGBConfig:
         'volatility_focused': None,  # maps → xgb_volatility at load time
     }
 
+    # -------------------------------------------------------------------------
     # FLATTENING METHODS
-    FLATTENING_METHODS = ['lag', 'agg', 'hybrid']
+    # -------------------------------------------------------------------------
+    FLATTENING_METHODS = ['lag', 'agg', 'hybrid', 'signal', 'none']
     HYBRID_LAG_POINTS = [1, 2, 3, 5, 10, 24]
     HYBRID_WINDOWS = [6, 12, 24, 48]
+    # signal flattening windows -- short vs long for trend, and momentum windows
+    SIGNAL_SHORT_WINDOWS = [3, 6, 12]
+    SIGNAL_LONG_WINDOWS  = [24, 48]
+    SIGNAL_DIFF_LAGS     = [1, 3, 5, 12]
+
+
+    # -------------------------------------------------------------------------
+    # XGBOOST HYPERPARAMETERS
+    # -------------------------------------------------------------------------
+    DEFAULT_PARAMS = {
+        'n_estimators': 3222,
+        'learning_rate': 0.05,
+        'max_depth': 6,
+        'subsample': 0.8,
+        'colsample_bytree': 0.8,
+        'colsample_bylevel': 0.8,
+        'min_child_weight': 3,
+        'gamma': 0.0,
+        'reg_alpha': 0.0,
+        'reg_lambda': 1,
+        'random_state': 42,
+        'n_jobs': -1,
+        'tree_method': 'hist',
+    }
+
+
+    # =========================================================================
+    # CLASS METHODS
+    # =========================================================================
+
+    @classmethod
+    def get_xgb_objective(cls):
+        """
+        Returns (objective_str, extra_params_dict).
+        'reg:pseudohubererror_large' is a virtual name handled here —
+        XGBoost receives 'reg:pseudohubererror' + huber_slope kwarg.
+        """
+        if cls.OBJECTIVE == 'reg:pseudohubererror_large':
+            return 'reg:pseudohubererror', {'huber_slope': cls.HUBER_SLOPE}
+        return cls.OBJECTIVE, {}
+
+    @classmethod
+    def validate_approach_config(cls):
+        """
+        Validates that native (A) and custom objective (B) approaches
+        are not active simultaneously for the same mechanism.
+
+        Raises ValueError if a conflict is detected and
+        ALLOW_COMBINED_APPROACHES is False.
+        """
+        if cls.ALLOW_COMBINED_APPROACHES:
+            return  # eksperyment -- brak blokady
+
+        conflicts = []
+
+        if (cls.SAMPLE_WEIGHT_MODE is not None
+                and cls.USE_CUSTOM_OBJECTIVE
+                and cls.CUSTOM_OBJ_SAMPLE_WEIGHTS):
+            conflicts.append(
+                "Sample weights: SAMPLE_WEIGHT_MODE aktywny (podejscie A) "
+                "oraz USE_CUSTOM_OBJECTIVE+CUSTOM_OBJ_SAMPLE_WEIGHTS aktywne "
+                "(podejscie B) jednoczesnie."
+            )
+
+        if (cls.REWEIGHT_MISDIR
+                and cls.USE_CUSTOM_OBJECTIVE
+                and cls.CUSTOM_OBJ_MISDIR_PENALTY):
+            conflicts.append(
+                "Misdir penalty: REWEIGHT_MISDIR aktywny (podejscie A) "
+                "oraz USE_CUSTOM_OBJECTIVE+CUSTOM_OBJ_MISDIR_PENALTY aktywne "
+                "(podejscie B) jednoczesnie."
+            )
+
+        if conflicts:
+            raise ValueError(
+                "Konflikt konfiguracji -- aktywne oba podejscia jednoczesnie:\n"
+                + "\n".join(f"  - {c}" for c in conflicts)
+                + "\nUstaw ALLOW_COMBINED_APPROACHES=True "
+                  "aby pominac to zabezpieczenie."
+            )
 
     @staticmethod
     def load_optuna_params(params_path_or_dir, params_name='best'):

@@ -14,16 +14,19 @@ def pseudo_huber_loss(y_true, y_pred, delta=1.0):
     return float(np.mean(delta ** 2 * (np.sqrt(1.0 + (residuals / delta) ** 2) - 1.0)))
 
 
-def calculate_metrics(y_true_log, y_pred_log):
+def calculate_metrics(y_true_log, y_pred_log, threshold=None):
     """
-    Calculate metrics on log returns
+    Calculate metrics on log returns.
 
     Args:
         y_true_log: True log returns
         y_pred_log: Predicted log returns
+        threshold:  Optional signal threshold. When > 0, computes additional
+                    thresholded metrics (t_ prefix) on samples where
+                    |y_true| >= threshold.
 
     Returns:
-        dict: Metrics
+        dict: Metrics (standard + optional thresholded)
     """
     metrics = {
         'mae':  float(mean_absolute_error(y_true_log, y_pred_log)),
@@ -50,6 +53,26 @@ def calculate_metrics(y_true_log, y_pred_log):
     pred_dir   = np.sign(y_pred_log)
     metrics['dir_acc'] = float(np.mean(actual_dir == pred_dir) * 100)
 
+    # Thresholded metrics (computed on samples where |y_true| >= threshold)
+    if threshold is not None and threshold > 0:
+        mask = np.abs(y_true_log) >= threshold
+        n_above = int(np.sum(mask))
+        metrics['t_n_samples']   = n_above
+        metrics['t_pct_samples'] = float(n_above / max(len(y_true_log), 1) * 100)
+        metrics['t_threshold']   = float(threshold)
+
+        if n_above >= 10:
+            yt = y_true_log[mask]
+            yp = y_pred_log[mask]
+            metrics['t_mae']  = float(mean_absolute_error(yt, yp))
+            metrics['t_rmse'] = float(np.sqrt(mean_squared_error(yt, yp)))
+            metrics['t_r2']   = float(r2_score(yt, yp))
+            metrics['t_pseudo_huber']       = pseudo_huber_loss(yt, yp, delta=1.0)
+            metrics['t_pseudo_huber_large'] = pseudo_huber_loss(yt, yp, delta=10.0)
+            t_actual_dir = np.sign(yt)
+            t_pred_dir   = np.sign(yp)
+            metrics['t_dir_acc'] = float(np.mean(t_actual_dir == t_pred_dir) * 100)
+
     return metrics
 
 
@@ -75,6 +98,19 @@ def print_metrics_summary(metrics):
         print("\nDIRECTIONAL:")
         print(f"  Accuracy: {metrics['dir_acc']:.2f}%")
 
+    if 't_mae' in metrics:
+        print(f"\nTHRESHOLDED METRICS (|y| ≥ {metrics['t_threshold']:.6f}, "
+              f"n={metrics['t_n_samples']} / {metrics['t_pct_samples']:.1f}%):")
+        print(f"  MAE:                   {metrics['t_mae']:.6f}")
+        print(f"  RMSE:                  {metrics['t_rmse']:.6f}")
+        print(f"  R²:                    {metrics['t_r2']:.4f}")
+        print(f"  Pseudo-Huber (δ=1):    {metrics['t_pseudo_huber']:.6f}")
+        print(f"  Pseudo-Huber (δ=10):   {metrics['t_pseudo_huber_large']:.6f}")
+        print(f"  Dir Acc:               {metrics['t_dir_acc']:.2f}%")
+    elif 't_n_samples' in metrics:
+        print(f"\nTHRESHOLDED: insufficient samples above threshold "
+              f"(n={metrics['t_n_samples']}, need ≥ 10)")
+
 
 def interpret_metrics(metrics):
     """Provide interpretation of metrics quality"""
@@ -98,3 +134,16 @@ def interpret_metrics(metrics):
             print(f"  ○ Slight edge: {dir_acc:.1f}%")
         else:
             print(f"  ✗ No edge: {dir_acc:.1f}%")
+
+    # Thresholded interpretation
+    t_dir_acc = metrics.get('t_dir_acc')
+    if t_dir_acc is not None:
+        label = f"(|y| ≥ {metrics['t_threshold']:.4f})"
+        if t_dir_acc > 60:
+            print(f"  ✓ Strong thresholded direction {label}: {t_dir_acc:.1f}%")
+        elif t_dir_acc > 55:
+            print(f"  ✓ Good thresholded direction {label}: {t_dir_acc:.1f}%")
+        elif t_dir_acc > 50:
+            print(f"  ○ Slight thresholded edge {label}: {t_dir_acc:.1f}%")
+        else:
+            print(f"  ✗ No thresholded edge {label}: {t_dir_acc:.1f}%")
