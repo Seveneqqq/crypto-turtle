@@ -80,7 +80,7 @@ def get_next_test_id(base_dir='xgb_data'):
     return get_next_id(base_dir, 'XT', '_test_results_')
 
 
-def get_next_data_id(base_dir='xgb_prepared_data'):
+def get_next_data_id(base_dir='prepared_data'):
     """
     Get next available prepared data ID
 

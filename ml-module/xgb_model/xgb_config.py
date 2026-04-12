@@ -94,7 +94,7 @@ class XGBConfig:
 
     # PATHS
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    PREPARED_DATA_DIR = os.path.join(BASE_DIR, 'xgb_prepared_data')
+    PREPARED_DATA_DIR = os.path.join(BASE_DIR, 'prepared_data')
     RAW_DATA_DIR = os.path.join(BASE_DIR, 'data')
     MODELS_DIR = os.path.join(BASE_DIR, 'xgb_models')
     LOGS_DIR = os.path.join(BASE_DIR, 'xgb_data')

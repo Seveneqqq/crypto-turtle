@@ -58,13 +58,13 @@ from sklearn.preprocessing import StandardScaler, RobustScaler
 warnings.filterwarnings('ignore')
 
 # ---------------------------------------------------------------------------
-# Feature engineering bridge (resolves root feature_engineering.py)
+# Feature engineering (resolves root feature_engineering.py)
 # ---------------------------------------------------------------------------
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 if _PKG_DIR not in sys.path:
     sys.path.insert(0, _PKG_DIR)
 
-from feature_engineering import prepare_features, select_features  # noqa: E402
+from feature_engineering import prepare_features  # noqa: E402
 
 
 # ===========================================================================
@@ -544,6 +544,11 @@ class XGBModelPackage:
         """
         n = self._feature_scaler.n_features_in_
 
+        # 0. Directly from model_config.json — model is self-contained
+        cols = self._config.get('scaler_feature_cols')
+        if cols and len(cols) == n:
+            return cols
+
         # 1. Try prepared data metadata.json
         train_path = self._config.get('train_path', '')
         if train_path:
@@ -554,7 +559,6 @@ class XGBModelPackage:
                 os.path.join(self._model_dir, '..', '..', train_path),
                 os.path.join(self._model_dir, '..', train_path),
                 os.path.join(os.path.dirname(self._model_dir), train_path),
-                os.path.join(self._model_dir),
             ]
             for base in candidates:
                 meta_path = os.path.normpath(os.path.join(base, 'metadata.json'))
@@ -572,7 +576,7 @@ class XGBModelPackage:
         model_feats = self._config.get('features', [])
         if len(model_feats) == n:
             return model_feats
-        print("[XGBModelPackage][ERROR] w modelu jest inna liczba features niż w skalerze oraz nie znaleziono zapasowego pliku metadata.json")
+
         # 3. Cannot determine
         return None
 
