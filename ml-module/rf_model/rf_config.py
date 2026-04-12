@@ -13,8 +13,8 @@ class RFConfig:
     # -------------------------------------------------------------------------
     DEFAULT_LOOKBACK        = 48
     DEFAULT_HORIZON         = 12
-    DEFAULT_FLATTENING      = 'hybrid'
-    DEFAULT_FEATURE_SET     = 'minimal'
+    DEFAULT_FLATTENING      = 'none'
+    DEFAULT_FEATURE_SET     = 'technical'
 
     # -------------------------------------------------------------------------
     # TARGET SCALING
@@ -195,13 +195,28 @@ class RFConfig:
     # -------------------------------------------------------------------------
     # FLATTENING METHODS
     # -------------------------------------------------------------------------
-    FLATTENING_METHODS  = ['lag', 'agg', 'hybrid', 'signal']
+    FLATTENING_METHODS  = ['lag', 'agg', 'hybrid', 'signal', 'none']
     HYBRID_LAG_POINTS   = [1, 2, 3, 5, 10, 24]
     HYBRID_WINDOWS      = [6, 12, 24, 48]
     # signal flattening windows — short vs long for trend, and momentum windows
     SIGNAL_SHORT_WINDOWS = [3, 6, 12]
     SIGNAL_LONG_WINDOWS  = [24, 48]
     SIGNAL_DIFF_LAGS     = [1, 3, 5, 12]
+
+    # -------------------------------------------------------------------------
+    # THRESHOLD METRICS
+    # Metrics computed only for samples where |y_pred| >= threshold.
+    # Mirrors the signal generation logic in rf_model_package (SignalConfig):
+    # predictions below threshold are treated as 'no signal' and excluded
+    # from directional accuracy and other threshold metrics.
+    #
+    # DIR_ACC_THRESHOLD:
+    #   None  -- disabled, show standard dir_acc only (current behaviour)
+    #   float -- absolute log-return threshold, same unit as model output.
+    #            Use the same value as SignalConfig.threshold in rf_model_package.
+    #            Example: 0.001 = 0.1% minimum log-return to count as a signal.
+    # -------------------------------------------------------------------------
+    DIR_ACC_THRESHOLD = 0.001    # None | float -- set to None to disable
 
     # -------------------------------------------------------------------------
     # OBJECTIVE VALIDATION

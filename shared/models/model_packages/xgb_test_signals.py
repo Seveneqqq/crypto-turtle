@@ -35,7 +35,7 @@ sys.path.insert(0, _PROJECT_ROOT)
 # Paths
 # ---------------------------------------------------------------------------
 PREPARED_DIR = os.path.join(_XGB_MODEL, 'prepared_data', 'E104_prep_eth_universal_full_1m')
-MODEL_DIR    = os.path.join(_XGB_MODEL, 'xgb_models', 'X097_eth_xgb_model_E104_1703')
+MODEL_DIR    = os.path.join(_XGB_MODEL, 'xgb_models', 'X160_eth_xgb_model_E104_1204')
 
 TEST_CSV     = os.path.join(PREPARED_DIR, 'test.csv')
 SYM_CSV      = os.path.join(PREPARED_DIR, 'sym.csv')

@@ -13,7 +13,8 @@ import joblib
 from rf_config import RFConfig
 from common.data_utils import load_test_data_only
 from common.id_utils import get_next_test_id, extract_model_id, extract_data_id
-from common.metrics import calculate_metrics, print_metrics_summary, interpret_metrics
+from common.metrics import (calculate_metrics, calculate_threshold_metrics,
+                             print_metrics_summary, interpret_metrics)
 from common.visualization import plot_test_results, plot_feature_importance
 
 warnings.filterwarnings('ignore')
@@ -315,8 +316,18 @@ def test_model(model_dir=None, test_path=None):
     print("=" * 80)
 
     metrics = calculate_metrics(y_test, y_pred_log)
-    print_metrics_summary(metrics)
-    interpret_metrics(metrics)
+
+    # Threshold metrics -- computed on samples where |y_pred| >= threshold
+    # (mirrors signal generation logic in rf_model_package)
+    dir_acc_threshold = config.get('dir_acc_threshold', RFConfig.DIR_ACC_THRESHOLD)
+    thresh_metrics = None
+    if dir_acc_threshold is not None:
+        thresh_metrics = calculate_threshold_metrics(
+            y_test, y_pred_log, threshold=dir_acc_threshold
+        )
+
+    print_metrics_summary(metrics, thresh_metrics)
+    interpret_metrics(metrics, thresh_metrics)
 
     # ------------------------------------------------------------------
     # Visualizations
@@ -338,19 +349,26 @@ def test_model(model_dir=None, test_path=None):
     print("SAVING RESULTS")
     print("=" * 80)
 
+    above_thresh = (np.abs(y_pred_log) >= dir_acc_threshold
+                    if dir_acc_threshold is not None
+                    else np.ones(len(y_pred_log), dtype=bool))
     pd.DataFrame({
         'actual_log':    y_test,
         'predicted_log': y_pred_log,
         'error':         y_pred_log - y_test,
+        'above_thresh':  above_thresh.astype(int),
     }).to_csv(os.path.join(output_dir, 'results.csv'), index=False)
     print("  [OK] results.csv")
 
+    metrics_out = {**metrics}
+    if thresh_metrics is not None:
+        metrics_out['threshold_metrics'] = thresh_metrics
     with open(os.path.join(output_dir, 'metrics.json'), 'w') as f:
-        json.dump(metrics, f, indent=2)
+        json.dump(metrics_out, f, indent=2)
     print("  [OK] metrics.json")
 
     _save_summary(output_dir, test_id, model_id, data_id, config,
-                  y_test, metrics, oob)
+                  y_test, metrics, oob, thresh_metrics)
     print("  [OK] summary.txt")
 
     # ------------------------------------------------------------------
@@ -367,6 +385,10 @@ def test_model(model_dir=None, test_path=None):
     print(f"PH(d=1):  {metrics['pseudo_huber']:.6f}")
     print(f"PH(d=10): {metrics['pseudo_huber_large']:.6f}")
     print(f"Dir Acc:  {metrics['dir_acc']:.2f}%")
+    if thresh_metrics is not None and thresh_metrics.get('dir_acc_thresh') is not None:
+        print(f"Dir Acc@T:{thresh_metrics['dir_acc_thresh']:.2f}%  "
+              f"(n={thresh_metrics['n_above']}, {thresh_metrics['pct_above']:.1f}%, "
+              f"T={thresh_metrics['threshold']:.4f})")
     print(f"Output:   {output_dir}")
     print("=" * 80)
 
@@ -378,7 +400,7 @@ def test_model(model_dir=None, test_path=None):
 # =============================================================================
 
 def _save_summary(output_dir, test_id, model_id, data_id, config,
-                  y_test, metrics, oob):
+                  y_test, metrics, oob, thresh_metrics=None):
     with open(os.path.join(output_dir, 'summary.txt'), 'w', encoding='utf-8') as f:
         f.write("=" * 70 + "\n")
         f.write("RANDOM FOREST MODEL TEST SUMMARY\n")
@@ -393,13 +415,29 @@ def _save_summary(output_dir, test_id, model_id, data_id, config,
         f.write(f"Criterion:  {config['params'].get('criterion', 'N/A')}\n")
         if oob is not None:
             f.write(f"OOB R2:     {oob:.4f}  (training proxy)\n")
-        f.write("\nLOG RETURN METRICS:\n")
+        f.write("\nLOG RETURN METRICS (ALL SAMPLES):\n")
         f.write(f"  MAE:                   {metrics['mae']:.6f}\n")
         f.write(f"  RMSE:                  {metrics['rmse']:.6f}\n")
         f.write(f"  R2:                    {metrics['r2']:.4f}\n")
         f.write(f"  Pseudo-Huber (d=1):    {metrics['pseudo_huber']:.6f}\n")
         f.write(f"  Pseudo-Huber (d=10):   {metrics['pseudo_huber_large']:.6f}\n")
         f.write(f"  Dir Acc:               {metrics['dir_acc']:.2f}%\n")
+        if thresh_metrics is not None:
+            T   = thresh_metrics['threshold']
+            n   = thresh_metrics['n_above']
+            pct = thresh_metrics['pct_above']
+            f.write(f"\nTHRESHOLD METRICS (|y_pred| >= {T:.4f}):\n")
+            f.write(f"  Samples above threshold: {n}  ({pct:.1f}% of all)\n")
+            if n > 0:
+                f.write(f"  MAE:                   {thresh_metrics['mae_thresh']:.6f}\n")
+                f.write(f"  RMSE:                  {thresh_metrics['rmse_thresh']:.6f}\n")
+                f.write(f"  R2:                    {thresh_metrics['r2_thresh']:.4f}\n")
+                f.write(f"  Pseudo-Huber (d=1):    {thresh_metrics['pseudo_huber_thresh']:.6f}\n")
+                f.write(f"  Pseudo-Huber (d=10):   {thresh_metrics['pseudo_huber_large_thresh']:.6f}\n")
+                f.write(f"  Dir Acc:               {thresh_metrics['dir_acc_thresh']:.2f}%\n")
+                f.write(f"  Bias BUY:              {thresh_metrics['bias_buy']:.1f}%\n")
+            else:
+                f.write("  (no predictions above threshold)\n")
 
 
 # =============================================================================

@@ -259,6 +259,26 @@ def create_signal_features(df, features, lookback, short_windows=None,
     return flat_df, feature_names
 
 
+def create_none_features(df, features):
+    """
+    No temporal flattening -- pass only the current (t-1) feature values.
+
+    Shifts all features by 1 to prevent look-ahead leakage, identical to
+    the other methods.  lookback is not used; the model sees a single
+    time-step snapshot instead of a temporal window.
+
+    Useful as a baseline to measure how much the temporal context
+    (lag/agg/hybrid/signal) contributes relative to a no-history model.
+
+    Returns flat_df with the same column names as the input features,
+    and n_flat_features == n_features.
+    """
+    flat_df = pd.DataFrame(
+        {feat: df[feat].shift(1) for feat in features}
+    )
+    return flat_df, list(features)
+
+
 def flatten_features(df, features, lookback, method='hybrid', **kwargs):
     """Flatten sequential features into tabular format for Random Forest"""
     if method == 'lag':
@@ -274,6 +294,8 @@ def flatten_features(df, features, lookback, method='hybrid', **kwargs):
                                       kwargs.get('short_windows'),
                                       kwargs.get('long_windows'),
                                       kwargs.get('diff_lags'))
+    elif method == 'none':
+        return create_none_features(df, features)
     else:
         raise ValueError(f"Unknown flattening method: {method}")
 
@@ -379,7 +401,9 @@ def load_prepared_data(data_path, flattening_method=None, feature_set=None,
         train_df, features, lookback, method=flattening_method
     )
     y_all  = create_log_return_target(train_df, lookback, horizon)
-    X_flat = X_flat.iloc[lookback:].reset_index(drop=True).dropna()
+    # 'none' only shifts by 1 -- drop 1 row; all other methods drop lookback rows
+    drop_rows = 1 if flattening_method == 'none' else lookback
+    X_flat = X_flat.iloc[drop_rows:].reset_index(drop=True).dropna()
 
     n      = min(len(X_flat), len(y_all))
     X_all  = X_flat.iloc[:n].values
@@ -465,7 +489,8 @@ def load_test_data_only(data_path, flattening_method=None, feature_set=None,
         test_df, features, lookback, method=flattening_method
     )
     y_test       = create_log_return_target(test_df, lookback, horizon)
-    X_test_flat  = X_test_flat.iloc[lookback:].reset_index(drop=True).dropna()
+    drop_rows    = 1 if flattening_method == 'none' else lookback
+    X_test_flat  = X_test_flat.iloc[drop_rows:].reset_index(drop=True).dropna()
     min_test     = min(len(X_test_flat), len(y_test))
     X_test       = X_test_flat.iloc[:min_test].values
     y_test       = y_test[:min_test]
@@ -542,7 +567,8 @@ def prepare_raw_data_on_the_fly(df, features=None, lookback=48, horizon=12,
         df, selected, lookback, method=flattening_method
     )
     y_all      = create_log_return_target(df, lookback, horizon)
-    X_flat_raw = X_flat_raw.iloc[lookback:].reset_index(drop=True).dropna()
+    drop_rows  = 1 if flattening_method == 'none' else lookback
+    X_flat_raw = X_flat_raw.iloc[drop_rows:].reset_index(drop=True).dropna()
 
     n      = min(len(X_flat_raw), len(y_all))
     X_all  = X_flat_raw.iloc[:n]

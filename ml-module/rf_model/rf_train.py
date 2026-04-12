@@ -127,9 +127,11 @@ def train(
         if v is not None:
             params[k] = v
 
-    # oob_score requires bootstrap=True
+    # oob_score: honour RFConfig.USE_OOB_SCORE flag; requires bootstrap=True
     if not params.get('bootstrap', True):
         params['oob_score'] = False
+    else:
+        params['oob_score'] = RFConfig.USE_OOB_SCORE
 
     params['random_state'] = seed
 
@@ -312,7 +314,7 @@ if __name__ == "__main__":
     parser.add_argument('--lookback', type=int, default=None)
     parser.add_argument('--horizon', type=int, default=None)
     parser.add_argument('--flattening_method', type=str, default=None,
-                        choices=['lag', 'agg', 'hybrid'])
+                        choices=['lag', 'agg', 'hybrid', 'signal', 'none'])
     parser.add_argument('--feature_set', type=str, default=None)
     parser.add_argument('--n_estimators', type=int, default=None)
     parser.add_argument('--max_depth', type=int, default=None)

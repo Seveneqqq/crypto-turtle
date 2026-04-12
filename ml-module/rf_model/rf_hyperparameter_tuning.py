@@ -17,6 +17,7 @@ import joblib
 from rf_config import RFConfig
 from common.data_utils import load_data
 from common.id_utils import get_next_optuna_id, extract_data_id_from_path
+from common.visualization import plot_optuna_results
 
 warnings.filterwarnings('ignore')
 
@@ -156,7 +157,7 @@ def suggest_hyperparameters(trial):
         params['flattening_method'] = TuningConfig.FIXED_FLATTENING_METHOD
     else:
         params['flattening_method'] = trial.suggest_categorical(
-            'flattening_method', ['lag', 'agg', 'hybrid']
+            'flattening_method', ['lag', 'agg', 'hybrid', 'signal', 'none']
         )
 
     return params
@@ -424,7 +425,6 @@ def run_tuning(n_trials=None, timeout=None, study_name=None):
     # ------------------------------------------------------------------
     # Visualizations
     # ------------------------------------------------------------------
-    from common.visualization import plot_optuna_results
     plot_optuna_results(study, output_dir)
 
     # ------------------------------------------------------------------
@@ -490,7 +490,7 @@ if __name__ == "__main__":
     parser.add_argument('--lookback',           type=int, default=None)
     parser.add_argument('--horizon',            type=int, default=None)
     parser.add_argument('--flattening_method',  type=str, default=None,
-                        choices=['lag', 'agg', 'hybrid'])
+                        choices=['lag', 'agg', 'hybrid', 'signal', 'none'])
     parser.add_argument('--scale_target',       action='store_true', default=None)
     parser.add_argument('--no_scale_target',    dest='scale_target',
                         action='store_false')

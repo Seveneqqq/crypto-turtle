@@ -6,6 +6,7 @@ XGBoost gain/weight/cover -- no positional key remapping needed.
 """
 import os
 import numpy as np
+import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -141,11 +142,17 @@ def plot_feature_importance(model, feature_names, output_dir, top_n=30):
     Plot Random Forest feature importance (MDI -- Mean Decrease in Impurity).
     model.feature_importances_ maps directly to features positionally --
     no key remapping needed (unlike XGBoost Booster).
+
+    top_n is capped at the actual number of features to avoid shape
+    mismatches when the model has fewer features than top_n (e.g.
+    flattening='none' with a small feature set).
     """
     importance = model.feature_importances_
+    n_actual   = len(importance)
+    top_n      = min(top_n, n_actual)          # cap to available features
     indices    = np.argsort(importance)[::-1][:top_n]
 
-    fig, ax = plt.subplots(figsize=(10, max(8, top_n * 0.3)))
+    fig, ax = plt.subplots(figsize=(10, max(4, top_n * 0.3)))
     y_pos = np.arange(top_n)
     ax.barh(y_pos, importance[indices][::-1], alpha=0.7, color='steelblue')
     ax.set_yticks(y_pos)

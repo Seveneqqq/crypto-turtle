@@ -140,7 +140,8 @@ def apply_misdir_penalty(y_raw, y_pred_raw, weights, penalty, min_quantile):
     penalty_mask = large_move & wrong_dir
 
     weights[penalty_mask] *= penalty
-    return weights.astype(np.float32)
+    n_penalised = int(np.sum(penalty_mask))
+    return weights.astype(np.float32), n_penalised
 
 
 def train_model(X_train, y_train, X_val, y_val,
@@ -213,16 +214,12 @@ def train_model(X_train, y_train, X_val, y_val,
         y_raw_1   = _inverse_if_scaled(y_train,          target_scaler)
         y_pred_1  = _inverse_if_scaled(y_pred_scaled_1,  target_scaler)
 
-        updated_weights = apply_misdir_penalty(
+        updated_weights, n_penalised = apply_misdir_penalty(
             y_raw_1, y_pred_1,
             sample_weight,
             penalty=misdir_penalty,
             min_quantile=misdir_min_quantile,
         )
-
-        n_penalised = int(np.sum(updated_weights >
-                                 (sample_weight if sample_weight is not None
-                                  else np.ones(len(y_train)))))
         logger.info(
             f"Misdir penalty applied: {n_penalised} samples penalised  "
             f"new weights min={updated_weights.min():.4f}  "
