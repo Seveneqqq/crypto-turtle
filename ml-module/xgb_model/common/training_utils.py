@@ -10,6 +10,8 @@ import xgboost as xgb
 import joblib
 
 from common.metrics import calculate_metrics
+from common.sample_weighting import compute_sample_weights, apply_misdir_penalty, make_custom_objective
+from common.log_utils import log_train_model_setup, log_metrics_comparison
 
 
 def set_seed(seed=42):
@@ -38,47 +40,171 @@ def _inverse_if_scaled(y, target_scaler):
     return y
 
 
-def _compute_metrics(y_true_scaled, y_pred_scaled, target_scaler):
+def _compute_metrics(y_true_scaled, y_pred_scaled, target_scaler, threshold=None):
     """Compute metrics in original log-return space"""
     y_true = _inverse_if_scaled(y_true_scaled, target_scaler)
     y_pred = _inverse_if_scaled(y_pred_scaled, target_scaler)
-    return calculate_metrics(y_true, y_pred)
+    return calculate_metrics(y_true, y_pred, threshold=threshold)
 
 
-def train_model(X_train, y_train, X_val, y_val,
-                params, early_stopping_rounds,
-                logger, verbose=True, target_scaler=None,
-                use_best_iteration=False):
+def _run_xgb_train(params, dtrain, dval, early_stopping_rounds, verbose,
+                   xgb_model=None, custom_objective=None):
     """
-    Train XGBoost with holdout validation.
-    X_train/X_val are separate — no leakage into early stopping.
-    y_train/y_val are already scaled if target_scaler is provided.
+    Internal helper: single xgb.train() call.
 
-    use_best_iteration=False (default): predict and save from last iteration
-    use_best_iteration=True:            predict and save from best_iteration checkpoint
+    xgb_model:        existing Booster to continue from ('boost' variant).
+    custom_objective: callable (y_pred, dtrain) -> (grad, hess) or None.
+                      When provided, params['objective'] is stripped --
+                      XGBoost ignores it when obj= is supplied.
 
-    Early stopping always monitors validation loss (last entry in evals list).
-
-    Returns: (model, best_iteration, best_score, train_metrics, val_metrics)
+    Returns: (model, evals_result)
+        evals_result: dict with keys 'train' and 'validation', each mapping
+                      metric name → list of per-round values.
     """
-    if target_scaler is not None:
-        logger.info(f"Target scaling: ENABLED ({target_scaler.method})")
-
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dval   = xgb.DMatrix(X_val,   label=y_val)
-
-    # Early stopping always monitors the LAST entry — keep val last
     evals_list = [(dtrain, 'train'), (dval, 'validation')]
+    evals_result = {}
+
+    if custom_objective is not None:
+        # Strip 'objective' from params -- XGBoost ignores it when obj= given
+        params_for_train = {k: v for k, v in params.items() if k != 'objective'}
+        model = xgb.train(
+            params_for_train, dtrain,
+            num_boost_round=params.get('n_estimators', 1000),
+            evals=evals_list,
+            evals_result=evals_result,
+            obj=custom_objective,
+            early_stopping_rounds=early_stopping_rounds,
+            verbose_eval=verbose_eval_interval(verbose),
+            xgb_model=xgb_model,
+        )
+        return model, evals_result
 
     model = xgb.train(
         params, dtrain,
         num_boost_round=params.get('n_estimators', 1000),
         evals=evals_list,
+        evals_result=evals_result,
         early_stopping_rounds=early_stopping_rounds,
         verbose_eval=verbose_eval_interval(verbose),
+        xgb_model=xgb_model,
+    )
+    return model, evals_result
+
+
+def train_model(X_train, y_train, X_val, y_val,
+                params, early_stopping_rounds,
+                logger, verbose=True, target_scaler=None,
+                use_best_iteration=False,
+                sample_weight=None,
+                reweight_misdir=False,
+                misdir_approach_a_variant='retrain',
+                misdir_penalty=2.0,
+                misdir_min_quantile=0.7,
+                custom_objective=None,
+                signal_threshold=None):
+    """
+    Train XGBoost with holdout validation.
+    X_train/X_val are separate -- no leakage into early stopping.
+    y_train/y_val are already scaled if target_scaler is provided.
+
+    use_best_iteration=False (default): predict and save from last iteration
+    use_best_iteration=True:            predict and save from best_iteration
+
+    Early stopping always monitors validation loss (last entry in evals list).
+
+    Podejscie A -- sample weights:
+        sample_weight: np.ndarray | None
+            Per-sample weights passed to xgb.DMatrix(weight=...).
+            XGBoost scales each sample's hessian contribution.
+            Computed externally via compute_sample_weights() from raw y_train.
+
+    Podejscie A -- misdir penalty:
+        reweight_misdir: bool
+            If True, performs a second training run after identifying
+            mis-directed large-move samples from the first model.
+        misdir_approach_a_variant: 'retrain' | 'boost'
+            'retrain' -- full restart from scratch with updated weights
+            'boost'   -- continue boosting from first model checkpoint
+                         (xgb_model=model), adding new trees with correction.
+                         Faster than retrain, different semantics.
+
+    Podejscie B -- custom objective:
+        custom_objective: callable | None
+            Custom objective function (y_pred, dtrain) -> (grad, hess).
+            Created via make_custom_objective() from sample_weighting.py.
+            When provided:
+              - params['objective'] is stripped (XGBoost ignores it)
+              - evals_result reports 'rmse' (default XGBoost eval metric)
+                instead of pseudo-Huber native score
+              - reweight_misdir is NOT applied (would conflict; use
+                use_misdir_penalty=True in make_custom_objective instead)
+
+    Returns: (model, best_iteration, best_score, train_metrics, val_metrics)
+    """
+    log_train_model_setup(
+        logger, target_scaler, sample_weight, reweight_misdir,
+        misdir_approach_a_variant, misdir_penalty, misdir_min_quantile, custom_objective,
     )
 
-    n_total  = model.num_boosted_rounds()
+    # --- base_score fix for custom objective ---
+    # XGBoost defaults to base_score=0.5. When targets are unscaled
+    # log-returns (~0.004), the initial residuals (~0.496) are enormous
+    # relative to Huber delta, collapsing hessians to ~0 and preventing
+    # any splits (sum(hess) < min_child_weight).
+    # Setting base_score = mean(y_train) ensures initial residuals match
+    # the data scale, keeping hessians healthy from the start.
+    if custom_objective is not None and 'base_score' not in params:
+        base_score_val = float(np.mean(y_train))
+        params = {**params, 'base_score': base_score_val}
+        logger.info(f"Auto base_score:  {base_score_val:.8f} (mean of y_train)")
+
+    dtrain = xgb.DMatrix(X_train, label=y_train, weight=sample_weight)
+    dval   = xgb.DMatrix(X_val,   label=y_val)
+
+    # --- Trening 1 ---
+    logger.info("Training (fit 1/1)..." if not reweight_misdir else "Training (fit 1/2)...")
+    model, evals_result = _run_xgb_train(
+        params, dtrain, dval, early_stopping_rounds, verbose,
+        custom_objective=custom_objective,
+    )
+
+    # --- Opcjonalny misdir penalty (drugi trening) ---
+    if reweight_misdir:
+        # Predykcje z modelu 1 w raw przestrzeni (odwroc skalowanie)
+        iter_range_1 = (0, model.num_boosted_rounds())
+        y_pred_scaled_1 = model.predict(dtrain, iteration_range=iter_range_1)
+        y_raw_1  = _inverse_if_scaled(y_train,          target_scaler)
+        y_pred_1 = _inverse_if_scaled(y_pred_scaled_1,  target_scaler)
+
+        updated_weights, n_penalised = apply_misdir_penalty(
+            y_raw_1, y_pred_1, sample_weight,
+            penalty=misdir_penalty, min_quantile=misdir_min_quantile,
+        )
+        logger.info(
+            f"Misdir penalty: {n_penalised} samples penalised  "
+            f"updated weights min={updated_weights.min():.4f}  "
+            f"max={updated_weights.max():.4f}"
+        )
+
+        dtrain2 = xgb.DMatrix(X_train, label=y_train, weight=updated_weights)
+
+        if misdir_approach_a_variant == 'boost':
+            # Kontynuacja od checkpointu -- dodaje nowe drzewa z korekta
+            logger.info("Training (fit 2/2) -- boosting from checkpoint...")
+            model, evals_result = _run_xgb_train(
+                params, dtrain2, dval, early_stopping_rounds, verbose,
+                xgb_model=model,
+                custom_objective=custom_objective,
+            )
+        else:
+            # Pelny restart od zera z zaktualizowanymi wagami
+            logger.info("Training (fit 2/2) -- full retrain...")
+            model, evals_result = _run_xgb_train(
+                params, dtrain2, dval, early_stopping_rounds, verbose,
+                custom_objective=custom_objective,
+            )
+
+    n_total   = model.num_boosted_rounds()
     best_iter = model.best_iteration  # 0-based index of best round
 
     if use_best_iteration:
@@ -98,8 +224,11 @@ def train_model(X_train, y_train, X_val, y_val,
     y_train_pred = model.predict(dtrain, iteration_range=iter_range)
     y_val_pred   = model.predict(dval,   iteration_range=iter_range)
 
-    train_metrics = _compute_metrics(y_train, y_train_pred, target_scaler)
-    val_metrics   = _compute_metrics(y_val,   y_val_pred,   target_scaler)
+    train_metrics = _compute_metrics(y_train, y_train_pred, target_scaler, threshold=signal_threshold)
+    val_metrics   = _compute_metrics(y_val,   y_val_pred,   target_scaler, threshold=signal_threshold)
+
+    # --- Faza 5: diagnostyczny log porównawczy (scaled vs original) ---
+    log_metrics_comparison(logger, target_scaler, train_metrics, val_metrics)
 
     if use_best_iteration:
         model.set_attr(saved_iteration=str(best_iter + 1))
@@ -121,52 +250,84 @@ def verbose_eval_interval(verbose):
 def evaluate_for_tuning(X_train, y_train, X_val, y_val,
                         params, early_stopping_rounds,
                         target_scaler=None,
-                        optimize_target='val'):
+                        optimize_target='val',
+                        optimize_metric='mae',
+                        sample_weight=None,
+                        custom_objective=None,
+                        signal_threshold=None):
     """
     Evaluate hyperparameters for Optuna.
-    Returns the XGBoost native loss (objective function score) on the chosen
-    dataset — val or train — so Optuna minimises the same loss that XGBoost
-    itself optimises during tree construction.
+    Always returns metrics in ORIGINAL log-return space (after
+    inverse_transform if target_scaler is active).
+
+    Both code paths (custom objective and standard objective) now
+    compute metrics identically via _compute_metrics(), ensuring
+    consistent Optuna scores regardless of objective type.
 
     Args:
         optimize_target: 'val' (default) or 'train'
-            'val'   → return XGBoost eval score on validation set
-            'train' → return XGBoost eval score on training set
+            'val'   -- evaluate on validation set
+            'train' -- evaluate on training set
+        optimize_metric: 'mae' (default), 'rmse', or 'pseudo_huber'
+            Which metric to return as the Optuna score.
+            All metrics are computed in original log-return space.
+        sample_weight: np.ndarray | None
+            Per-sample weights for DMatrix (podejscie A).
+            Note: reweight_misdir is NOT applied during tuning.
+        custom_objective: callable | None
+            Custom objective function (podejscie B).
     """
     if optimize_target not in ('val', 'train'):
         raise ValueError(f"optimize_target must be 'val' or 'train', got: {optimize_target!r}")
+    valid_metrics = ('mae', 'rmse', 'pseudo_huber', 'dir_acc',
+                     't_mae', 't_rmse', 't_pseudo_huber', 't_dir_acc', 't_r2')
+    if optimize_metric not in valid_metrics:
+        raise ValueError(f"optimize_metric must be one of {valid_metrics}, got: {optimize_metric!r}")
 
-    dtrain = xgb.DMatrix(X_train, label=y_train)
+    # base_score fix for custom objective (same as in train_model)
+    if custom_objective is not None and 'base_score' not in params:
+        params = {**params, 'base_score': float(np.mean(y_train))}
+
+    dtrain = xgb.DMatrix(X_train, label=y_train, weight=sample_weight)
     dval   = xgb.DMatrix(X_val,   label=y_val)
 
-    evals_result = {}
-    bst = xgb.train(
-        params, dtrain,
-        num_boost_round=params.get('n_estimators', 1000),
-        evals=[(dtrain, 'train'), (dval, 'validation')],
-        early_stopping_rounds=early_stopping_rounds,
-        verbose_eval=False,
-        evals_result=evals_result,
-    )
-
-    # evals_result keys: 'train', 'validation'
-    # each maps metric_name -> list of values per round
-    if optimize_target == 'val':
-        metric_history = evals_result.get('validation', {})
+    if custom_objective is not None:
+        params_for_train = {k: v for k, v in params.items() if k != 'objective'}
+        bst = xgb.train(
+            params_for_train, dtrain,
+            num_boost_round=params.get('n_estimators', 1000),
+            evals=[(dtrain, 'train'), (dval, 'validation')],
+            obj=custom_objective,
+            early_stopping_rounds=early_stopping_rounds,
+            verbose_eval=False,
+        )
     else:
-        metric_history = evals_result.get('train', {})
+        bst = xgb.train(
+            params, dtrain,
+            num_boost_round=params.get('n_estimators', 1000),
+            evals=[(dtrain, 'train'), (dval, 'validation')],
+            early_stopping_rounds=early_stopping_rounds,
+            verbose_eval=False,
+        )
 
-    if not metric_history:
-        # Fallback: sklearn MAE on val
-        y_pred = bst.predict(dval if optimize_target == 'val' else dtrain)
-        y_ref  = y_val if optimize_target == 'val' else y_train
-        metrics = _compute_metrics(y_ref, y_pred, target_scaler)
-        return metrics['mae']
+    # Always compute metrics in original log-return space
+    # (identical logic for both custom and standard objective)
+    y_pred = bst.predict(dval if optimize_target == 'val' else dtrain)
+    y_ref  = y_val if optimize_target == 'val' else y_train
+    metrics = _compute_metrics(y_ref, y_pred, target_scaler, threshold=signal_threshold)
 
-    # Take the last (final) value of the XGBoost native loss
-    metric_name  = next(iter(metric_history))
-    final_score  = metric_history[metric_name][-1]
-    return float(final_score)
+    if optimize_metric in metrics:
+        score = metrics[optimize_metric]
+    else:
+        # Thresholded metric requested but threshold not set or insufficient samples
+        fallback = optimize_metric.replace('t_', '')
+        score = metrics.get(fallback, metrics['mae'])
+
+    # For accuracy/R² metrics, Optuna minimises — invert so higher is better
+    if optimize_metric in ('t_dir_acc', 't_r2', 'dir_acc'):
+        score = -score
+
+    return score
 
 
 def save_feature_importance(model, flat_features, output_dir, logger):
@@ -255,12 +416,31 @@ def save_xgb_model(model, feature_scaler, config_dict, output_dir, logger, targe
         f.write(f"  MAE:      {train_m['mae']:.6f}\n")
         f.write(f"  RMSE:     {train_m['rmse']:.6f}\n")
         f.write(f"  R²:       {train_m['r2']:.4f}\n")
-        f.write(f"  Dir Acc:  {train_m['dir_acc']:.2f}%\n\n")
+        f.write(f"  Dir Acc:  {train_m['dir_acc']:.2f}%\n")
+        if 't_mae' in train_m:
+            f.write(f"\n  THRESHOLDED (|y| ≥ {train_m['t_threshold']:.6f},"
+                    f" n={train_m['t_n_samples']}):\n")
+            f.write(f"  t_MAE:      {train_m['t_mae']:.6f}\n")
+            f.write(f"  t_RMSE:     {train_m['t_rmse']:.6f}\n")
+            f.write(f"  t_R²:       {train_m['t_r2']:.4f}\n")
+            f.write(f"  t_PH(δ=1):  {train_m['t_pseudo_huber']:.6f}\n")
+            f.write(f"  t_PH(δ=10): {train_m['t_pseudo_huber_large']:.6f}\n")
+            f.write(f"  t_Dir Acc:  {train_m['t_dir_acc']:.2f}%\n")
+        f.write("\n")
         f.write("VALIDATION METRICS (log return):\n")
         f.write(f"  MAE:      {val_metrics['mae']:.6f}\n")
         f.write(f"  RMSE:     {val_metrics['rmse']:.6f}\n")
         f.write(f"  R²:       {val_metrics['r2']:.4f}\n")
         f.write(f"  Dir Acc:  {val_metrics['dir_acc']:.2f}%\n")
+        if 't_mae' in val_metrics:
+            f.write(f"\n  THRESHOLDED (|y| ≥ {val_metrics['t_threshold']:.6f},"
+                    f" n={val_metrics['t_n_samples']}):\n")
+            f.write(f"  t_MAE:      {val_metrics['t_mae']:.6f}\n")
+            f.write(f"  t_RMSE:     {val_metrics['t_rmse']:.6f}\n")
+            f.write(f"  t_R²:       {val_metrics['t_r2']:.4f}\n")
+            f.write(f"  t_PH(δ=1):  {val_metrics['t_pseudo_huber']:.6f}\n")
+            f.write(f"  t_PH(δ=10): {val_metrics['t_pseudo_huber_large']:.6f}\n")
+            f.write(f"  t_Dir Acc:  {val_metrics['t_dir_acc']:.2f}%\n")
     logger.info("  ✓ summary.txt")
 
 

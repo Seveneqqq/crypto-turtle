@@ -15,7 +15,11 @@ from xgb_config import XGBConfig
 from common.data_utils import load_test_data_only
 from common.id_utils import get_next_test_id, extract_model_id, extract_data_id
 from common.metrics import calculate_metrics, print_metrics_summary, interpret_metrics
+from common.sample_weighting import resolve_signal_threshold
 from common.visualization import plot_test_results, plot_feature_importance
+from common.log_utils import (
+    log_run_header, log_model_info, log_test_run_info, log_test_complete,
+)
 
 warnings.filterwarnings('ignore')
 
@@ -43,20 +47,62 @@ def load_model(model_dir):
 
 
 def auto_detect_test_path(config):
-    """Auto-detect test data path from training configuration"""
+    """
+    Auto-detect test data path from training configuration.
+
+    Search order:
+      1. Directory used during training (if it contains metadata.json + test.csv)
+      2. prepared_data/ by data_id
+      3. data_preparation/prepared_data/ by data_id (universal prepared dirs)
+      4. rf_model/rf_prepared_data/ by data_id (RF prepared dirs, same format)
+    """
     train_path = config.get('train_path', '')
-    data_id = config.get('data_id', 'UNKNOWN')
+    data_id    = config.get('data_id', 'UNKNOWN')
 
-    if os.path.isdir(train_path) and os.path.exists(os.path.join(train_path, 'metadata.json')):
-        return train_path
+    # Strategy 1: model was trained on a prepared directory that has test.csv
+    if os.path.isdir(train_path) and os.path.exists(
+            os.path.join(train_path, 'metadata.json')):
+        if os.path.exists(os.path.join(train_path, 'test.csv')):
+            return train_path
 
-    if data_id not in ['RAW', 'UNKNOWN']:
-        prep_base = XGBConfig.PREPARED_DATA_DIR
-        if os.path.exists(prep_base):
-            matching = [d for d in os.listdir(prep_base)
-                        if d.startswith(data_id) and os.path.isdir(os.path.join(prep_base, d))]
-            if matching:
-                return os.path.join(prep_base, sorted(matching)[-1])
+    if data_id in ('RAW', 'UNKNOWN'):
+        return None
+
+    def _search_prep_dir(base):
+        """Search base directory for a subdirectory starting with data_id."""
+        if not os.path.exists(base):
+            return None
+        matching = [
+            d for d in os.listdir(base)
+            if d.startswith(data_id) and os.path.isdir(os.path.join(base, d))
+        ]
+        if not matching:
+            return None
+        candidate = os.path.join(base, sorted(matching)[-1])
+        if os.path.exists(os.path.join(candidate, 'test.csv')):
+            return candidate
+        return None
+
+    project_root = os.path.dirname(XGBConfig.BASE_DIR)   # claude_xgb/
+
+    # Strategy 2: prepared_data (XGBoost's own prepared directory)
+    result = _search_prep_dir(XGBConfig.PREPARED_DATA_DIR)
+    if result:
+        return result
+
+    # Strategy 3: data_preparation/prepared_data (universal prepared directories)
+    result = _search_prep_dir(
+        os.path.join(project_root, 'data_preparation', 'prepared_data')
+    )
+    if result:
+        return result
+
+    # Strategy 4: rf_model/rf_prepared_data (RF prepared dirs, same format)
+    result = _search_prep_dir(
+        os.path.join(project_root, 'rf_model', 'rf_prepared_data')
+    )
+    if result:
+        return result
 
     return None
 
@@ -138,20 +184,12 @@ def test_model(model_dir=None, test_path=None):
 
     model_id = extract_model_id(model_dir)
 
-    print("\n" + "=" * 80)
-    print("XGBOOST MODEL TESTING")
-    print("=" * 80)
+    log_run_header("XGBOOST MODEL TESTING", newline=True)
 
     print(f"\nLoading model: {model_dir}")
     model, config, feature_scaler, target_scaler = load_model(model_dir)
 
-    print(f"Model ID:   {model_id}")
-    print(f"Data ID:    {config['data_id']}")
-    print(f"Symbol:     {config['symbol'].upper()}")
-    print(f"Horizon:    t+{config['horizon']}")
-    print(f"Features:   {config['n_features']} → {config['n_flat_features']} flat")
-    print(f"Flattening: {config['flattening_method']}")
-    print(f"Target scaler: {'ENABLED (' + target_scaler.method + ')' if target_scaler else 'DISABLED'}")
+    log_model_info(model_id, config, target_scaler)
 
     if test_path is None:
         test_path = auto_detect_test_path(config)
@@ -191,14 +229,10 @@ def test_model(model_dir=None, test_path=None):
     output_dir = os.path.join(XGBConfig.LOGS_DIR, run_name)
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"\nTest ID:    {test_id}")
-    print(f"Samples:    {len(X_test)}")
-    print(f"Output:     {output_dir}")
+    log_test_run_info(test_id, len(X_test), output_dir)
 
     # Predictions
-    print("\n" + "=" * 80)
-    print("GENERATING PREDICTIONS")
-    print("=" * 80)
+    log_run_header("GENERATING PREDICTIONS", newline=True)
 
     saved_iter = model.attr('saved_iteration')
     if saved_iter is not None:
@@ -223,18 +257,42 @@ def test_model(model_dir=None, test_path=None):
     print(f"Generated {len(y_pred_log)} predictions (iter_range={iter_range})")
 
     # Metrics
-    print("\n" + "=" * 80)
-    print("EVALUATION METRICS")
-    print("=" * 80)
+    log_run_header("EVALUATION METRICS", newline=True)
 
-    metrics = calculate_metrics(y_test, y_pred_log)
+    # Resolve signal threshold for thresholded metrics
+    signal_threshold_enabled = config.get('signal_threshold_enabled', XGBConfig.SIGNAL_THRESHOLD_ENABLED)
+    resolved_threshold = None
+    if signal_threshold_enabled:
+        saved_threshold = config.get('signal_threshold_resolved')
+        if saved_threshold is not None:
+            resolved_threshold = float(saved_threshold)
+            print(f"\nSignal threshold: {resolved_threshold:.6f} (from model config)")
+        else:
+            # Fallback for older models without a saved threshold.
+            # y_train is unavailable here, so 'empirical' mode cannot be used safely
+            # (it would compute the percentile from test data — data leakage).
+            # Force 'fixed' mode regardless of what was recorded in config.
+            _saved_mode = config.get('signal_threshold_mode', XGBConfig.SIGNAL_THRESHOLD_MODE)
+            _fixed_value = config.get('signal_threshold_value', XGBConfig.SIGNAL_THRESHOLD_VALUE)
+            if _saved_mode == 'empirical':
+                print(
+                    f"\n[WARN] Model used signal_threshold_mode='empirical' but y_train is "
+                    f"unavailable during testing — falling back to fixed threshold "
+                    f"({_fixed_value}) to avoid data leakage."
+                )
+            resolved_threshold = resolve_signal_threshold(
+                y_test,       # ignored by 'fixed' mode
+                mode='fixed',
+                fixed_value=_fixed_value,
+            )
+            print(f"\nSignal threshold: {resolved_threshold:.6f} (fallback fixed — model config missing)")
+
+    metrics = calculate_metrics(y_test, y_pred_log, threshold=resolved_threshold)
     print_metrics_summary(metrics)
     interpret_metrics(metrics)
 
     # Visualizations
-    print("\n" + "=" * 80)
-    print("GENERATING VISUALIZATIONS")
-    print("=" * 80)
+    log_run_header("GENERATING VISUALIZATIONS", newline=True)
 
     plot_test_results(y_test, y_pred_log, output_dir, config['horizon'])
 
@@ -242,9 +300,7 @@ def test_model(model_dir=None, test_path=None):
         plot_feature_importance(model, config['flat_features'], output_dir, top_n=30)
 
     # Save results
-    print("\n" + "=" * 80)
-    print("SAVING RESULTS")
-    print("=" * 80)
+    log_run_header("SAVING RESULTS", newline=True)
 
     pd.DataFrame({
         'actual_log': y_test,
@@ -275,21 +331,18 @@ def test_model(model_dir=None, test_path=None):
         f.write(f"  Pseudo-Huber (δ=1):    {metrics['pseudo_huber']:.6f}\n")
         f.write(f"  Pseudo-Huber (δ=10):   {metrics['pseudo_huber_large']:.6f}\n")
         f.write(f"  Dir Acc:               {metrics['dir_acc']:.2f}%\n")
+        if 't_mae' in metrics:
+            f.write(f"\nTHRESHOLDED METRICS (|y| ≥ {metrics['t_threshold']:.6f},"
+                    f" n={metrics['t_n_samples']}):\n")
+            f.write(f"  t_MAE:                 {metrics['t_mae']:.6f}\n")
+            f.write(f"  t_RMSE:                {metrics['t_rmse']:.6f}\n")
+            f.write(f"  t_R²:                  {metrics['t_r2']:.4f}\n")
+            f.write(f"  t_Pseudo-Huber (δ=1):  {metrics['t_pseudo_huber']:.6f}\n")
+            f.write(f"  t_Pseudo-Huber (δ=10): {metrics['t_pseudo_huber_large']:.6f}\n")
+            f.write(f"  t_Dir Acc:             {metrics['t_dir_acc']:.2f}%\n")
     print("  ✓ summary.txt")
 
-    print("\n" + "=" * 80)
-    print("TEST COMPLETE")
-    print("=" * 80)
-    print(f"Test ID:  {test_id}")
-    print(f"Model ID: {model_id}")
-    print(f"Samples:  {len(y_test)}")
-    print(f"MAE:      {metrics['mae']:.6f}")
-    print(f"R²:       {metrics['r2']:.4f}")
-    print(f"PH(δ=1):  {metrics['pseudo_huber']:.6f}")
-    print(f"PH(δ=10): {metrics['pseudo_huber_large']:.6f}")
-    print(f"Dir Acc:  {metrics['dir_acc']:.2f}%")
-    print(f"Output:   {output_dir}")
-    print("=" * 80)
+    log_test_complete(test_id, model_id, len(y_test), metrics, output_dir)
 
     return metrics
 

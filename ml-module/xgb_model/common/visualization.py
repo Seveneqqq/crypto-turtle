@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import optuna
+from optuna.trial import TrialState
 
 
 def plot_test_results(y_true_log, y_pred_log, output_dir, horizon):
@@ -101,8 +103,7 @@ def plot_test_results(y_true_log, y_pred_log, output_dir, horizon):
     # Rolling accuracy
     window = min(500, n // 4)
     if window > 10:
-        rolling_acc = pd.Series(correct).rolling(window).mean() * 100 if False else \
-            np.convolve(correct, np.ones(window) / window, mode='valid') * 100
+        rolling_acc = np.convolve(correct, np.ones(window) / window, mode='valid') * 100
         axes[1, 1].plot(rolling_acc, color='purple', linewidth=1.0)
         axes[1, 1].axhline(y=50, color='r', linestyle='--', lw=1.5, alpha=0.7)
         axes[1, 1].set_title(f'Rolling Dir Accuracy (window={window})')
@@ -152,3 +153,82 @@ def plot_feature_importance(model, feature_names, output_dir, top_n=30):
     plt.savefig(os.path.join(output_dir, 'feature_importance.png'), dpi=150, bbox_inches='tight')
     plt.close()
     print("  ✓ feature_importance.png")
+
+
+def plot_optuna_results(study, output_dir):
+    """
+    Create Optuna optimization visualizations.
+
+    Generates up to four plots:
+      history.png      -- Optuna built-in optimization history
+      importances.png  -- Optuna built-in parameter importances
+      distribution.png -- histogram of all completed trial values
+      convergence.png  -- cumulative best value per trial
+
+    Each plot is wrapped in try/except so a missing dependency or
+    insufficient data never aborts the tuning run.
+    """
+    print("\nGenerating Optuna plots...")
+
+    # 1. Optimization history
+    try:
+        fig = optuna.visualization.matplotlib.plot_optimization_history(study)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'history.png'), dpi=150)
+        plt.close()
+        print("  ✓ history.png")
+    except Exception:
+        pass
+
+    # 2. Parameter importances
+    try:
+        fig = optuna.visualization.matplotlib.plot_param_importances(study)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'importances.png'), dpi=150)
+        plt.close()
+        print("  ✓ importances.png")
+    except Exception:
+        pass
+
+    # 3. Trial value distribution
+    completed = [t for t in study.trials if t.state == TrialState.COMPLETE]
+    if completed:
+        losses = [t.value for t in completed]
+        plt.figure(figsize=(10, 6))
+        plt.hist(losses, bins=min(30, len(losses)), alpha=0.7, edgecolor='black')
+        plt.axvline(study.best_value, color='r', linestyle='--', lw=2,
+                    label=f'Best: {study.best_value:.6f}')
+        plt.xlabel('Validation Loss')
+        plt.ylabel('Frequency')
+        plt.title('Trial Results Distribution')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'distribution.png'), dpi=150)
+        plt.close()
+        print("  ✓ distribution.png")
+
+    # 4. Convergence: cumulative best value per trial
+    if completed:
+        trial_nums   = [t.number for t in completed]
+        values       = [t.value  for t in completed]
+        best_so_far  = []
+        current_best = float('inf')
+        for v in values:
+            current_best = min(current_best, v)
+            best_so_far.append(current_best)
+
+        plt.figure(figsize=(12, 5))
+        plt.plot(trial_nums, values,      'o', alpha=0.4, markersize=4,
+                 color='steelblue', label='Trial loss')
+        plt.plot(trial_nums, best_so_far, 'r-', linewidth=2,
+                 label='Best so far')
+        plt.xlabel('Trial number')
+        plt.ylabel('Validation Loss')
+        plt.title('Optuna Convergence')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'convergence.png'), dpi=150)
+        plt.close()
+        print("  ✓ convergence.png")

@@ -7,9 +7,7 @@ Tests four input scenarios against model X064 (E101 prepared data):
   3. Auto-detect   — test.csv   (data_mode='auto', must resolve to 'prepared')
   4. Raw OHLCV     — reconstructed from test.csv close + OHLCV cols (data_mode='raw')
 
-Run from the xgb_model directory:
-    cd claude_xgb/xgb_model
-    python ../xgb_model_package/test_signals.py
+
 """
 
 import os
@@ -24,8 +22,8 @@ import pandas as pd
 # Path setup — allow running from xgb_model/ or project root
 # ---------------------------------------------------------------------------
 _SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))          # xgb_model_package/
-_PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)                         # claude_xgb/
-_XGB_MODEL    = os.path.join(_PROJECT_ROOT, 'xgb_model')            # xgb_model/
+_PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
+_XGB_MODEL    = os.path.join(_PROJECT_ROOT)            # xgb_model/
 
 # Add package dir to path so 'from xgb_model_package import ...' works
 if _SCRIPT_DIR not in sys.path:
@@ -36,11 +34,13 @@ sys.path.insert(0, _PROJECT_ROOT)
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-PREPARED_DIR = os.path.join(_XGB_MODEL, 'xgb_prepared_data', 'E101_prep_eth_universal_full_1m')
-MODEL_DIR    = os.path.join(_XGB_MODEL, 'xgb_models', 'X064_eth_xgb_model_E101_0903')
+PREPARED_DIR = os.path.join(_XGB_MODEL, 'prepared_data', 'E104_prep_eth_universal_full_1m')
+MODEL_DIR    = os.path.join(_XGB_MODEL, 'xgb_models', 'X160_eth_xgb_model_E104_1204')
 
 TEST_CSV     = os.path.join(PREPARED_DIR, 'test.csv')
 SYM_CSV      = os.path.join(PREPARED_DIR, 'sym.csv')
+BTC_RAW_CSV  = os.path.join(_SCRIPT_DIR, 'eth_1m_BP.csv')
+BTC_OUT_CSV  = os.path.join(_SCRIPT_DIR, 'ss', 'eth_signals.csv')
 
 # ---------------------------------------------------------------------------
 # Imports
@@ -361,6 +361,57 @@ def test_signal_config_variants(pkg_default: XGBModelPackage):
         ok('Config applied correctly')
 
 
+def test_btc_raw_signals(pkg: XGBModelPackage):
+    """
+    Test 7: Raw BTC 1m data with buy_pressure column (btc_1m_BP.csv).
+    Runs full predict_batch in 'raw' mode, saves signals to ss/btc_signals.csv.
+    """
+    header('TEST 7 — Raw BTC CSV with buy_pressure  (data_mode="raw")')
+
+    if not os.path.exists(BTC_RAW_CSV):
+        err(f'btc_1m_BP.csv not found: {BTC_RAW_CSV}')
+        return None
+
+    print(f'  Loading {BTC_RAW_CSV} ...')
+    t0 = time.time()
+    df = pd.read_csv(BTC_RAW_CSV)
+    load_ms = (time.time() - t0) * 1000
+    print(f'  Rows: {len(df):,}   Load time: {load_ms:.0f} ms')
+    print(f'  Columns: {list(df.columns)}')
+    print(f'  Date range: {df["open_time"].iloc[0]}  →  {df["open_time"].iloc[-1]}')
+    print(f'  Min rows required: {pkg.min_rows_required}')
+
+    t1 = time.time()
+    result = pkg.predict_batch(df, data_mode='raw')
+    pred_ms = (time.time() - t1) * 1000
+
+    if len(result) == 0:
+        err('No signals produced — check min_rows_required vs data length')
+        return None
+
+    print(f'  Signals produced:  {len(result):,}   Predict time: {pred_ms:.0f} ms')
+    print(f'  avg mu:          {result["mu"].mean():.6f}')
+    print(f'  avg sigma:       {result["sigma"].mean():.6f}')
+    print(f'  avg signal_buy:  {result["signal_buy"].mean():.2f}')
+    print(f'  avg signal_sell: {result["signal_sell"].mean():.2f}')
+    print(f'  max signal_buy:  {result["signal_buy"].max():.2f}')
+    print(f'  max signal_sell: {result["signal_sell"].max():.2f}')
+
+    n_buy  = (result['signal_buy']  > 60).sum()
+    n_sell = (result['signal_sell'] > 60).sum()
+    n_hold = len(result) - n_buy - n_sell
+    print(f'  signal_buy  > 60:  {n_buy:,} candles ({n_buy/len(result)*100:.1f}%)')
+    print(f'  signal_sell > 60:  {n_sell:,} candles ({n_sell/len(result)*100:.1f}%)')
+    print(f'  hold (both <=60):  {n_hold:,} candles ({n_hold/len(result)*100:.1f}%)')
+
+    # Save to file
+    os.makedirs(os.path.dirname(BTC_OUT_CSV), exist_ok=True)
+    result.to_csv(BTC_OUT_CSV, index=False)
+    ok(f'Signals saved → {BTC_OUT_CSV}  ({len(result):,} rows)')
+
+    return result
+
+
 # ===========================================================================
 # MAIN
 # ===========================================================================
@@ -384,6 +435,12 @@ def main():
             sys.exit(1)
         ok(f'{label} found')
 
+    # Optional check for test 7
+    if os.path.exists(BTC_RAW_CSV):
+        ok('btc_1m_BP.csv found')
+    else:
+        print(f'  [WARN] btc_1m_BP.csv not found — test 7 will be skipped')
+
     results = {}
     errors  = []
 
@@ -395,14 +452,15 @@ def main():
         traceback.print_exc()
         sys.exit(1)
 
-    # --- Tests 1-6 ---
+    # --- Tests 1-7 ---
     for name, fn, args in [
-        ('prepared_test',   test_prepared_test_csv,   (pkg,)),
-        ('prepared_sym',    test_prepared_sym_csv,    (pkg,)),
-        ('auto_detect',     test_auto_detect,         (pkg,)),
-        ('raw_ohlcv',       test_raw_ohlcv,           (pkg,)),
-        ('validation',      test_validation_errors,   (pkg,)),
+        ('prepared_test',   test_prepared_test_csv,      (pkg,)),
+        ('prepared_sym',    test_prepared_sym_csv,       (pkg,)),
+        ('auto_detect',     test_auto_detect,            (pkg,)),
+        ('raw_ohlcv',       test_raw_ohlcv,              (pkg,)),
+        ('validation',      test_validation_errors,      (pkg,)),
         ('signal_configs',  test_signal_config_variants, (pkg,)),
+        ('btc_raw_signals', test_btc_raw_signals,        (pkg,)),
     ]:
         try:
             res = fn(*args)
