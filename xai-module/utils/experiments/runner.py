@@ -25,7 +25,15 @@ class ExperimentRunner:
             target=self.config["target"],
             split_type=self.config.get("split_type", "random"),
             test_size=self.config.get("test_size", 0.2),
-            scaling=True
+            scaling=True,
+
+            # ===== POPRAWKA =====
+            finance_horizon=self.config.get("finance_horizon", 1),
+            finance_target_type=self.config.get(
+                "finance_target_type",
+                "return"
+            )
+            # ====================
         )
 
         X_train, X_test, y_train, y_test, transformer = preprocessor.prepare(df)

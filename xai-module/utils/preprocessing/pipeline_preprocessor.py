@@ -93,22 +93,43 @@ class GenericPreprocessor:
 
         df = df.copy()
 
-        if self.target == "target" and "target" not in df.columns:
+        if self.target == "OFFENSE_CODE_GROUP":
+            cols_to_drop = [
+                "OFFENSE_CODE",
+                "OFFENSE_DESCRIPTION",
+                "INCIDENT_NUMBER",
+                "UCR_PART"
+            ]
+
+            df = df.drop(
+                columns=[col for col in cols_to_drop if col in df.columns],
+                errors="ignore"
+            )
+
+        if self.target in ["target", "target_direction"]:
+        
             if "close" not in df.columns:
                 raise KeyError(
-                    "Finance mode: target='target' but column 'close' not found. "
+                    "Finance mode: column 'close' not found. "
                     f"Available columns: {list(df.columns)}"
                 )
-
+        
             h = int(self.finance_horizon)
-
-            if self.finance_target_type == "future_close":
+        
+            if self.target == "target_direction" or self.finance_target_type == "direction":
+                df["target_direction"] = (
+                    df["close"].shift(-h) > df["close"]
+                ).astype(int)
+        
+                df = df.dropna(subset=["target_direction"])
+        
+            elif self.finance_target_type == "future_close":
                 df["target"] = df["close"].shift(-h)
-
+                df = df.dropna(subset=["target"])
+        
             else:
                 df["target"] = np.log(df["close"].shift(-h) / df["close"])
-
-            df = df.dropna(subset=["target"])
+                df = df.dropna(subset=["target"])
 
         datetime_cols = []
         for col in df.columns:
