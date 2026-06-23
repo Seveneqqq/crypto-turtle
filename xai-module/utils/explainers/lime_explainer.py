@@ -1,3 +1,4 @@
+import re
 import lime.lime_tabular
 import numpy as np
 
@@ -23,6 +24,12 @@ class LimeExplainer:
             discretize_continuous=True
         )
 
+    def _normalize_feature_name(self, name: str) -> str:
+        for feature in self.feature_names:
+            if feature in name:
+                return feature
+        return name
+
     def explain(self, X_instance):
         X_transformed = self.preprocessor.transform(
             X_instance.to_frame().T
@@ -42,4 +49,16 @@ class LimeExplainer:
                 self.model.predict
             )
 
-        return dict(explanation.as_list())
+        normalized = {}
+
+        for feature, value in explanation.as_list():
+            clean_feature = self._normalize_feature_name(feature)
+            normalized[clean_feature] = normalized.get(clean_feature, 0) + abs(float(value))
+
+        return dict(
+            sorted(
+                normalized.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+        )
