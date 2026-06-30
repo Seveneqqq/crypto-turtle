@@ -14,8 +14,8 @@ class GenericPreprocessor:
         test_size: float = 0.2,
         random_state: int = 42,
         scaling: bool = True,
-        finance_horizon: int = 1,           # 🔥 ile kroków do przodu przewidujesz
-        finance_target_type: str = "return" # "return" albo "future_close"
+        finance_horizon: int = 1,           
+        finance_target_type: str = "return" 
     ):
         self.target = target
         self.split_type = split_type
@@ -31,26 +31,20 @@ class GenericPreprocessor:
     # =============================
     def prepare(self, df: pd.DataFrame):
 
-        # 1️⃣ cleaning
         df = self._clean(df)
 
-        # 2️⃣ feature engineering (tu też robimy target dla finance jeśli trzeba)
         df = self._feature_engineering(df)
 
-        # 🔥 jeśli target dalej nie istnieje, to kończymy czytelnie
         if self.target not in df.columns:
             raise KeyError(
                 f"Target column '{self.target}' not found in dataframe columns: {list(df.columns)[:30]}..."
             )
 
-        # 3️⃣ split target
         X = df.drop(columns=[self.target])
         y = df[self.target]
 
-        # 4️⃣ split train/test na surowym y
         X_train, X_test, y_train, y_test = self._split(X, y)
 
-        # 5️⃣ label encoding dopiero po splicie (fit na TRAIN)
         if y_train.dtype == "object":
             self.label_encoder = LabelEncoder()
             y_train_enc = self.label_encoder.fit_transform(y_train)
@@ -70,7 +64,6 @@ class GenericPreprocessor:
             y_train = pd.Series(y_train_enc, index=X_train.index)
             y_test = pd.Series(y_test_enc, index=X_test.index)
 
-        # 6️⃣ transformer
         transformer = self._build_transformer(X_train)
 
         return X_train, X_test, y_train, y_test, transformer
@@ -84,12 +77,10 @@ class GenericPreprocessor:
         df = df.dropna(axis=1, how="all")
         df = df.dropna(axis=0, how="all")
 
-        # imputacja numerycznych medianą
         numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
         if len(numeric_cols) > 0:
             df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
 
-        # medical: binary target
         if self.target == "Diabetes_012" and self.target in df.columns:
             df[self.target] = df[self.target].apply(lambda x: 1 if x > 0 else 0)
 
@@ -102,29 +93,44 @@ class GenericPreprocessor:
 
         df = df.copy()
 
-        # ---------- FINANCE: zbuduj target jeśli go nie ma ----------
-        # config finance ma target="target", a plik zwykle nie ma takiej kolumny
-        if self.target == "target" and "target" not in df.columns:
+        if self.target == "OFFENSE_CODE_GROUP":
+            cols_to_drop = [
+                "OFFENSE_CODE",
+                "OFFENSE_DESCRIPTION",
+                "INCIDENT_NUMBER",
+                "UCR_PART"
+            ]
+
+            df = df.drop(
+                columns=[col for col in cols_to_drop if col in df.columns],
+                errors="ignore"
+            )
+
+        if self.target in ["target", "target_direction"]:
+        
             if "close" not in df.columns:
                 raise KeyError(
-                    "Finance mode: target='target' but column 'close' not found. "
+                    "Finance mode: column 'close' not found. "
                     f"Available columns: {list(df.columns)}"
                 )
-
+        
             h = int(self.finance_horizon)
-
-            if self.finance_target_type == "future_close":
-                # przewidujemy przyszły close
+        
+            if self.target == "target_direction" or self.finance_target_type == "direction":
+                df["target_direction"] = (
+                    df["close"].shift(-h) > df["close"]
+                ).astype(int)
+        
+                df = df.dropna(subset=["target_direction"])
+        
+            elif self.finance_target_type == "future_close":
                 df["target"] = df["close"].shift(-h)
-
+                df = df.dropna(subset=["target"])
+        
             else:
-                # domyślnie: log-return (bardziej stabilne statystycznie)
                 df["target"] = np.log(df["close"].shift(-h) / df["close"])
+                df = df.dropna(subset=["target"])
 
-            # usuń wiersze bez targetu (ostatnie h)
-            df = df.dropna(subset=["target"])
-
-        # ---------- DATETIME: cechy czasu ----------
         datetime_cols = []
         for col in df.columns:
             if "date" in col.lower() or "time" in col.lower():
@@ -137,7 +143,6 @@ class GenericPreprocessor:
                     df[f"{col}_hour"] = df[col].dt.hour
                     datetime_cols.append(col)
 
-        # usuń oryginalne datetime
         if len(datetime_cols) > 0:
             df = df.drop(columns=datetime_cols)
 
@@ -176,7 +181,6 @@ class GenericPreprocessor:
         numeric_cols = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
         categorical_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
 
-        # usuń wysoką kardynalność
         high_cardinality_cols = [
             col for col in categorical_cols
             if X[col].nunique() > 50
@@ -189,7 +193,6 @@ class GenericPreprocessor:
 
         print("Dropped high-cardinality cols:", high_cardinality_cols)
 
-        # binary
         binary_cols = [
             col for col in numeric_cols
             if set(X[col].dropna().unique()).issubset({0, 1})

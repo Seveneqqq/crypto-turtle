@@ -23,23 +23,38 @@ import numpy as np
 
 @app.on_event("startup")
 def run_experiment_on_startup():
-    print("🚀 Starting experiment pipeline...")
+    print("🚀 Starting all experiment pipelines...")
 
-    dataset_name = "medical"  # "medical", "crime", "finance"
-    config = EXPERIMENTS[dataset_name]
+    for experiment_name, config in EXPERIMENTS.items():
+        
+        print("\n====================================")
+        print(f"🚀 Running experiment: {experiment_name}")
+        print("====================================")
+    
+        models = config.get("models")
+    
+        if models is None:
+            if config["task"] == "classification":
+                models = ["rf", "logreg", "xgb", "dt"]
+            else:
+                models = ["linreg", "rf", "xgb"]
+    
+        pipeline = ExperimentPipeline(config, models)
 
-    if config["task"] == "classification":
-        models = ["rf", "logreg", "xgb", "dt"] # "mlp"
-    else:
-        models = ["linreg", "rf", "xgb"]
+        try:
+            results = pipeline.run()
 
-    pipeline = ExperimentPipeline(config, models)
-    results = pipeline.run()
+            print(f"\n✅ Finished experiment: {experiment_name}")
 
-    print("\n🔥 FINAL RESULTS:")
-    for model_name, data in results.items():
-        print(f"\nModel: {model_name}")
-        print("Metrics:", data["metrics"])
+            for model_name, data in results.items():
+                print(f"\nModel: {model_name}")
+                print("Metrics:", data["metrics"])
+
+        except Exception as e:
+            print(f"\n❌ Experiment failed: {experiment_name}")
+            print(str(e))
+
+    print("\n🎉 All experiments finished.")
 
 
 

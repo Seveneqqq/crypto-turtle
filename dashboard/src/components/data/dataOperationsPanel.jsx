@@ -520,7 +520,7 @@ ML Data Pipeline
 
 <Tabs defaultValue="download">
 
-<TabsList className="grid grid-cols-5">
+<TabsList className="grid grid-cols-5" id="data-operations-tabs">
 
 <TabsTrigger value="download">Download</TabsTrigger>
 <TabsTrigger value="process">Process</TabsTrigger>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import FileSelect from '../../components/files/fileSelect'
 import LeftSidebar from "../../components/leftSidebar.jsx"
 import ProcessDataPanel from '../../components/data/processDataPanel.jsx'
@@ -12,13 +12,69 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog"
 
+
 function PipelineDataPage() {
 
   const [reports, setReports] = useState([])
   const [loadingReports, setLoadingReports] = useState(false)
-
+  const [action, setAction] = useState("get_historical_data")
   const [selectedImage, setSelectedImage] = useState(null)
   const [openImageViewer, setOpenImageViewer] = useState(false)
+
+  const actionSelector = () => {
+
+    const btn = document.querySelector('#data-operations-tabs button[data-state="active"]')
+    if (!btn) return
+
+    const value = btn.innerText
+
+    switch (value) {
+      case "Download":
+        setAction("get_historical_data")
+        break
+      case "Process":
+        setAction("process_data")
+        break
+      case "Process LSTM":
+        setAction("process_data_lstm")
+        break
+      case "Tune ML":
+        setAction("tune_data")
+        break
+      case "Tune LSTM":
+        setAction("tune_lstm")
+        break
+      default:
+        setAction("get_historical_data")
+    }
+
+    console.log("Selected tab:", value)
+  }
+
+  useEffect(() => {
+
+    const tabsContainer = document.getElementById("data-operations-tabs")
+    if (!tabsContainer) return
+
+    const observer = new MutationObserver(() => {
+      actionSelector()
+    })
+
+    observer.observe(tabsContainer, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["data-state"]
+    })
+
+    actionSelector()
+
+    return () => observer.disconnect()
+
+  }, [])
+
+  useEffect(() => {
+    console.log("Selected action:", action)
+  }, [action])
 
   const fetchReports = async () => {
     try {
@@ -140,9 +196,7 @@ function PipelineDataPage() {
 
         </div>
 
-        <TasksHistoryPanel action="process_data"/>
-
-        {/* MODAL POWIĘKSZONEGO OBRAZU */}
+        <TasksHistoryPanel key={action} action={action}/>
 
         <Dialog open={openImageViewer} onOpenChange={setOpenImageViewer}>
 

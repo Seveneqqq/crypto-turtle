@@ -50,7 +50,6 @@ class XaiFidelity:
 
         X_modified = X_test.copy()
 
-        # pracujemy na surowych kolumnach X_test
         raw_columns = list(X_modified.columns)
 
         for feature in top_features:

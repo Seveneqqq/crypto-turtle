@@ -12,14 +12,15 @@ from utils.evaluation.xai_fidelity import XaiFidelity
 from utils.evaluation.xai_local import XaiLocal
 from utils.evaluation.xai_debugger import XaiDebugger
 from utils.evaluation.xai_ranking import XaiRanking
+from utils.evaluation.model_interpretability_analysis import ModelInterpretabilityAnalysis
 
 from utils.reporting.feature_importance_report import FeatureImportanceReport
 from utils.reporting.feature_comparison import FeatureComparison
 
 from utils.visualization.xai_heatmap import XaiHeatmap
 from utils.visualization.feature_importance_plot import FeatureImportancePlot
+from utils.visualization.model_tradeoff_plot import ModelTradeoffPlot
 
-# 🔵 DODANE
 from utils.explanations.human_xai_explainer import HumanXaiExplainer
 
 
@@ -53,10 +54,6 @@ class ExperimentPipeline:
             y_test = result["y_test"]
             y_pred = result["y_pred"]
 
-            # ======================
-            # XAI METHODS
-            # ======================
-
             xai_results = {}
 
             for method in self.config.get("xai_methods", ["shap", "permutation"]):
@@ -72,10 +69,6 @@ class ExperimentPipeline:
                     task=self.config["task"]
                 )
 
-                # ======================
-                # SHAP
-                # ======================
-
                 if method == "shap":
 
                     sample = X_train.sample(
@@ -89,10 +82,6 @@ class ExperimentPipeline:
                         shap_values
                     )
 
-                # ======================
-                # PERMUTATION
-                # ======================
-
                 elif method == "permutation":
 
                     perm_result = explainer.explain(
@@ -103,10 +92,6 @@ class ExperimentPipeline:
                     importance = explainer.get_global_importance(
                         perm_result
                     )
-
-                # ======================
-                # LIME
-                # ======================
 
                 elif method == "lime":
 
@@ -146,7 +131,6 @@ class ExperimentPipeline:
                 runtime = time.time() - start
 
                 print(f"⏱ {method} time: {runtime:.2f}s")
-
                 print(f"📊 {method.upper()} top 5 features:")
 
                 for i, (k, v) in enumerate(importance.items()):
@@ -155,10 +139,6 @@ class ExperimentPipeline:
                         break
 
                     print(f"   {k}: {v:.6f}")
-
-                # ======================
-                # FEATURE IMPORTANCE REPORT
-                # ======================
 
                 importance_df = FeatureImportanceReport.build_table(
                     importance
@@ -173,10 +153,6 @@ class ExperimentPipeline:
                     importance_path,
                     index=False
                 )
-
-                # ======================
-                # FEATURE IMPORTANCE PLOT
-                # ======================
 
                 plot_path = (
                     f"{logger.base_dir}/"
@@ -228,16 +204,38 @@ class ExperimentPipeline:
 
                 elif method == "lime":
 
-                    importance_noisy = importance
+                    importances_noisy = {}
+
+                    samples_noisy = X_test_noisy.iloc[:min(50, len(X_test_noisy))]
+
+                    for i in range(len(samples_noisy)):
+
+                        explanation_noisy = explainer.explain(
+                            samples_noisy.iloc[i]
+                        )
+
+                        for feature, weight in explanation_noisy.items():
+
+                            importances_noisy[feature] = (
+                                importances_noisy.get(feature, 0)
+                                + abs(weight)
+                            )
+
+                    for k in importances_noisy:
+                        importances_noisy[k] /= len(samples_noisy)
+
+                    importance_noisy = dict(
+                        sorted(
+                            importances_noisy.items(),
+                            key=lambda x: x[1],
+                            reverse=True
+                        )
+                    )
 
                 stability = XaiStability.stability_score(
                     importance,
                     importance_noisy
                 )
-
-                # ======================
-                # FIDELITY
-                # ======================
 
                 fidelity = XaiFidelity.feature_removal_test(
                     pipeline,
@@ -248,20 +246,12 @@ class ExperimentPipeline:
                     k=5
                 )
 
-                # ======================
-                # LOCAL EXPLANATIONS
-                # ======================
-
                 local_explanations = XaiLocal.generate_local_explanations(
                     method,
                     explainer,
                     X_test,
                     max_samples=5
                 )
-
-                # ======================
-                # DEBUGGING ERRORS
-                # ======================
 
                 debug_explanations = XaiDebugger.explain_errors(
                     task=self.config["task"],
@@ -281,10 +271,6 @@ class ExperimentPipeline:
                     "local_explanations": local_explanations,
                     "debug_explanations": debug_explanations
                 }
-
-                # ======================
-                # 🔵 HUMAN EXPLANATION (DODANE)
-                # ======================
 
                 instance = X_test.iloc[0]
 
@@ -310,10 +296,6 @@ class ExperimentPipeline:
                 with open(human_path, "w", encoding="utf-8") as f:
                     f.write(human_explanation)
 
-            # ======================
-            # FEATURE COMPARISON
-            # ======================
-
             method_importances = {
                 m: xai_results[m]["global_importance"]
                 for m in xai_results
@@ -332,10 +314,6 @@ class ExperimentPipeline:
                 comparison_path,
                 index=False
             )
-
-            # ======================
-            # XAI METHOD COMPARISON
-            # ======================
 
             methods = list(xai_results.keys())
 
@@ -365,10 +343,6 @@ class ExperimentPipeline:
                         "top10_overlap": float(overlap)
                     }
 
-            # ======================
-            # HEATMAP
-            # ======================
-
             heatmap_path = (
                 f"{logger.base_dir}/"
                 f"method_agreement_heatmap_{model_name}.png"
@@ -378,10 +352,6 @@ class ExperimentPipeline:
                 comparisons,
                 heatmap_path
             )
-
-            # ======================
-            # XAI RANKING
-            # ======================
 
             ranking_df = XaiRanking.build_ranking(
                 dataset_name=self.config["dataset_name"],
@@ -430,10 +400,6 @@ class ExperimentPipeline:
 
             logger.log(experiment_result)
 
-        # ======================
-        # SAVE RESULTS
-        # ======================
-
         logger.save()
 
         summary = XaiSummary.build_summary(
@@ -451,5 +417,18 @@ class ExperimentPipeline:
 
         print("\n📊 XAI SUMMARY")
         print(summary)
+
+        analysis = ModelInterpretabilityAnalysis.build_table(results)
+
+        analysis.to_csv(
+            f"{logger.base_dir}/accuracy_vs_interpretability.csv",
+            index=False
+        )
+
+        print("\nAccuracy vs Interpretability:")
+        print(analysis)
+
+        tradeoff_path = f"{logger.base_dir}/accuracy_vs_interpretability.png"
+        ModelTradeoffPlot.plot(analysis, tradeoff_path)
 
         return results

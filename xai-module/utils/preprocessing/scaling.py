@@ -12,13 +12,11 @@ def build_scaler(X: pd.DataFrame, scaling_type="standard"):
 
     numeric_cols = X.select_dtypes(include=["int64", "float64"]).columns
 
-    # wykryj kolumny binarne (0/1)
     binary_cols = [
         col for col in numeric_cols
         if set(X[col].dropna().unique()).issubset({0, 1})
     ]
 
-    # kolumny do skalowania = numeryczne bez binarnych
     scale_cols = [col for col in numeric_cols if col not in binary_cols]
 
     if scaling_type == "standard":
