@@ -1,0 +1,18 @@
+The model predicted class '65'.
+
+The most influential variables for this decision were:
+ - num__OFFENSE_CODE (importance: 2.6690)
+ - cat__UCR_PART_Part Two (importance: 0.2962)
+ - cat__UCR_PART_Part Three (importance: 0.2061)
+ - cat__UCR_PART_Part One (importance: 0.1676)
+ - num__Lat (importance: 0.0832)
+
+Values of the most important features:
+ - OFFENSE_CODE: 2907
+ - Lat: 42.28979533
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:

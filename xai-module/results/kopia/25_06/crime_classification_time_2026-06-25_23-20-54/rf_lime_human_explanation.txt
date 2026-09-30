@@ -1,0 +1,17 @@
+The model predicted class '36'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_A7 (importance: 0.0774)
+ - num__Long (importance: 0.0133)
+ - cat__DISTRICT_A1 (importance: 0.0062)
+ - cat__DISTRICT_B2 (importance: 0.0035)
+ - cat__DAY_OF_WEEK_Thursday (importance: 0.0028)
+
+Values of the most important features:
+ - Long: -71.05440282
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

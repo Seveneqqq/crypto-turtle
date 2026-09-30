@@ -1,0 +1,18 @@
+The model predicted class '33'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_B2 (importance: 0.1337)
+ - cat__DISTRICT_B3 (importance: 0.1139)
+ - num__HOUR (importance: 0.1011)
+ - num__Lat (importance: 0.0992)
+ - cat__DAY_OF_WEEK_Saturday (importance: 0.0968)
+
+Values of the most important features:
+ - HOUR: 9
+ - Lat: 42.35633324
+
+Model explanation reliability:
+- Explanations are unstable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

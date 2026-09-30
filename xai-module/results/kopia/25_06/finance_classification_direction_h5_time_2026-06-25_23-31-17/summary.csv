@@ -1,0 +1,37 @@
+dataset,model,accuracy,f1_macro,report
+finance_classification_direction_h5_time,rf,0.5040508598907817,0.3515006874211211,"              precision    recall  f1-score   support
+
+           0       0.50      0.98      0.67     30910
+           1       0.50      0.02      0.04     30435
+
+    accuracy                           0.50     61345
+   macro avg       0.50      0.50      0.35     61345
+weighted avg       0.50      0.50      0.35     61345
+"
+finance_classification_direction_h5_time,logreg,0.5044420898198713,0.40688834192094403,"              precision    recall  f1-score   support
+
+           0       0.50      0.90      0.65     30910
+           1       0.50      0.10      0.17     30435
+
+    accuracy                           0.50     61345
+   macro avg       0.50      0.50      0.41     61345
+weighted avg       0.50      0.50      0.41     61345
+"
+finance_classification_direction_h5_time,xgb,0.5021925177276062,0.39796137036306456,"              precision    recall  f1-score   support
+
+           0       0.50      0.91      0.65     30910
+           1       0.49      0.09      0.15     30435
+
+    accuracy                           0.50     61345
+   macro avg       0.50      0.50      0.40     61345
+weighted avg       0.50      0.50      0.40     61345
+"
+finance_classification_direction_h5_time,dt,0.5052734534191866,0.361470968252037,"              precision    recall  f1-score   support
+
+           0       0.50      0.97      0.66     30910
+           1       0.52      0.03      0.06     30435
+
+    accuracy                           0.51     61345
+   macro avg       0.51      0.50      0.36     61345
+weighted avg       0.51      0.51      0.36     61345
+"

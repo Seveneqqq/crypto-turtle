@@ -1,0 +1,339 @@
+[
+    {
+        "dataset": "medical",
+        "task": "classification",
+        "model": "rf",
+        "model_metrics": {
+            "accuracy": 0.720369040624932,
+            "f1_macro": 0.6424671069320327,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.93      0.72      0.81     38116\n           1       0.35      0.74      0.48      7841\n\n    accuracy                           0.72     45957\n   macro avg       0.64      0.73      0.64     45957\nweighted avg       0.83      0.72      0.75     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.09427712240081983,
+                    "bin__HighBP": 0.09138362249683134,
+                    "num__BMI": 0.0696288834751068,
+                    "bin__HighChol": 0.06139619611079038,
+                    "num__Age": 0.0443518309300481,
+                    "bin__DiffWalk": 0.025973389865210982,
+                    "num__Income": 0.018874266627706308,
+                    "bin__HeartDiseaseorAttack": 0.01584887772754276,
+                    "bin__HvyAlcoholConsump": 0.009137493316434028,
+                    "num__PhysHlth": 0.009042266104227217,
+                    "bin__Sex": 0.007144656422237941,
+                    "num__MentHlth": 0.0057482779894206075,
+                    "bin__PhysActivity": 0.005397827788138747,
+                    "num__Education": 0.004884710107911167,
+                    "bin__CholCheck": 0.004349574336779792,
+                    "bin__Stroke": 0.001859089141525274,
+                    "bin__AnyHealthcare": 0.0013480174039195983,
+                    "bin__Veggies": 0.0012012103786315912,
+                    "bin__Smoker": 0.0008412492671991615,
+                    "bin__Fruits": 0.0006622494555585742,
+                    "bin__NoDocbcCost": 0.0005813885494725852
+                }
+            },
+            "permutation": {
+                "global_importance": {
+                    "bin__HighBP": 0.012222222222222282,
+                    "num__Income": 0.011111111111111146,
+                    "num__GenHlth": 0.010000000000000009,
+                    "num__Age": 0.00888888888888891,
+                    "bin__HighChol": 0.00666666666666671,
+                    "num__BMI": 0.0033333333333333734,
+                    "bin__HeartDiseaseorAttack": 0.0033333333333333734,
+                    "num__Education": 0.0033333333333333734,
+                    "num__PhysHlth": 0.0022222222222222734,
+                    "bin__PhysActivity": 0.0022222222222222734,
+                    "bin__CholCheck": 0.0011111111111111738,
+                    "bin__Veggies": 0.0011111111111111367,
+                    "bin__Stroke": 0.0011111111111111367,
+                    "bin__Sex": 3.700743415417188e-17,
+                    "bin__DiffWalk": 3.700743415417188e-17,
+                    "bin__NoDocbcCost": 0.0,
+                    "bin__AnyHealthcare": -0.0011111111111110998,
+                    "bin__Smoker": -0.0011111111111110998,
+                    "bin__Fruits": -0.0011111111111110998,
+                    "num__MentHlth": -0.004444444444444436,
+                    "bin__HvyAlcoholConsump": -0.007777777777777772
+                }
+            },
+            "lime": {
+                "global_importance": {
+                    "bin__HighBP <= 0.00": 0.07771689560696374,
+                    "num__GenHlth <= -0.57": 0.07381704138975648,
+                    "0.00 < bin__HighBP <= 1.00": 0.07165845839222622,
+                    "0.00 < bin__HighChol <= 1.00": 0.06075655683474085,
+                    "bin__HvyAlcoholConsump <= 0.00": 0.06052841710176872,
+                    "bin__HeartDiseaseorAttack <= 0.00": 0.052333836207549604,
+                    "bin__HighChol <= 0.00": 0.04783164334903454,
+                    "bin__DiffWalk <= 0.00": 0.03803933179164261,
+                    "-0.57 < num__GenHlth <= 0.37": 0.0356470887817652,
+                    "num__Age > 0.62": 0.03386067025430007,
+                    "num__BMI > 0.49": 0.030415323328464448,
+                    "num__Age <= -0.67": 0.028700332309943084,
+                    "num__GenHlth > 0.37": 0.02840026547710326,
+                    "num__BMI <= -0.69": 0.026799611635866038,
+                    "0.05 < num__Income <= 1.01": 0.018594375316713388,
+                    "-0.25 < num__BMI <= 0.49": 0.01839538434959108,
+                    "bin__DiffWalk > 0.00": 0.012852150798987064,
+                    "-0.03 < num__Age <= 0.62": 0.012688184346325017,
+                    "-0.69 < num__BMI <= -0.25": 0.011380786336804142,
+                    "num__Income <= -0.90": 0.01083218721763734,
+                    "bin__Stroke <= 0.00": 0.00968646637115106,
+                    "bin__HeartDiseaseorAttack > 0.00": 0.00709514725736198,
+                    "bin__HvyAlcoholConsump > 0.00": 0.005033781650597622,
+                    "bin__Sex <= 0.00": 0.00336042955869513,
+                    "0.02 < num__Education <= 1.03": 0.0032945272011643627,
+                    "num__Education <= -0.99": 0.0024905367949650836,
+                    "0.00 < bin__Sex <= 1.00": 0.0023771031028580417,
+                    "bin__Stroke > 0.00": 0.0016812628670512442,
+                    "num__MentHlth > -0.20": 0.000490603136413295,
+                    "num__PhysHlth > -0.08": 0.00035669002122321644,
+                    "num__PhysHlth <= -0.52": 0.00030420024312086114,
+                    "bin__NoDocbcCost > 0.00": 0.0002454727836067157,
+                    "0.00 < bin__PhysActivity <= 1.00": 0.00024275061850270635
+                }
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.6790529118249321,
+                "top10_overlap": 0.8
+            },
+            "shap_vs_lime": {
+                "spearman": -0.8366989937615313,
+                "top10_overlap": 0.0
+            },
+            "permutation_vs_lime": {
+                "spearman": -0.4041770743601183,
+                "top10_overlap": 0.0
+            }
+        }
+    },
+    {
+        "dataset": "medical",
+        "task": "classification",
+        "model": "logreg",
+        "model_metrics": {
+            "accuracy": 0.8357159953869921,
+            "f1_macro": 0.5879397695680998,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.85      0.97      0.91     38116\n           1       0.56      0.18      0.27      7841\n\n    accuracy                           0.84     45957\n   macro avg       0.71      0.57      0.59     45957\nweighted avg       0.80      0.84      0.80     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.24324982360728564,
+                    "bin__HighBP": 0.16937993663891027,
+                    "bin__HighChol": 0.14666348089483905,
+                    "num__BMI": 0.14313877422297738,
+                    "num__Age": 0.12594368147102009,
+                    "bin__Sex": 0.05822544642859709,
+                    "bin__HvyAlcoholConsump": 0.049675989097725796,
+                    "num__Income": 0.04476161875342463,
+                    "num__PhysHlth": 0.03522329189052899,
+                    "bin__CholCheck": 0.023659980230141646,
+                    "bin__DiffWalk": 0.023012434947804764,
+                    "bin__HeartDiseaseorAttack": 0.01867127997051527,
+                    "num__Education": 0.01263275146658341,
+                    "bin__Smoker": 0.009279383290448142,
+                    "bin__AnyHealthcare": 0.008708449700630201,
+                    "bin__PhysActivity": 0.007207332601465035,
+                    "num__MentHlth": 0.006524882057298833,
+                    "bin__NoDocbcCost": 0.005831459027145383,
+                    "bin__Fruits": 0.005817442476676227,
+                    "bin__Veggies": 0.0042314935122271455,
+                    "bin__Stroke": 0.004222232891790563
+                }
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__BMI": 0.02111111111111112,
+                    "bin__HighChol": 0.008888888888888872,
+                    "num__GenHlth": 0.007777777777777735,
+                    "bin__HighBP": 0.0055555555555554985,
+                    "num__Age": 0.004444444444444399,
+                    "bin__HvyAlcoholConsump": 0.0022222222222221997,
+                    "bin__Smoker": 0.0011111111111110998,
+                    "bin__Sex": 0.0011111111111110998,
+                    "bin__AnyHealthcare": 0.0,
+                    "bin__PhysActivity": 0.0,
+                    "bin__Fruits": 0.0,
+                    "bin__Veggies": 0.0,
+                    "bin__Stroke": -3.700743415417188e-17,
+                    "num__Income": -0.0011111111111111367,
+                    "bin__CholCheck": -0.0011111111111111367,
+                    "num__PhysHlth": -0.0011111111111111367,
+                    "bin__DiffWalk": -0.0022222222222222734,
+                    "bin__NoDocbcCost": -0.0033333333333333734,
+                    "num__Education": -0.0033333333333334103,
+                    "num__MentHlth": -0.0033333333333334103,
+                    "bin__HeartDiseaseorAttack": -0.00444444444444451
+                }
+            },
+            "lime": {
+                "global_importance": {
+                    "bin__HvyAlcoholConsump <= 0.00": 0.05032376538237273,
+                    "num__GenHlth <= -0.57": 0.038367779267111005,
+                    "bin__HighBP <= 0.00": 0.034882574663037645,
+                    "0.00 < bin__HighChol <= 1.00": 0.03311523234772322,
+                    "0.00 < bin__HighBP <= 1.00": 0.032682711103747326,
+                    "num__Age > 0.62": 0.025813080852662682,
+                    "bin__HighChol <= 0.00": 0.025675537695715317,
+                    "num__BMI > 0.49": 0.022592062475947756,
+                    "num__GenHlth > 0.37": 0.02102376874304424,
+                    "bin__HeartDiseaseorAttack <= 0.00": 0.015201547118294259,
+                    "num__Age <= -0.67": 0.013567212045546086,
+                    "num__BMI <= -0.69": 0.012856760250222778,
+                    "bin__Sex <= 0.00": 0.012430957012660903,
+                    "0.00 < bin__Sex <= 1.00": 0.010674304192692522,
+                    "-0.57 < num__GenHlth <= 0.37": 0.008627485633751313,
+                    "0.05 < num__Income <= 1.01": 0.008553435779604917,
+                    "bin__Stroke <= 0.00": 0.007833702121692565,
+                    "bin__DiffWalk <= 0.00": 0.0077048730038507705,
+                    "num__Income <= -0.90": 0.0060683158191802864,
+                    "-0.69 < num__BMI <= -0.25": 0.005984886825529087,
+                    "bin__HvyAlcoholConsump > 0.00": 0.004512882001506549,
+                    "-0.03 < num__Age <= 0.62": 0.0038167211477302403,
+                    "-0.67 < num__Age <= -0.03": 0.0021987359491567344,
+                    "bin__HeartDiseaseorAttack > 0.00": 0.002194005230856993,
+                    "bin__DiffWalk > 0.00": 0.002178655559158466,
+                    "bin__NoDocbcCost <= 0.00": 0.0017090763076384793,
+                    "bin__Stroke > 0.00": 0.0007629189745158057,
+                    "num__PhysHlth > -0.08": 0.0004652965928146227,
+                    "bin__PhysActivity <= 0.00": 0.0003687694785013929,
+                    "0.00 < bin__PhysActivity <= 1.00": 0.00024315781216976566,
+                    "0.02 < num__Education <= 1.03": 0.00021211063728467005,
+                    "num__PhysHlth <= -0.52": 0.00012726180671663621
+                }
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.597919379414347,
+                "top10_overlap": 0.7
+            },
+            "shap_vs_lime": {
+                "spearman": -0.8393728411990219,
+                "top10_overlap": 0.0
+            },
+            "permutation_vs_lime": {
+                "spearman": 0.04260610535221585,
+                "top10_overlap": 0.0
+            }
+        }
+    },
+    {
+        "dataset": "medical",
+        "task": "classification",
+        "model": "xgb",
+        "model_metrics": {
+            "accuracy": 0.8376743477598625,
+            "f1_macro": 0.6021110667216275,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.85      0.97      0.91     38116\n           1       0.57      0.20      0.30      7841\n\n    accuracy                           0.84     45957\n   macro avg       0.71      0.58      0.60     45957\nweighted avg       0.81      0.84      0.80     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.585747480392456,
+                    "bin__HighBP": 0.41676443815231323,
+                    "num__BMI": 0.4052566587924957,
+                    "num__Age": 0.32967156171798706,
+                    "bin__HighChol": 0.30784323811531067,
+                    "num__Income": 0.11680807173252106,
+                    "bin__Sex": 0.09314820170402527,
+                    "bin__HvyAlcoholConsump": 0.07270825654268265,
+                    "num__MentHlth": 0.06647850573062897,
+                    "bin__HeartDiseaseorAttack": 0.05287596583366394,
+                    "num__PhysHlth": 0.05005442723631859,
+                    "bin__DiffWalk": 0.04798568785190582,
+                    "bin__CholCheck": 0.04212755709886551,
+                    "num__Education": 0.03934480622410774,
+                    "bin__Smoker": 0.03313741460442543,
+                    "bin__Veggies": 0.020805971696972847,
+                    "bin__PhysActivity": 0.015588231384754181,
+                    "bin__Fruits": 0.01507408544421196,
+                    "bin__AnyHealthcare": 0.0149577297270298,
+                    "bin__Stroke": 0.01465610507875681,
+                    "bin__NoDocbcCost": 0.010450596921145916
+                }
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__BMI": 0.027777777777777752,
+                    "bin__HighChol": 0.01777777777777771,
+                    "bin__HighBP": 0.014444444444444371,
+                    "num__Age": 0.013333333333333272,
+                    "num__GenHlth": 0.007777777777777735,
+                    "bin__HeartDiseaseorAttack": 0.007777777777777699,
+                    "bin__Smoker": 0.006666666666666599,
+                    "bin__Sex": 0.0055555555555554985,
+                    "bin__DiffWalk": 0.004444444444444399,
+                    "bin__Stroke": 0.004444444444444399,
+                    "bin__PhysActivity": 0.004444444444444399,
+                    "bin__HvyAlcoholConsump": 0.0022222222222221997,
+                    "bin__Veggies": 0.0022222222222221997,
+                    "num__Education": 0.0022222222222221624,
+                    "bin__NoDocbcCost": 0.0,
+                    "bin__AnyHealthcare": 0.0,
+                    "bin__Fruits": 0.0,
+                    "bin__CholCheck": 0.0,
+                    "num__Income": -3.700743415417188e-17,
+                    "num__PhysHlth": -3.700743415417188e-17,
+                    "num__MentHlth": -0.0022222222222222734
+                }
+            },
+            "lime": {
+                "global_importance": {
+                    "bin__HeartDiseaseorAttack <= 0.00": 0.046390514010984214,
+                    "bin__Stroke <= 0.00": 0.03555803717124087,
+                    "0.00 < bin__HighChol <= 1.00": 0.028402828285804305,
+                    "bin__NoDocbcCost <= 0.00": 0.026867799735615795,
+                    "num__Age > 0.62": 0.025564574924611554,
+                    "0.05 < num__Income <= 1.01": 0.022045541101012915,
+                    "bin__HighChol <= 0.00": 0.021995436708811232,
+                    "bin__HighBP <= 0.00": 0.018508360191244827,
+                    "0.00 < bin__HighBP <= 1.00": 0.016981745151281213,
+                    "num__BMI > 0.49": 0.014743572826177163,
+                    "num__Income <= -0.90": 0.012426481435677176,
+                    "bin__DiffWalk <= 0.00": 0.011652346808428991,
+                    "num__MentHlth <= -0.46": 0.011425877671813722,
+                    "num__GenHlth <= -0.57": 0.01111041536567396,
+                    "num__Age <= -0.67": 0.011048045158181294,
+                    "num__GenHlth > 0.37": 0.008903268382064575,
+                    "bin__HeartDiseaseorAttack > 0.00": 0.006869477433264144,
+                    "num__BMI <= -0.69": 0.006813780708035544,
+                    "bin__DiffWalk > 0.00": 0.005454946706249022,
+                    "-0.69 < num__BMI <= -0.25": 0.004874019438921947,
+                    "bin__Stroke > 0.00": 0.0035238034389998307,
+                    "-0.67 < num__Age <= -0.03": 0.002954195324831521,
+                    "bin__NoDocbcCost > 0.00": 0.002947359476616844,
+                    "0.00 < bin__PhysActivity <= 1.00": 0.0023679127606511217,
+                    "num__MentHlth > -0.20": 0.0017860156512126244,
+                    "-0.46 < num__MentHlth <= -0.20": 0.0015590815888682713,
+                    "-0.90 < num__Income <= 0.05": 0.0011842599732725333,
+                    "bin__PhysActivity <= 0.00": 0.0011162612804560153,
+                    "bin__HvyAlcoholConsump <= 0.00": 0.0010689246548355382,
+                    "bin__Sex <= 0.00": 0.00026585664634933763,
+                    "0.00 < bin__Smoker <= 1.00": 0.00022859671558191083,
+                    "-0.03 < num__Age <= 0.62": 0.00021251255750602378
+                }
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.5195893297094107,
+                "top10_overlap": 0.7
+            },
+            "shap_vs_lime": {
+                "spearman": -0.8393728411990219,
+                "top10_overlap": 0.0
+            },
+            "permutation_vs_lime": {
+                "spearman": -0.4686671588743743,
+                "top10_overlap": 0.0
+            }
+        }
+    }
+]

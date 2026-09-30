@@ -1,0 +1,21 @@
+The model predicted class '21'.
+
+The most influential variables for this decision were:
+ - num__Lat (importance: 0.0093)
+ - num__Long (importance: 0.0082)
+ - num__HOUR (importance: 0.0075)
+ - num__MONTH (importance: 0.0045)
+ - num__YEAR (importance: 0.0029)
+
+Values of the most important features:
+ - Lat: 42.35633324
+ - Long: -71.05440282
+ - HOUR: 9
+ - MONTH: 2
+ - YEAR: 2016
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

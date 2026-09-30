@@ -1,0 +1,21 @@
+The model predicted class '0'.
+
+The most influential variables for this decision were:
+ - num__high (importance: 0.0067)
+ - bin__ignore (importance: 0.0000)
+ - num__number_of_trades (importance: -0.0111)
+ - num__close (importance: -0.0122)
+ - num__volume (importance: -0.0122)
+
+Values of the most important features:
+ - high: 91863.6
+ - ignore: 0.0
+ - number_of_trades: 5618.0
+ - close: 91747.99
+ - volume: 23.98297
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

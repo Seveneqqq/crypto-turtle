@@ -1,0 +1,21 @@
+The model predicted class '1'.
+
+The most influential variables for this decision were:
+ - num__PhysHlth (importance: 0.0367)
+ - num__GenHlth (importance: 0.0222)
+ - bin__PhysActivity (importance: 0.0211)
+ - bin__Veggies (importance: 0.0200)
+ - bin__NoDocbcCost (importance: 0.0122)
+
+Values of the most important features:
+ - PhysHlth: 21.0
+ - GenHlth: 3.0
+ - PhysActivity: 1.0
+ - Veggies: 0.0
+ - NoDocbcCost: 1.0
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

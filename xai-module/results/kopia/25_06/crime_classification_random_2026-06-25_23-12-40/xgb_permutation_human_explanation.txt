@@ -1,0 +1,16 @@
+The model predicted class '40'.
+
+The most influential variables for this decision were:
+ - feature_9 (importance: 0.0878)
+ - feature_8 (importance: 0.0844)
+ - feature_0 (importance: 0.0344)
+ - feature_6 (importance: 0.0300)
+ - feature_3 (importance: 0.0111)
+
+Values of the most important features:
+
+Model explanation reliability:
+- Explanations are unstable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

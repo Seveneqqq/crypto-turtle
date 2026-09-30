@@ -1,0 +1,4382 @@
+[
+    {
+        "dataset": "medical_classification_random",
+        "task": "classification",
+        "model": "rf",
+        "model_metrics": {
+            "accuracy": 0.720369040624932,
+            "f1_macro": 0.6424671069320327,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.93      0.72      0.81     38116\n           1       0.35      0.74      0.48      7841\n\n    accuracy                           0.72     45957\n   macro avg       0.64      0.73      0.64     45957\nweighted avg       0.83      0.72      0.75     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.09427712240081983,
+                    "bin__HighBP": 0.09138362249683134,
+                    "num__BMI": 0.0696288834751068,
+                    "bin__HighChol": 0.06139619611079038,
+                    "num__Age": 0.0443518309300481,
+                    "bin__DiffWalk": 0.025973389865210982,
+                    "num__Income": 0.018874266627706308,
+                    "bin__HeartDiseaseorAttack": 0.01584887772754276,
+                    "bin__HvyAlcoholConsump": 0.009137493316434028,
+                    "num__PhysHlth": 0.009042266104227217,
+                    "bin__Sex": 0.007144656422237941,
+                    "num__MentHlth": 0.0057482779894206075,
+                    "bin__PhysActivity": 0.005397827788138747,
+                    "num__Education": 0.004884710107911167,
+                    "bin__CholCheck": 0.004349574336779792,
+                    "bin__Stroke": 0.001859089141525274,
+                    "bin__AnyHealthcare": 0.0013480174039195983,
+                    "bin__Veggies": 0.0012012103786315912,
+                    "bin__Smoker": 0.0008412492671991615,
+                    "bin__Fruits": 0.0006622494555585742,
+                    "bin__NoDocbcCost": 0.0005813885494725852
+                },
+                "stability": 0.9766233766233766,
+                "runtime": 1.7540295124053955,
+                "fidelity": {
+                    "baseline_score": 0.6519345960822406,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.19838268351393457,
+                    "top_k_used": [
+                        "num__GenHlth",
+                        "bin__HighBP",
+                        "num__BMI",
+                        "bin__HighChol",
+                        "num__Age"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.11247672262796969
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.07015563593129615
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.0510243575545907
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.0488730703886634
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.04292181917186315
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.03350688087907505
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.027118402279573912
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.024893588944998848
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.014411717693438674
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.00891271882239937
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.1175001100864336
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.08058241446110306
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.08008654612817781
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.07900486601646933
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.05299322746242091
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": -0.04516314998817929
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.03300725836606823
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03275562997573601
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.018469569987473403
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.009723897882638116
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1268764999776965
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09399864473554237
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.08699477406697155
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.062236987170574826
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.052378652166631484
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.017873280032281284
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.012242892865409536
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.012048194873632519
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.007778179077171477
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.005087402873496454
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09886043809604525
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.08560150887877668
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.062038345516549145
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.0596383533516731
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.023087702823381285
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.01905908168545878
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.009298396217337433
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.007941327502788233
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.005073182821691499
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.004782133885836778
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.11242896059069563
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.10861389891299492
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.08844672879621555
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.07908459956408123
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.05383419833532542
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.03444175410862761
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03250913701871956
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.025951662854295746
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.00929085415058787
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.008064890334966183
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.11247672262796969
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.07015563593129615
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.0510243575545907
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.0488730703886634
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.04292181917186315
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.03350688087907505
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.027118402279573912
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.024893588944998848
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.014411717693438674
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.00891271882239937
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 203346,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09913837261170594
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07102352991814273
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.07067268166931015
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.048056311464055805
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.03256088139126809
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.016907172126084866
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": -0.009485646564950524
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.006976283459665789
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.006743226448161714
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.006367651098387887
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 201972,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.12378830731681925
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.08960597559821429
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.06419379495597707
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06365717720328712
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.022519894426495914
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.01682190142783927
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.012671321818687615
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.009343651456709404
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.006699580787489258
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": -0.006477697170841901
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 241058,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07842247219229762
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.07187706977332958
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.04646910280774237
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.04092418103977453
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.03883542840190458
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.03427844058598561
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.01867778822304318
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.012346574253798571
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.006447694906029618
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.005200123159114101
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.12362472729786306
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.10820050885411925
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06414923028072228
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.05910618379405806
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.03870570780290166
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.025437301466898245
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.017964380920492462
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.010451509079810227
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.009799878072910929
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.009343867229021523
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__BMI": 0.012222222222222282,
+                    "bin__Sex": 0.011111111111111146,
+                    "bin__PhysActivity": 0.010000000000000009,
+                    "bin__NoDocbcCost": 0.00888888888888891,
+                    "num__GenHlth": 0.00666666666666671,
+                    "num__PhysHlth": 0.0033333333333333734,
+                    "num__Income": 0.0033333333333333734,
+                    "bin__DiffWalk": 0.0033333333333333734,
+                    "bin__Veggies": 0.0022222222222222734,
+                    "bin__HighBP": 0.0022222222222222734,
+                    "num__MentHlth": 0.0011111111111111738,
+                    "num__Education": 0.0011111111111111367,
+                    "bin__CholCheck": 0.0011111111111111367,
+                    "bin__HvyAlcoholConsump": 3.700743415417188e-17,
+                    "bin__AnyHealthcare": 3.700743415417188e-17,
+                    "bin__HeartDiseaseorAttack": 0.0,
+                    "bin__HighChol": -0.0011111111111110998,
+                    "bin__Stroke": -0.0011111111111110998,
+                    "num__Age": -0.0011111111111110998,
+                    "bin__Fruits": -0.004444444444444436,
+                    "bin__Smoker": -0.007777777777777772
+                },
+                "stability": 0.9999999999999999,
+                "runtime": 3.5803472995758057,
+                "fidelity": {
+                    "baseline_score": 0.6519345960822406,
+                    "perturbed_score": 0.5250557332557915,
+                    "fidelity_drop": 0.1268788628264491,
+                    "top_k_used": [
+                        "num__BMI",
+                        "bin__Sex",
+                        "bin__PhysActivity",
+                        "bin__NoDocbcCost",
+                        "num__GenHlth"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "bin__HighBP": 0.1496190066468086,
+                    "num__GenHlth": 0.13740727877541353,
+                    "bin__HighChol": 0.10869261457133639,
+                    "num__BMI": 0.08716325051782564,
+                    "num__Age": 0.07489489223570922,
+                    "bin__HvyAlcoholConsump": 0.06434924885312367,
+                    "bin__HeartDiseaseorAttack": 0.06024739426720001,
+                    "bin__DiffWalk": 0.05020944356900447,
+                    "num__Income": 0.02848238215811831,
+                    "bin__Stroke": 0.00970351529693354,
+                    "num__Education": 0.006023184661957226,
+                    "bin__Sex": 0.0058676790030018485,
+                    "bin__PhysActivity": 0.0006758101562660085,
+                    "bin__NoDocbcCost": 0.0006120976373599936,
+                    "num__PhysHlth": 0.000363320693358065
+                },
+                "stability": 0.8223860190276743,
+                "runtime": 4.682925224304199,
+                "fidelity": {
+                    "baseline_score": 0.6519345960822406,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.19838268351393457,
+                    "top_k_used": [
+                        "bin__HighBP",
+                        "num__GenHlth",
+                        "bin__HighChol",
+                        "num__BMI",
+                        "num__Age"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.1425719482293728
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.13847359962032962
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11336432820089729
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.0872495768149515
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.08413321358479509
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.07221910711794441
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.06250191315174655
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.0563729755275648
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.038777339814310786
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.018328037128951372
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.14958292695990164
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.14930391021614547
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.12929363954328074
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.10327404582273253
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.07465268003811393
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.06489403194302625
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.05459822197003238
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.047723062974485135
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.041868197451672716
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.01187895848984019
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.17676837297301926
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.1490998759752072
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1225461387909799
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11134083477447036
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.08412463040531572
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06594752109638671
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05998191969618069
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.05037035822445797
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.015927531335071052
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.012395295033569826
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.17634182986548716
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.14918911396246595
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.1079065188255106
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.08271123340068869
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06083616172753394
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05795798116347636
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.052864355630672814
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.049780787029123905
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03763818130671559
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.012211211151933986
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.15809496409682947
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.14806190280788298
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.12684896694434425
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.12370728588498575
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.10606024098765271
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06531639816637282
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05011271378694823
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.04573829760232573
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.035936838534633454
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.02016464778650694
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.1514660039749606
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1419702659176595
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.10902952940592026
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.08625136272087665
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.08409186136416563
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06274436561867257
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.056125020768917504
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05124283661674115
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.035792150314327864
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.01723450649855382
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 203346,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.15133204239202616
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.1502091637087422
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1325869313604961
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.10993939291487992
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.0791539719554913
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06414130491574796
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.06150132236151916
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.049933791325847625
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.025241500836503637
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.015187684947793002
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 201972,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.1486992120456747
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.13989885163221757
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11053927503251397
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09408848732624604
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.062109122871843184
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05116638273283235
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.05006315944350819
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03549875643886336
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.012136105845314276
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.011158349301873188
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 241058,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.1478512177963199
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.10777935972208882
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.08629093694219221
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.07107148746497614
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06784805612124654
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.06621640112536957
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.05197548350829339
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.04747483259725138
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03372165306464707
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.0317140460126121
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.1569654836239733
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.15040515856426412
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11239999894756943
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.07547104239494917
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06555951811338694
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.05865563879746694
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.054931143870691077
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.049029320857733254
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03529869560613014
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.018273281676538067
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.27566159472355695,
+                "top10_overlap": 0.6
+            },
+            "shap_vs_lime": {
+                "spearman": 0.8677092101721706,
+                "top10_overlap": 0.9
+            },
+            "permutation_vs_lime": {
+                "spearman": 0.1624968441407438,
+                "top10_overlap": 0.5
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "medical_classification_random",
+                "model": "rf",
+                "method": "shap",
+                "stability": 0.9766233766233766,
+                "fidelity_drop": 0.19838268351393457,
+                "agreement_mean": 0.5716854024478638,
+                "runtime": 1.7540295124053955,
+                "speed_score": 0.3631043151482391,
+                "final_score": 0.5618996330524556
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "rf",
+                "method": "lime",
+                "stability": 0.8223860190276743,
+                "fidelity_drop": 0.19838268351393457,
+                "agreement_mean": 0.5151030271564572,
+                "runtime": 4.682925224304199,
+                "speed_score": 0.17596571493203786,
+                "final_score": 0.4778862228140583
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "rf",
+                "method": "permutation",
+                "stability": 0.9999999999999999,
+                "fidelity_drop": 0.1268788628264491,
+                "agreement_mean": 0.21907921943215036,
+                "runtime": 3.5803472995758057,
+                "speed_score": 0.21832405592750834,
+                "final_score": 0.460055851468438
+            }
+        ]
+    },
+    {
+        "dataset": "medical_classification_random",
+        "task": "classification",
+        "model": "logreg",
+        "model_metrics": {
+            "accuracy": 0.8357159953869921,
+            "f1_macro": 0.5879397695680998,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.85      0.97      0.91     38116\n           1       0.56      0.18      0.27      7841\n\n    accuracy                           0.84     45957\n   macro avg       0.71      0.57      0.59     45957\nweighted avg       0.80      0.84      0.80     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.24324982360728564,
+                    "bin__HighBP": 0.16937993663891027,
+                    "bin__HighChol": 0.14666348089483905,
+                    "num__BMI": 0.14313877422297738,
+                    "num__Age": 0.12594368147102009,
+                    "bin__Sex": 0.05822544642859709,
+                    "bin__HvyAlcoholConsump": 0.049675989097725796,
+                    "num__Income": 0.04476161875342463,
+                    "num__PhysHlth": 0.03522329189052899,
+                    "bin__CholCheck": 0.023659980230141646,
+                    "bin__DiffWalk": 0.023012434947804764,
+                    "bin__HeartDiseaseorAttack": 0.01867127997051527,
+                    "num__Education": 0.01263275146658341,
+                    "bin__Smoker": 0.009279383290448142,
+                    "bin__AnyHealthcare": 0.008708449700630201,
+                    "bin__PhysActivity": 0.007207332601465035,
+                    "num__MentHlth": 0.006524882057298833,
+                    "bin__NoDocbcCost": 0.005831459027145383,
+                    "bin__Fruits": 0.005817442476676227,
+                    "bin__Veggies": 0.0042314935122271455,
+                    "bin__Stroke": 0.004222232891790563
+                },
+                "stability": 0.92987012987013,
+                "runtime": 0.009000301361083984,
+                "fidelity": {
+                    "baseline_score": 0.6009577015163607,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.14740578894805473,
+                    "top_k_used": [
+                        "num__GenHlth",
+                        "bin__HighBP",
+                        "bin__HighChol",
+                        "num__BMI",
+                        "num__Age"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.2480127276140697
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.23503762963916516
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.17171908264455407
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.13637676057883277
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.09784787755723481
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.07072454534286089
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06749455040451874
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.050136221722025795
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.037849399585205196
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.022088859951308264
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.39139151022893914
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.31890686776845756
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": -0.26997820161807495
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.13637676057883277
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.07520433258303871
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.07086077931830563
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.05875940740979129
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.051772476577336836
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.025232933056803464
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.017722401987075833
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.34246757145032175
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.20456514086824915
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.1358164936934191
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.11039083884292764
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06749455040451874
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.06077638554730847
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.05875940740979129
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.025232933056803464
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.025068110861012908
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": -0.023158114512526876
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.34246757145032175
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.2330473264461805
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.20456514086824915
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1003861040342663
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06749455040451874
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.06077638554730847
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.05875940740979129
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.025232933056803464
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.020254173699515238
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": -0.017681136335715223
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.39139151022893914
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.2834431172732225
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.19625038016520466
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.13637676057883277
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.10027244344405162
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06749455040451874
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.05875940740979129
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.051772476577336836
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.037849399585205196
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.017722401987075833
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 203346,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.19569575511446957
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11751881481958258
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.0937607832988681
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.07676584426149778
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06818838028941637
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": -0.035362272671430446
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.032986194467113775
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.025232933056803464
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.015040866516607741
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.015006514949952707
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 230363,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.29354363267170436
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.17627822222937387
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06818838028941637
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.0490625950413012
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.047240519545537096
+                            },
+                            {
+                                "feature": "bin__AnyHealthcare",
+                                "value": -0.03870422089168979
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.037849399585205196
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": -0.035362272671430446
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.023440195824717017
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": -0.021990796311409187
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.27275352115766555
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.19569575511446957
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.17627822222937387
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.15943675346618766
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.13492213636357817
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.060163466066430964
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": -0.035362272671430446
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.025232933056803464
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.023440195824717017
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": -0.021990796311409187
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 102073,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11751881481958258
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.11039083884292764
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06818838028941637
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.06002605979981083
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.053043409007145666
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.04892393877861739
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.037849399585205196
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.029368551864297095
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.023440195824717017
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": -0.021990796311409187
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 175359,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.11751881481958258
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06818838028941637
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.053043409007145666
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.04892393877861739
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.032986194467113775
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.025232933056803464
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.023440195824717017
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.01771519482957641
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.015040866516607741
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.015006514949952707
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__PhysHlth": 0.02111111111111112,
+                    "num__GenHlth": 0.008888888888888872,
+                    "bin__PhysActivity": 0.007777777777777735,
+                    "num__BMI": 0.0055555555555554985,
+                    "bin__NoDocbcCost": 0.004444444444444399,
+                    "bin__Smoker": 0.0022222222222221997,
+                    "num__Age": 0.0011111111111110998,
+                    "bin__AnyHealthcare": 0.0011111111111110998,
+                    "bin__Stroke": 0.0,
+                    "bin__HighBP": 0.0,
+                    "bin__HighChol": 0.0,
+                    "bin__CholCheck": 0.0,
+                    "num__Education": -3.700743415417188e-17,
+                    "num__MentHlth": -0.0011111111111111367,
+                    "bin__Veggies": -0.0011111111111111367,
+                    "bin__Sex": -0.0011111111111111367,
+                    "bin__HvyAlcoholConsump": -0.0022222222222222734,
+                    "bin__HeartDiseaseorAttack": -0.0033333333333333734,
+                    "bin__DiffWalk": -0.0033333333333334103,
+                    "bin__Fruits": -0.0033333333333334103,
+                    "num__Income": -0.00444444444444451
+                },
+                "stability": 0.9862297202321584,
+                "runtime": 0.10577106475830078,
+                "fidelity": {
+                    "baseline_score": 0.6009577015163607,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.14740578894805473,
+                    "top_k_used": [
+                        "num__PhysHlth",
+                        "num__GenHlth",
+                        "bin__PhysActivity",
+                        "num__BMI",
+                        "bin__NoDocbcCost"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "num__GenHlth": 0.06852607958392237,
+                    "bin__HighBP": 0.06769917114925303,
+                    "bin__HighChol": 0.05876454706383262,
+                    "bin__HvyAlcoholConsump": 0.05351989506102365,
+                    "num__Age": 0.0447196460094281,
+                    "num__BMI": 0.04113355281360148,
+                    "bin__Sex": 0.023004454041895887,
+                    "bin__HeartDiseaseorAttack": 0.01866851642710507,
+                    "num__Income": 0.014073368375384157,
+                    "bin__DiffWalk": 0.010101491414710714,
+                    "bin__Stroke": 0.008166265585632467,
+                    "bin__NoDocbcCost": 0.0006746179222346644,
+                    "num__Education": 0.0005423221027123219,
+                    "num__PhysHlth": 0.0005001610910055847,
+                    "bin__Smoker": 0.00022606820626556494,
+                    "num__MentHlth": 0.0001609208239268516
+                },
+                "stability": 0.6980541257973629,
+                "runtime": 2.607311725616455,
+                "fidelity": {
+                    "baseline_score": 0.6009577015163607,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.14740578894805473,
+                    "top_k_used": [
+                        "num__GenHlth",
+                        "bin__HighBP",
+                        "bin__HighChol",
+                        "bin__HvyAlcoholConsump",
+                        "num__Age"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.10196820648361289
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07084968174311346
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.061981964783728444
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05611486711980913
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.05171616483539572
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.023059768178904094
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.02283301059489854
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.02257006118279054
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.015023764264027054
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.013026511751932097
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.11595140704962784
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06256971115153324
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.05939584434069749
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05381289561767779
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.049063952484590105
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.025618988555940702
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.022117882071885652
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.02193885168757453
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.014351187195067226
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.014331439994649302
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09276065884436378
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06868508239239494
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06402109760085137
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.059186903054911595
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.05724531022847517
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05594692100410949
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.025244483078283236
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.023375247576326842
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.017784892203027845
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.010956786239526974
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09069408559926462
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06442024381913304
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06370041715161091
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05780230364886996
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.04875673237087681
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.02879946875575808
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.02264766044079447
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.01983036612740231
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.011251853178972622
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.006669406128242759
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.1161519614288702
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06790750093235026
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06199780732105024
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.06162949565028574
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05480808657090924
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.05120794844981296
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.022429276863375144
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.018010189368508286
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.017698778870503706
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.012360396851819937
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 203346,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.11920612721440554
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.10456580231649397
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07131170405537736
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06416684368150502
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.0604537049986028
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.05525743089640984
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.025760772855765543
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.01499371877785182
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.013276459351476349
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.010773719652250855
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 230363,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.10671100134773001
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09525595402162206
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06917297913827335
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06791149517053803
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.06318493541536403
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.0631846589342182
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.02469372692485435
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.016251518254314153
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.015316640192536252
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.012258746206063747
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.11665410364352044
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06794741536703326
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06045066279132348
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.05928307496474524
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.03229665916786703
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.02519150428954993
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.020459106906359412
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.01962288785225885
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.018747194598962767
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.014956184803237866
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 102073,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06758753979655234
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06495817349738385
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06180555893321094
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.05197264358756399
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.024897868750179165
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.023208822579146658
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.015891801164339435
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.015021787878934939
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.0109282233788393
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.010408571294388314
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 175359,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06644355330968199
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06366476092451705
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.0607456575955296
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.055411713269242296
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.02486127457736202
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.022929049175291816
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.022833229636524
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.019295933684314794
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.012946120007128947
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": 0.006626787982184566
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.18015911432135345,
+                "top10_overlap": 0.5
+            },
+            "shap_vs_lime": {
+                "spearman": 0.8026315229205634,
+                "top10_overlap": 0.8
+            },
+            "permutation_vs_lime": {
+                "spearman": 0.02496717004493088,
+                "top10_overlap": 0.4
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "medical_classification_random",
+                "model": "logreg",
+                "method": "shap",
+                "stability": 0.92987012987013,
+                "fidelity_drop": 0.14740578894805473,
+                "agreement_mean": 0.4913953186209584,
+                "runtime": 0.009000301361083984,
+                "speed_score": 0.9910799814936199,
+                "final_score": 0.5744336334599183
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "logreg",
+                "method": "permutation",
+                "stability": 0.9862297202321584,
+                "fidelity_drop": 0.14740578894805473,
+                "agreement_mean": 0.10256314218314216,
+                "runtime": 0.10577106475830078,
+                "speed_score": 0.9043463261706706,
+                "final_score": 0.50771968926677
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "logreg",
+                "method": "lime",
+                "stability": 0.6980541257973629,
+                "fidelity_drop": 0.14740578894805473,
+                "agreement_mean": 0.41379934648274713,
+                "runtime": 2.607311725616455,
+                "speed_score": 0.277214744957787,
+                "final_score": 0.40639231395322434
+            }
+        ]
+    },
+    {
+        "dataset": "medical_classification_random",
+        "task": "classification",
+        "model": "xgb",
+        "model_metrics": {
+            "accuracy": 0.8376743477598625,
+            "f1_macro": 0.6021110667216275,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.85      0.97      0.91     38116\n           1       0.57      0.20      0.30      7841\n\n    accuracy                           0.84     45957\n   macro avg       0.71      0.58      0.60     45957\nweighted avg       0.81      0.84      0.80     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.585747480392456,
+                    "bin__HighBP": 0.41676443815231323,
+                    "num__BMI": 0.4052566587924957,
+                    "num__Age": 0.32967156171798706,
+                    "bin__HighChol": 0.30784323811531067,
+                    "num__Income": 0.11680807173252106,
+                    "bin__Sex": 0.09314820170402527,
+                    "bin__HvyAlcoholConsump": 0.07270825654268265,
+                    "num__MentHlth": 0.06647850573062897,
+                    "bin__HeartDiseaseorAttack": 0.05287596583366394,
+                    "num__PhysHlth": 0.05005442723631859,
+                    "bin__DiffWalk": 0.04798568785190582,
+                    "bin__CholCheck": 0.04212755709886551,
+                    "num__Education": 0.03934480622410774,
+                    "bin__Smoker": 0.03313741460442543,
+                    "bin__Veggies": 0.020805971696972847,
+                    "bin__PhysActivity": 0.015588231384754181,
+                    "bin__Fruits": 0.01507408544421196,
+                    "bin__AnyHealthcare": 0.0149577297270298,
+                    "bin__Stroke": 0.01465610507875681,
+                    "bin__NoDocbcCost": 0.010450596921145916
+                },
+                "stability": 0.7467532467532467,
+                "runtime": 0.18200016021728516,
+                "fidelity": {
+                    "baseline_score": 0.6555683122847302,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.2020163997164242,
+                    "top_k_used": [
+                        "num__GenHlth",
+                        "bin__HighBP",
+                        "num__BMI",
+                        "num__Age",
+                        "bin__HighChol"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.42786815762519836
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.3928336203098297
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.30299508571624756
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.1904735416173935
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.18399877846240997
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.17343351244926453
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.16389526426792145
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.155183345079422
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.13258741796016693
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.12239733338356018
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 1.0183296203613281
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.44994112849235535
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.4461388885974884
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": -0.42324119806289673
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.31399765610694885
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.2921558618545532
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.1322898417711258
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.12000049650669098
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": -0.06347259134054184
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.05487694963812828
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": -1.0100799798965454
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.45787036418914795
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.3719662129878998
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.35908254981040955
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.3542974293231964
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.16604918241500854
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.07212205231189728
+                            },
+                            {
+                                "feature": "bin__Smoker",
+                                "value": 0.06571701914072037
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.057475656270980835
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.05650734156370163
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.41283726692199707
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.36814460158348083
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.27841833233833313
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.2727353274822235
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.12601982057094574
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.10157471895217896
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.05098051205277443
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.03704296052455902
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.03642379119992256
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.03257565572857857
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.9798235297203064
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.5199321508407593
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.38668087124824524
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.34880784153938293
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.3288872539997101
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.32474207878112793
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.13094601035118103
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": -0.09319888800382614
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.09124535322189331
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.08125559240579605
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 230363,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.5009487271308899
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.425238698720932
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.4134356677532196
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.3726402819156647
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.28739243745803833
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.23115384578704834
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.16106592118740082
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.050901371985673904
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": -0.04467540606856346
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": -0.02952960506081581
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.6813527941703796
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.465436190366745
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.3058302700519562
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.27073541283607483
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.18469686806201935
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.13103404641151428
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.09423960745334625
+                            },
+                            {
+                                "feature": "bin__Smoker",
+                                "value": -0.0702996626496315
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.06894200295209885
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.02688327059149742
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 175359,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.34885066747665405
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.3277173936367035
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.2795259654521942
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.15652696788311005
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.14628379046916962
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.14146128296852112
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.10112547129392624
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09728212654590607
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.09058775007724762
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.05491018667817116
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 178118,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.39224424958229065
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.30384376645088196
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.2588430643081665
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.19931472837924957
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.12650452554225922
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.12239847332239151
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.0726647600531578
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.06027154624462128
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.054140690714120865
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.04221614450216293
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 135682,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.4982609450817108
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.4385506808757782
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.35142770409584045
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.2544325590133667
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.1388045698404312
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.04512946307659149
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.04446860030293465
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.0434611514210701
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.029983289539813995
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": -0.02465681917965412
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__PhysHlth": 0.027777777777777752,
+                    "num__GenHlth": 0.01777777777777771,
+                    "num__BMI": 0.014444444444444371,
+                    "bin__NoDocbcCost": 0.013333333333333272,
+                    "bin__PhysActivity": 0.007777777777777735,
+                    "num__Income": 0.007777777777777699,
+                    "num__Age": 0.006666666666666599,
+                    "bin__AnyHealthcare": 0.0055555555555554985,
+                    "bin__HvyAlcoholConsump": 0.004444444444444399,
+                    "bin__HighBP": 0.004444444444444399,
+                    "num__Education": 0.004444444444444399,
+                    "bin__Smoker": 0.0022222222222221997,
+                    "bin__CholCheck": 0.0022222222222221997,
+                    "bin__DiffWalk": 0.0022222222222221624,
+                    "bin__HighChol": 0.0,
+                    "bin__HeartDiseaseorAttack": 0.0,
+                    "bin__Stroke": 0.0,
+                    "num__MentHlth": 0.0,
+                    "bin__Sex": -3.700743415417188e-17,
+                    "bin__Veggies": -3.700743415417188e-17,
+                    "bin__Fruits": -0.0022222222222222734
+                },
+                "stability": 0.14323439360490015,
+                "runtime": 1.1175692081451416,
+                "fidelity": {
+                    "baseline_score": 0.6555683122847302,
+                    "perturbed_score": 0.47225000862336586,
+                    "fidelity_drop": 0.18331830366136437,
+                    "top_k_used": [
+                        "num__PhysHlth",
+                        "num__GenHlth",
+                        "num__BMI",
+                        "bin__NoDocbcCost",
+                        "bin__PhysActivity"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "bin__HeartDiseaseorAttack": 0.052217569809757516,
+                    "bin__HighChol": 0.05066132633979839,
+                    "num__Age": 0.040641656694242086,
+                    "bin__Stroke": 0.038925345630338413,
+                    "num__Income": 0.03667746295367998,
+                    "bin__HighBP": 0.0356223261475308,
+                    "bin__NoDocbcCost": 0.02963278996825758,
+                    "num__BMI": 0.02619312777330957,
+                    "num__GenHlth": 0.020097574618121786,
+                    "bin__DiffWalk": 0.016854304264484976,
+                    "num__MentHlth": 0.013061113465927119,
+                    "bin__PhysActivity": 0.0033637016763381966,
+                    "bin__HvyAlcoholConsump": 0.0014172856686209287,
+                    "num__Education": 0.00048504055793997,
+                    "bin__Sex": 0.00026103813566235955
+                },
+                "stability": 0.8742777885989091,
+                "runtime": 3.2800374031066895,
+                "fidelity": {
+                    "baseline_score": 0.6555683122847302,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.2020163997164242,
+                    "top_k_used": [
+                        "bin__HeartDiseaseorAttack",
+                        "bin__HighChol",
+                        "num__Age",
+                        "bin__Stroke",
+                        "num__Income"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.06966779153457653
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06461982479889714
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.054634306078759125
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05149228959084803
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04291488241786484
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.040597016034639735
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03894050531860865
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.030750774216767963
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.01930885742927008
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.013870147084538912
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.0497421450129683
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.04748436106845607
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.04575195513212609
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.043596595820802095
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04079235386228198
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03914062932042483
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.032854795609304245
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.029494456565222028
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.02672804678798898
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.01966691151341545
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06694424765121355
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.055468305669138976
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.051743669854578116
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.035584734633206175
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.0321136443455076
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.03080959872048016
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.02809456397341022
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.024912566268786525
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.023980103331696864
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.01947150350886903
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06650811748003589
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05237753381997663
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.04628140817842088
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.04486840819693957
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04430470982767329
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03283643619675372
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.024353531686388402
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.023695144256743857
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.023134098493860042
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.016784348314198148
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05221385761498628
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.05190303392357403
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05102161457770378
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.04920841342281604
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04333716201827376
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.034257543540629626
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.03271044734692196
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03149699372996956
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.030261795007213453
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.01785500293640811
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 230363,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.06865643414920856
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06497861547885912
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05249538244240231
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05233926985444151
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.03785307014857839
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03595454397775363
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03561939346453997
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.025464338088624878
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.018595500739928356
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.017474530581733684
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.05368887409333291
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05305004023262863
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05291379666444682
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.045547248682884414
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.040705138266587594
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03407904694613557
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.03246641983700555
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.02249561921336203
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.017887430004454634
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.0173664111461887
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 175359,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.0632412414355795
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05348867449454385
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.050965803466225486
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.049832229297365575
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03478881775861244
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.029133100630967815
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.028656451945016547
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.018294940266396865
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.016699039029768974
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.013970082666416422
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 178118,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.06231381996005764
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05016286642504356
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.04828057147952782
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04566957738914279
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03661246387052065
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.031422455863614925
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.02470527993051722
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.01737772910439547
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.016777970859330624
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.01645992821474883
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 135682,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.06380494726195969
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05186697615267738
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.044798187778504
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03520113089710757
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.03405421864339994
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.033960980786899166
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.02906220767456843
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.02101639858618723
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.017698068183920373
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.017452283936568523
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.23042089621535425,
+                "top10_overlap": 0.6
+            },
+            "shap_vs_lime": {
+                "spearman": 0.4243301663673144,
+                "top10_overlap": 0.7
+            },
+            "permutation_vs_lime": {
+                "spearman": 0.10267616989013462,
+                "top10_overlap": 0.6
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "medical_classification_random",
+                "model": "xgb",
+                "method": "shap",
+                "stability": 0.7467532467532467,
+                "fidelity_drop": 0.2020163997164242,
+                "agreement_mean": 0.32737553129133434,
+                "runtime": 0.18200016021728516,
+                "speed_score": 0.8460235739868018,
+                "final_score": 0.4821468399213319
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "xgb",
+                "method": "lime",
+                "stability": 0.8742777885989091,
+                "fidelity_drop": 0.2020163997164242,
+                "agreement_mean": 0.26350316812872454,
+                "runtime": 3.2800374031066895,
+                "speed_score": 0.23364281799830636,
+                "final_score": 0.4527678813359422
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "xgb",
+                "method": "permutation",
+                "stability": 0.14323439360490015,
+                "fidelity_drop": 0.18331830366136437,
+                "agreement_mean": 0.16654853305274442,
+                "runtime": 1.1175692081451416,
+                "speed_score": 0.4722395830811771,
+                "final_score": 0.19482710896185917
+            }
+        ]
+    },
+    {
+        "dataset": "medical_classification_random",
+        "task": "classification",
+        "model": "dt",
+        "model_metrics": {
+            "accuracy": 0.7525730574232434,
+            "f1_macro": 0.5810839858702449,
+            "report": "              precision    recall  f1-score   support\n\n           0       0.86      0.84      0.85     38116\n           1       0.30      0.33      0.31      7841\n\n    accuracy                           0.75     45957\n   macro avg       0.58      0.58      0.58     45957\nweighted avg       0.76      0.75      0.76     45957\n"
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__GenHlth": 0.07984471739420151,
+                    "bin__HighBP": 0.06853686229128587,
+                    "num__BMI": 0.06357374140809796,
+                    "num__Age": 0.04764711911575691,
+                    "bin__HighChol": 0.04317776889321227,
+                    "num__Income": 0.027551116078628334,
+                    "num__Education": 0.024629616256566008,
+                    "num__PhysHlth": 0.021031167655187116,
+                    "num__MentHlth": 0.014623062628378805,
+                    "bin__Sex": 0.01439059099992152,
+                    "bin__DiffWalk": 0.012634714073905907,
+                    "bin__Smoker": 0.01238006866702407,
+                    "bin__Fruits": 0.01177288144993595,
+                    "bin__PhysActivity": 0.011522150548429312,
+                    "bin__HeartDiseaseorAttack": 0.011306805244737953,
+                    "bin__Veggies": 0.010232068568938464,
+                    "bin__HvyAlcoholConsump": 0.008494599604420252,
+                    "bin__NoDocbcCost": 0.005275744753696386,
+                    "bin__Stroke": 0.004815415153678117,
+                    "bin__AnyHealthcare": 0.0029976761829991977,
+                    "bin__CholCheck": 0.0014236407736149034
+                },
+                "stability": 0.9714285714285713,
+                "runtime": 1.4458603858947754,
+                "fidelity": {
+                    "baseline_score": 0.5795885573347783,
+                    "perturbed_score": 0.453551912568306,
+                    "fidelity_drop": 0.1260366447664723,
+                    "top_k_used": [
+                        "num__GenHlth",
+                        "bin__HighBP",
+                        "num__BMI",
+                        "num__Age",
+                        "bin__HighChol"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.21752028663756104
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.1820914839808024
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.1785418430398016
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.10916881323660516
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.03863153069936826
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.036557048913197304
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": -0.028722651687551275
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.027063181035449937
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.02513656582706334
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.0202990266213917
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.12612997665669737
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.10529231251878401
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.08603034748690307
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.05805859262181336
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.02784496268095652
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.027803247332375568
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.022496836453794973
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": -0.022374240596171942
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": -0.016189413697705882
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.010868024892267533
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.11774411783470667
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.08358444949687409
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.08091406910698065
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.06003177435268665
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.03420593017117234
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.007865955127614638
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.00729981687700169
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.005392921194739945
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.0046193146710087635
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.003537893116478039
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.13614976472210846
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09251880406382548
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.054513647852210384
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.030834953512961075
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.021702448131944378
+                            },
+                            {
+                                "feature": "bin__Smoker",
+                                "value": 0.005075822218935707
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": 0.003539890533976393
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.0032027941086351184
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.003089877879722428
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.003067766073528726
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighChol",
+                                "value": -0.11000286123407887
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": 0.09693223810605536
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.08827306639597791
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.040436310180517396
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": -0.032888866846100456
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.02235305957951146
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.02063115019646342
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.016856414518905537
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.015036232648828668
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.0074742800048861
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.21752028663756104
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": -0.1820914839808024
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.1785418430398016
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.10916881323660516
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": -0.03863153069936826
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.036557048913197304
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": -0.028722651687551275
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.027063181035449937
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.02513656582706334
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.0202990266213917
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 203346,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.17842221011730214
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.1675256545753187
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.15013097873366785
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.10246913790876105
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.07837010879176698
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.05334519324545768
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.020436388559958378
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.018064854561449475
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.014963017098701748
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.009400185778780792
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 230363,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.11455092521848195
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.059100204344204335
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.05039213655666192
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04123747399417779
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.03850409192808146
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.02778245102603333
+                            },
+                            {
+                                "feature": "bin__AnyHealthcare",
+                                "value": 0.026112731904845518
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.02572923820898683
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": -0.02154865053201313
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.01672980713574728
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 241058,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.19789926250216178
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.1625740079577141
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.15673038846732235
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": -0.11454687203610889
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": -0.06562767218525856
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.051043982498367
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.03994067232109875
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.03049292321014075
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": -0.024747786970717577
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": -0.014567054273344537
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "bin__HighBP",
+                                "value": -0.13723331745207443
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09249239387919013
+                            },
+                            {
+                                "feature": "bin__Smoker",
+                                "value": 0.07812140074598559
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.025432311969976418
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.025011585515469476
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": -0.01735395700961538
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.01640320456921862
+                            },
+                            {
+                                "feature": "bin__Veggies",
+                                "value": 0.016014527218744565
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.013247889675090753
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.01230223877863798
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__PhysHlth": 0.03666666666666666,
+                    "num__GenHlth": 0.022222222222222216,
+                    "bin__PhysActivity": 0.02111111111111112,
+                    "bin__Veggies": 0.01999999999999998,
+                    "bin__NoDocbcCost": 0.012222222222222245,
+                    "bin__Fruits": 0.011111111111111108,
+                    "bin__HighBP": 0.010000000000000009,
+                    "bin__AnyHealthcare": 0.004444444444444436,
+                    "num__MentHlth": 0.0033333333333332993,
+                    "bin__HeartDiseaseorAttack": 0.0022222222222221997,
+                    "num__Income": 0.0,
+                    "bin__Sex": 0.0,
+                    "bin__Stroke": 0.0,
+                    "bin__Smoker": 0.0,
+                    "num__Education": -0.0022222222222222365,
+                    "bin__HvyAlcoholConsump": -0.005555555555555536,
+                    "num__Age": -0.005555555555555573,
+                    "bin__DiffWalk": -0.006666666666666672,
+                    "bin__HighChol": -0.006666666666666672,
+                    "num__BMI": -0.006666666666666672,
+                    "bin__CholCheck": -0.00888888888888891
+                },
+                "stability": 0.9503300451336462,
+                "runtime": 0.34369707107543945,
+                "fidelity": {
+                    "baseline_score": 0.5795885573347783,
+                    "perturbed_score": 0.5705558579810077,
+                    "fidelity_drop": 0.009032699353770601,
+                    "top_k_used": [
+                        "num__PhysHlth",
+                        "num__GenHlth",
+                        "bin__PhysActivity",
+                        "bin__Veggies",
+                        "bin__NoDocbcCost"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "bin__HighBP": 0.07322618089704365,
+                    "bin__HeartDiseaseorAttack": 0.06835074703317678,
+                    "num__Age": 0.06676227736488412,
+                    "num__BMI": 0.06508483174356584,
+                    "num__GenHlth": 0.056249497329943124,
+                    "bin__Stroke": 0.05477555850602845,
+                    "bin__HighChol": 0.0535377529740051,
+                    "num__Income": 0.025581003218274927,
+                    "bin__DiffWalk": 0.018679019761676942,
+                    "bin__NoDocbcCost": 0.016653656126959883,
+                    "bin__HvyAlcoholConsump": 0.01613406540301703,
+                    "bin__Sex": 0.010808116461775454,
+                    "num__Education": 0.009916781966451915,
+                    "bin__PhysActivity": 0.009231665307922637,
+                    "num__PhysHlth": 0.005659502173594672,
+                    "num__MentHlth": 0.005037144120459216,
+                    "bin__Fruits": 0.003629244099919956,
+                    "bin__Smoker": 0.0022145957831075282
+                },
+                "stability": 0.6267885663654107,
+                "runtime": 2.5783815383911133,
+                "fidelity": {
+                    "baseline_score": 0.5795885573347783,
+                    "perturbed_score": 0.5435122459614382,
+                    "fidelity_drop": 0.03607631137334011,
+                    "top_k_used": [
+                        "bin__HighBP",
+                        "bin__HeartDiseaseorAttack",
+                        "num__Age",
+                        "num__BMI",
+                        "num__GenHlth"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1496351322742271
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.07939422391791985
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.0793825819338741
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06768287399604228
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06407500605352863
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.04228156701150613
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.03562722833657734
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03506224626843766
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.03403371685718916
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.015981484895624034
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 227694,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.10810108013092022
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.09488446048091674
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.0762584431545816
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.07079359121603823
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06412516713104849
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.04621295669062812
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.032230399828245625
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.031439748564886225
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.030364304076378232
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": 0.025317937902920546
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 85626,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.11564657293228502
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.0969814107059075
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09183625506932441
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.0722178927121428
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.0700178378482733
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.047264288665785734
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.04240411975100482
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.030044826038776236
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.029668455878363358
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.013925854668885568
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 141915,
+                        "top_features": [
+                            {
+                                "feature": "num__Age",
+                                "value": 0.09584086366340404
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.08814691555748262
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.08588233078195405
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.08173049915553002
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.06647342197721387
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.052342461634459984
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.05021288373894134
+                            },
+                            {
+                                "feature": "bin__HvyAlcoholConsump",
+                                "value": 0.04393527756547847
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.03534359643933192
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.017504660679642892
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 93630,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.10912966245484451
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.09212046112961855
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.08802736092219106
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.07865692300476856
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07432424463529641
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06478408628262709
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.04149587822935167
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03222461115096838
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.030330876687325502
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.023396547823190745
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 175726,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1387968342400389
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07932418804702171
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.07559824817378087
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.06734696253400133
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06138998535967585
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.055495807675563294
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.040791108704823116
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.035127783598391
+                            },
+                            {
+                                "feature": "bin__PhysActivity",
+                                "value": 0.03189446727776036
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.03144022480798488
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 203346,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.1735447568209327
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.08172213677174105
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.08082060182339001
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.07902684591980173
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07864015337675093
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06940235392258581
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.06730014502241208
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.04567646085876298
+                            },
+                            {
+                                "feature": "bin__Fruits",
+                                "value": 0.030527516512662018
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.0243930608906337
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 230363,
+                        "top_features": [
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.14529866823263685
+                            },
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.09290637482236314
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.0847853914948581
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.08059649622957656
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.07949125410872555
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.07209183940378322
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.05447870138442978
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.04620189009516185
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.028807682341523623
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.026786332493709385
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 241058,
+                        "top_features": [
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.10648131040387236
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.0936971990068309
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.08333633785878207
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.06308768013993037
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.04366022878478419
+                            },
+                            {
+                                "feature": "bin__NoDocbcCost",
+                                "value": 0.043577989905939384
+                            },
+                            {
+                                "feature": "bin__Sex",
+                                "value": 0.03982513623330781
+                            },
+                            {
+                                "feature": "num__Education",
+                                "value": 0.03473565392206885
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.031973774149221805
+                            },
+                            {
+                                "feature": "bin__DiffWalk",
+                                "value": 0.02797164628161254
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 4912,
+                        "top_features": [
+                            {
+                                "feature": "num__GenHlth",
+                                "value": 0.10183425097002312
+                            },
+                            {
+                                "feature": "bin__HighBP",
+                                "value": 0.06340025945569473
+                            },
+                            {
+                                "feature": "bin__HeartDiseaseorAttack",
+                                "value": 0.05839111392357128
+                            },
+                            {
+                                "feature": "bin__HighChol",
+                                "value": 0.051870967172184534
+                            },
+                            {
+                                "feature": "num__PhysHlth",
+                                "value": 0.04236340444551164
+                            },
+                            {
+                                "feature": "bin__Stroke",
+                                "value": 0.03866391503649744
+                            },
+                            {
+                                "feature": "num__Income",
+                                "value": 0.03356129715870439
+                            },
+                            {
+                                "feature": "num__BMI",
+                                "value": 0.033258298815448034
+                            },
+                            {
+                                "feature": "num__Age",
+                                "value": 0.025619936153543642
+                            },
+                            {
+                                "feature": "num__MentHlth",
+                                "value": 0.019555824091563583
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": -0.022831288248861156,
+                "top10_overlap": 0.4
+            },
+            "shap_vs_lime": {
+                "spearman": 0.5604686143225975,
+                "top10_overlap": 0.6
+            },
+            "permutation_vs_lime": {
+                "spearman": -0.18158163458201074,
+                "top10_overlap": 0.4
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "medical_classification_random",
+                "model": "dt",
+                "method": "shap",
+                "stability": 0.9714285714285713,
+                "fidelity_drop": 0.1260366447664723,
+                "agreement_mean": 0.2688186630368682,
+                "runtime": 1.4458603858947754,
+                "speed_score": 0.40885408086535874,
+                "final_score": 0.4787619663621747
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "dt",
+                "method": "permutation",
+                "stability": 0.9503300451336462,
+                "fidelity_drop": 0.009032699353770601,
+                "agreement_mean": -0.10220646141543595,
+                "runtime": 0.34369707107543945,
+                "speed_score": 0.7442153603859845,
+                "final_score": 0.38975720432610705
+            },
+            {
+                "dataset": "medical_classification_random",
+                "model": "dt",
+                "method": "lime",
+                "stability": 0.6267885663654107,
+                "fidelity_drop": 0.03607631137334011,
+                "agreement_mean": 0.1894434898702934,
+                "runtime": 2.5783815383911133,
+                "speed_score": 0.27945594657008344,
+                "final_score": 0.2978369998396298
+            }
+        ]
+    }
+]

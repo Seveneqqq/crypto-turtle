@@ -1,0 +1,21 @@
+The model predicted class '1'.
+
+The most influential variables for this decision were:
+ - num__PhysHlth (importance: 0.0222)
+ - bin__AnyHealthcare (importance: 0.0100)
+ - bin__Sex (importance: 0.0056)
+ - num__Age (importance: 0.0056)
+ - bin__NoDocbcCost (importance: 0.0056)
+
+Values of the most important features:
+ - PhysHlth: 0.0
+ - AnyHealthcare: 1.0
+ - Sex: 1.0
+ - Age: 13.0
+ - NoDocbcCost: 0.0
+
+Model explanation reliability:
+- Explanations are unstable.
+- Important features moderately affect predictions.
+
+Comparison with other XAI methods:

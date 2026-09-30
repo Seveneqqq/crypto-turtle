@@ -1,0 +1,20 @@
+The model predicted class '33'.
+
+The most influential variables for this decision were:
+ - cat__SHOOTING_Y (importance: 0.5027)
+ - num__Lat (importance: 0.3566)
+ - num__Long (importance: 0.2984)
+ - num__HOUR (importance: 0.2768)
+ - num__MONTH (importance: 0.1810)
+
+Values of the most important features:
+ - Lat: 42.35633324
+ - Long: -71.05440282
+ - HOUR: 9
+ - MONTH: 2
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Important features moderately affect predictions.
+
+Comparison with other XAI methods:

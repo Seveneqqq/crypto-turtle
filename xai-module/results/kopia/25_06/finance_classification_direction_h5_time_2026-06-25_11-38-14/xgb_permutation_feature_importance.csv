@@ -1,0 +1,11 @@
+rank,feature,importance
+1,num__high,0.006666666666666691
+2,bin__ignore,0.0
+3,num__number_of_trades,-0.011111111111111108
+4,num__close,-0.012222222222222226
+5,num__volume,-0.012222222222222226
+6,num__low,-0.013333333333333327
+7,num__open,-0.014444444444444407
+8,num__taker_buy_quote_asset_volume,-0.027777777777777752
+9,num__quote_asset_volume,-0.03888888888888884
+10,num__taker_buy_base_asset_volume,-0.061111111111111116

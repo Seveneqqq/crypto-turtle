@@ -1,0 +1,21 @@
+The model predicted value -0.000.
+
+The most influential variables for this decision were:
+ - num__number_of_trades (importance: 0.0180)
+ - num__high (importance: 0.0058)
+ - num__close (importance: 0.0043)
+ - num__open (importance: 0.0006)
+ - bin__ignore (importance: 0.0000)
+
+Values of the most important features:
+ - number_of_trades: 5618.0
+ - high: 91863.6
+ - close: 91747.99
+ - open: 91851.21
+ - ignore: 0.0
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

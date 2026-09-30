@@ -1,0 +1,21 @@
+The model predicted value -0.000.
+
+The most influential variables for this decision were:
+ - num__taker_buy_base_asset_volume (importance: 0.0902)
+ - num__close (importance: 0.0622)
+ - num__volume (importance: 0.0277)
+ - num__open (importance: 0.0237)
+ - num__quote_asset_volume (importance: 0.0224)
+
+Values of the most important features:
+ - taker_buy_base_asset_volume: 12.07094
+ - close: 91747.99
+ - volume: 23.98297
+ - open: 91851.21
+ - quote_asset_volume: 2200783.929879
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

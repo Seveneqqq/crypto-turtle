@@ -1,0 +1,18 @@
+The model predicted class '43'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_B3 (importance: 0.1043)
+ - cat__DISTRICT_A1 (importance: 0.0995)
+ - num__YEAR (importance: 0.0993)
+ - cat__DISTRICT_D4 (importance: 0.0957)
+ - num__HOUR (importance: 0.0933)
+
+Values of the most important features:
+ - YEAR: 2015
+ - HOUR: 17
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

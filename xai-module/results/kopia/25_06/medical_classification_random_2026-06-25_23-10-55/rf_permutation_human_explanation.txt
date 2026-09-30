@@ -1,0 +1,21 @@
+The model predicted class '1'.
+
+The most influential variables for this decision were:
+ - num__BMI (importance: 0.0122)
+ - bin__Sex (importance: 0.0111)
+ - bin__PhysActivity (importance: 0.0100)
+ - bin__NoDocbcCost (importance: 0.0089)
+ - num__GenHlth (importance: 0.0067)
+
+Values of the most important features:
+ - BMI: 33.0
+ - Sex: 0.0
+ - PhysActivity: 1.0
+ - NoDocbcCost: 1.0
+ - GenHlth: 3.0
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Important features moderately affect predictions.
+
+Comparison with other XAI methods:

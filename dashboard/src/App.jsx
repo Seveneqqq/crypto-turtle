@@ -74,17 +74,17 @@ export default function App() {
     <Router>
       <Routes>
         {/* /home dostępne tylko dla zalogowanego */}
-        <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" replace />} />
-        <Route path="/historical-data" element={user ? <HistoricalDataPage /> : <Navigate to="/" replace />} />
-        <Route path="/pipeline-data" element={user ? <PipelineDataPage /> : <Navigate to="/" replace />} />
-        <Route path="/simulation" element={user ? <SimulationPage /> : <Navigate to="/" replace />} />
-        <Route path="/process-data" element={user ? <ProcessingDataPage /> : <Navigate to="/" replace />} />
-        <Route path="/accuracy" element={user ? <AccuracyPage /> : <Navigate to="/" replace />} />
-        <Route path="/preparing-features" element={user ? <PreparingFeaturesPage /> : <Navigate to="/" replace />} />
-        <Route path="/training" element={user ? <TrainingPage /> : <Navigate to="/" replace />} />
-        <Route path="/test-models" element={user ? <TestModelsPage /> : <Navigate to="/" replace />} />
-        <Route path="/training-ppo" element={user ? <TrainingPpoPage /> : <Navigate to="/" replace />} />
-        <Route path="/training-dqn" element={user ? <TrainingDqnPage /> : <Navigate to="/" replace />} />
+        <Route path="/home" element={!user ? <HomePage /> : <Navigate to="/" replace />} />
+        <Route path="/historical-data" element={!user ? <HistoricalDataPage /> : <Navigate to="/" replace />} />
+        <Route path="/pipeline-data" element={!user ? <PipelineDataPage /> : <Navigate to="/" replace />} />
+        <Route path="/simulation" element={!user ? <SimulationPage /> : <Navigate to="/" replace />} />
+        <Route path="/process-data" element={!user ? <ProcessingDataPage /> : <Navigate to="/" replace />} />
+        <Route path="/accuracy" element={!user ? <AccuracyPage /> : <Navigate to="/" replace />} />
+        <Route path="/preparing-features" element={!user ? <PreparingFeaturesPage /> : <Navigate to="/" replace />} />
+        <Route path="/training" element={!user ? <TrainingPage /> : <Navigate to="/" replace />} />
+        <Route path="/test-models" element={!user ? <TestModelsPage /> : <Navigate to="/" replace />} />
+        <Route path="/training-ppo" element={!user ? <TrainingPpoPage /> : <Navigate to="/" replace />} />
+        <Route path="/training-dqn" element={!user ? <TrainingDqnPage /> : <Navigate to="/" replace />} />
 
         {/* Strona główna */}
         <Route

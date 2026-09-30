@@ -1,0 +1,16 @@
+The model predicted class '0'.
+
+The most influential variables for this decision were:
+ - bin__HeartDiseaseorAttack <= 0.00 (importance: 0.0466)
+ - bin__Stroke <= 0.00 (importance: 0.0352)
+ - 0.00 < bin__HighChol <= 1.00 (importance: 0.0287)
+ - bin__NoDocbcCost <= 0.00 (importance: 0.0257)
+ - num__Age > 0.62 (importance: 0.0257)
+
+Values of the most important features:
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:

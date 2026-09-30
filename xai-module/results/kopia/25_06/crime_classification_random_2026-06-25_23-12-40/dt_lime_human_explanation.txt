@@ -1,0 +1,18 @@
+The model predicted class '35'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_nan (importance: 0.0013)
+ - cat__DISTRICT_B3 (importance: 0.0001)
+ - num__MONTH (importance: 0.0001)
+ - cat__DISTRICT_D4 (importance: 0.0001)
+ - num__YEAR (importance: 0.0001)
+
+Values of the most important features:
+ - MONTH: 12
+ - YEAR: 2015
+
+Model explanation reliability:
+- Explanations are unstable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

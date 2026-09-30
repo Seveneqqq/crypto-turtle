@@ -1,0 +1,28 @@
+dataset,model,accuracy,f1_macro,report
+medical,rf,0.720369040624932,0.6424671069320327,"              precision    recall  f1-score   support
+
+           0       0.93      0.72      0.81     38116
+           1       0.35      0.74      0.48      7841
+
+    accuracy                           0.72     45957
+   macro avg       0.64      0.73      0.64     45957
+weighted avg       0.83      0.72      0.75     45957
+"
+medical,logreg,0.8357159953869921,0.5879397695680998,"              precision    recall  f1-score   support
+
+           0       0.85      0.97      0.91     38116
+           1       0.56      0.18      0.27      7841
+
+    accuracy                           0.84     45957
+   macro avg       0.71      0.57      0.59     45957
+weighted avg       0.80      0.84      0.80     45957
+"
+medical,xgb,0.8376743477598625,0.6021110667216275,"              precision    recall  f1-score   support
+
+           0       0.85      0.97      0.91     38116
+           1       0.57      0.20      0.30      7841
+
+    accuracy                           0.84     45957
+   macro avg       0.71      0.58      0.60     45957
+weighted avg       0.81      0.84      0.80     45957
+"

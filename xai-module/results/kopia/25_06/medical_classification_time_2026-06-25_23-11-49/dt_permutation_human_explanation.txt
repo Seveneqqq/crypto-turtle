@@ -1,0 +1,21 @@
+The model predicted class '0'.
+
+The most influential variables for this decision were:
+ - num__BMI (importance: 0.0244)
+ - num__PhysHlth (importance: 0.0211)
+ - num__Education (importance: 0.0133)
+ - bin__HighChol (importance: 0.0122)
+ - bin__Veggies (importance: 0.0089)
+
+Values of the most important features:
+ - BMI: 31.0
+ - PhysHlth: 0.0
+ - Education: 4.0
+ - HighChol: 1.0
+ - Veggies: 0.0
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

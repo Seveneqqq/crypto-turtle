@@ -1,0 +1,17 @@
+The model predicted class '33'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_A7 (importance: 0.0005)
+ - cat__UCR_PART_Part Three (importance: 0.0000)
+ - cat__UCR_PART_Part One (importance: 0.0000)
+ - cat__DISTRICT_E18 (importance: 0.0000)
+ - num__OFFENSE_CODE (importance: 0.0000)
+
+Values of the most important features:
+ - OFFENSE_CODE: 619
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:

@@ -1,0 +1,17 @@
+The model predicted class '33'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_A7 (importance: 0.0398)
+ - num__Long (importance: 0.0073)
+ - cat__UCR_PART_Part Three (importance: 0.0069)
+ - cat__UCR_PART_Part Two (importance: 0.0055)
+ - cat__UCR_PART_Part One (importance: 0.0035)
+
+Values of the most important features:
+ - Long: -71.05440282
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:

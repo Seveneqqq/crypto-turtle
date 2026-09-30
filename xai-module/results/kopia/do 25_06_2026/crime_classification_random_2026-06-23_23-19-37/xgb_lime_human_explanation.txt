@@ -1,0 +1,16 @@
+The model predicted class '65'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_A7 (importance: 0.0053)
+ - cat__DAY_OF_WEEK_Tuesday (importance: 0.0034)
+ - cat__UCR_PART_Part One (importance: 0.0020)
+ - cat__UCR_PART_Part Three (importance: 0.0019)
+ - cat__SHOOTING_Y (importance: 0.0018)
+
+Values of the most important features:
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Important features moderately affect predictions.
+
+Comparison with other XAI methods:

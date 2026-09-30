@@ -1,0 +1,21 @@
+The model predicted class '1'.
+
+The most influential variables for this decision were:
+ - num__GenHlth (importance: 0.6195)
+ - bin__HighBP (importance: 0.4505)
+ - num__Age (importance: 0.4218)
+ - num__BMI (importance: 0.3858)
+ - bin__HighChol (importance: 0.3024)
+
+Values of the most important features:
+ - GenHlth: 4.0
+ - HighBP: 1.0
+ - Age: 13.0
+ - BMI: 31.0
+ - HighChol: 1.0
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:

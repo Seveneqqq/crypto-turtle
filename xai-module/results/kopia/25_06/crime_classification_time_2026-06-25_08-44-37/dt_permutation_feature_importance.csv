@@ -1,0 +1,21 @@
+rank,feature,importance
+1,num__OFFENSE_CODE,0.9311111111111111
+2,cat__UCR_PART_Part Three,0.026666666666666655
+3,cat__UCR_PART_Other,0.0033333333333332993
+4,cat__UCR_PART_nan,0.0
+5,cat__UCR_PART_Part Two,0.0
+6,cat__DAY_OF_WEEK_Wednesday,0.0
+7,cat__DAY_OF_WEEK_Tuesday,0.0
+8,cat__DAY_OF_WEEK_Thursday,0.0
+9,cat__UCR_PART_Part One,0.0
+10,cat__DAY_OF_WEEK_Saturday,0.0
+11,cat__DAY_OF_WEEK_Monday,0.0
+12,cat__DAY_OF_WEEK_Friday,0.0
+13,cat__SHOOTING_nan,0.0
+14,cat__SHOOTING_Y,0.0
+15,cat__DISTRICT_nan,0.0
+16,cat__DISTRICT_E5,0.0
+17,cat__DAY_OF_WEEK_Sunday,0.0
+18,cat__DISTRICT_E18,0.0
+19,cat__DISTRICT_E13,0.0
+20,cat__DISTRICT_D14,0.0

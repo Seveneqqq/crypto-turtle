@@ -1,0 +1,4 @@
+model,accuracy,interpretability
+linreg,,0.9555555555555554
+rf,,0.7858585858585858
+xgb,,0.9595959595959594

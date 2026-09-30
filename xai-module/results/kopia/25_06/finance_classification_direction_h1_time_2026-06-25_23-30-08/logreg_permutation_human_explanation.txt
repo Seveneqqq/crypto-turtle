@@ -1,0 +1,16 @@
+The model predicted class '0'.
+
+The most influential variables for this decision were:
+ - feature_7 (importance: 0.0178)
+ - feature_8 (importance: 0.0133)
+ - feature_6 (importance: 0.0056)
+ - feature_1 (importance: 0.0022)
+ - feature_3 (importance: 0.0011)
+
+Values of the most important features:
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

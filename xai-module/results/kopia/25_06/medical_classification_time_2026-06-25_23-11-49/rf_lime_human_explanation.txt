@@ -1,0 +1,21 @@
+The model predicted class '1'.
+
+The most influential variables for this decision were:
+ - bin__HighBP (importance: 0.1556)
+ - num__GenHlth (importance: 0.1468)
+ - bin__HighChol (importance: 0.1093)
+ - num__BMI (importance: 0.0858)
+ - bin__HvyAlcoholConsump (importance: 0.0749)
+
+Values of the most important features:
+ - HighBP: 1.0
+ - GenHlth: 4.0
+ - HighChol: 1.0
+ - BMI: 31.0
+ - HvyAlcoholConsump: 0.0
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:

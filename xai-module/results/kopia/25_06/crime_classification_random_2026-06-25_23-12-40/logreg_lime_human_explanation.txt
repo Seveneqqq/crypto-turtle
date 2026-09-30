@@ -1,0 +1,16 @@
+The model predicted class '43'.
+
+The most influential variables for this decision were:
+ - cat__DISTRICT_A7 (importance: 0.0014)
+ - cat__DISTRICT_B2 (importance: 0.0001)
+ - cat__DISTRICT_A1 (importance: 0.0001)
+ - cat__DISTRICT_C11 (importance: 0.0001)
+ - cat__DISTRICT_B3 (importance: 0.0001)
+
+Values of the most important features:
+
+Model explanation reliability:
+- Explanations are highly stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

@@ -1,0 +1,19 @@
+The model predicted class '36'.
+
+The most influential variables for this decision were:
+ - num__Lat (importance: 0.0016)
+ - num__HOUR (importance: 0.0013)
+ - num__Long (importance: 0.0012)
+ - cat__DISTRICT_A1 (importance: 0.0010)
+ - cat__DISTRICT_B2 (importance: 0.0007)
+
+Values of the most important features:
+ - Lat: 42.35633324
+ - HOUR: 9
+ - Long: -71.05440282
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Feature importance has limited impact on predictions.
+
+Comparison with other XAI methods:

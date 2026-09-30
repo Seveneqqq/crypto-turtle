@@ -1,0 +1,3203 @@
+[
+    {
+        "dataset": "finance_regression_return_h5_time",
+        "task": "regression",
+        "model": "linreg",
+        "model_metrics": {
+            "mae": 0.0004999715220072513,
+            "rmse": 0.0007428112793602439,
+            "r2": -0.0033104503351655268
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__close": 0.003022564919258153,
+                    "num__low": 0.0025909221953147625,
+                    "num__high": 0.00231634356822348,
+                    "num__open": 0.0018815004634393892,
+                    "num__volume": 9.951057712996574e-05,
+                    "num__taker_buy_base_asset_volume": 9.770314776710889e-05,
+                    "num__taker_buy_quote_asset_volume": 9.595385910188575e-05,
+                    "num__quote_asset_volume": 9.361876573616969e-05,
+                    "num__number_of_trades": 1.3293131892877936e-06,
+                    "bin__ignore": 0.0
+                },
+                "stability": 0.8909090909090909,
+                "runtime": 0.007999420166015625,
+                "fidelity": {
+                    "baseline_score": 0.0009591012276909524,
+                    "perturbed_score": 0.0010282674249350399,
+                    "fidelity_drop": 6.916619724408745e-05,
+                    "top_k_used": [
+                        "num__close",
+                        "num__low",
+                        "num__high",
+                        "num__open",
+                        "num__volume"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 245376,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 9.512811976802142e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -7.456478031480558e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -7.412752473799458e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 5.9537311188150236e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 2.5577670157009048e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -2.0051390909914646e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -1.4231062544537002e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 1.1511918165409024e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -8.166876224677663e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245377,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -4.354330807353412e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.7326276775135276e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 3.412458072093096e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -2.997775914849049e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -1.548425762188248e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.278576895130791e-06
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 2.190414060449292e-06
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -1.4563205835484004e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.6312681171200904e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245378,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 9.163891827064007e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -7.179307047357013e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 3.647188829861808e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -3.258988821003336e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 2.6163720652335244e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -7.527290704162859e-06
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -6.544816274446895e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.278576895130791e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -1.3425916064047603e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245379,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -6.254675512159357e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 4.9024535330055096e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -1.933457195795338e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 1.609694407454684e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -4.638052629699133e-06
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -2.3264585440975833e-06
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.8442090579483154e-06
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -1.5000960219677276e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.0402187648890662e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245380,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -8.067697484353378e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 6.754692711494434e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 6.320873473738963e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -5.422317667002726e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 2.673225166800373e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -1.866306590551303e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 3.6832882545585114e-06
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -1.4499332125713301e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 9.559336522714513e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 245385,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -0.00010388319274423596
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 8.148842279613055e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 6.97351859704652e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -5.603719720020967e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 1.612877194221638e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -1.3238596398891237e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -8.152881645901685e-06
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 2.385044324113291e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.021605802519343e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245391,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -8.8109085467024e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -8.310501242843581e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 8.232299214499985e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -7.607235605373187e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 7.1346143867731e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 6.921177852564095e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 9.004459531315213e-07
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -5.170196152794696e-07
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 1.8395887173652937e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245399,
+                        "top_features": [
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -1.9509381653575777e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -1.8955162121711157e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 1.5639648080196026e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 6.007510022877568e-06
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 4.144952433420963e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 3.694237387298732e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -3.2001896493702338e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 2.589609686337599e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -1.0749863738438323e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245400,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 6.15018601254212e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -4.8123886932057054e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 4.772899091464177e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -1.992026667851005e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.4941588212663534e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -1.4906168963628693e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -1.2024958178775707e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 4.980760484539832e-06
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -1.926617199250985e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245468,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00013369060773520903
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -0.00011348186526204376
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -0.00010516592407605205
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 9.498645422985043e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 8.766861095548849e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -7.356215915431242e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -6.46503729142735e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 5.223854842705282e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.0795518174439533e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__close": 0.5294902152027257,
+                    "num__low": 0.5044513805302672,
+                    "num__high": 0.3756793051775266,
+                    "num__taker_buy_quote_asset_volume": 0.2522754018997937,
+                    "num__open": 0.19757619301045062,
+                    "num__volume": 0.18043562988706743,
+                    "num__quote_asset_volume": 0.11203176569466604,
+                    "num__taker_buy_base_asset_volume": 0.10615513948182038,
+                    "bin__ignore": 2.220446049250313e-16,
+                    "num__number_of_trades": -0.0007495631035849085
+                },
+                "stability": 0.9999999999999999,
+                "runtime": 0.01800227165222168,
+                "fidelity": {
+                    "baseline_score": 0.0009591012276909524,
+                    "perturbed_score": 0.001021622760583332,
+                    "fidelity_drop": 6.252153289237959e-05,
+                    "top_k_used": [
+                        "num__close",
+                        "num__low",
+                        "num__high",
+                        "num__taker_buy_quote_asset_volume",
+                        "num__open"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "num__close": 0.009300067237654294,
+                    "num__low": 0.007977254558912603,
+                    "num__high": 0.0071382748020152546,
+                    "num__open": 0.005811705242185012,
+                    "num__taker_buy_base_asset_volume": 0.00031032818693493944,
+                    "num__taker_buy_quote_asset_volume": 0.00029853672059889253,
+                    "num__volume": 0.0002618849987815287,
+                    "num__quote_asset_volume": 0.00025346161425026265,
+                    "num__number_of_trades": 0.00011034624758234683,
+                    "bin__ignore": 0.0
+                },
+                "stability": 0.9151515151515152,
+                "runtime": 1.7359180450439453,
+                "fidelity": {
+                    "baseline_score": 0.0009591012276909524,
+                    "perturbed_score": 0.0009866656180296984,
+                    "fidelity_drop": 2.7564390338746022e-05,
+                    "top_k_used": [
+                        "num__close",
+                        "num__low",
+                        "num__high",
+                        "num__open",
+                        "num__taker_buy_base_asset_volume"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 245376,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009191119479815733
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.008080414649749594
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.007216527201228652
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.0059089705751013575
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00069035609313246
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0006334060187638806
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0004771458446764814
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.0003494243808256835
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 0.00025840617988763244
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245377,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009486326404838975
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.007623177145651943
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.007061701873554187
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005666770040210098
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0004795602266037079
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 0.00010391970633952094
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 8.545170313029768e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.3498808490374552e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.3748347205098246e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245378,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009172533085608427
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.007961658432470906
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.007088101993907213
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.006056045998557776
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0006796492589074157
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0004103664392607081
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.0003997743404885148
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.000282951009815466
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.69963829854366e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245379,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009173571333575862
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.0080632335584863
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.00711596463179682
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005992380285925306
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.00048279998781708747
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0002189051596991921
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00017881338882931832
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 0.0001056181182789485
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 8.608501746475001e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245380,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009167179625651731
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.008030701637359422
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.00716341390036447
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005931902489203214
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00021487721945515696
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0001568227962562519
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 0.00010336300835624677
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 4.871036068107614e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.464488277219335e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 245385,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009165731778416605
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.008110461742857962
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.007500491959282084
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005852577166511349
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0002627545258897081
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00023947585316701564
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.00010727885476262918
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 8.790900330279893e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 4.24842990231238e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245391,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009618536558020892
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.008006405237763152
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.007258039561326877
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005891310519586178
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.0006326277573571685
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00031496184156579534
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 0.0002057425011984341
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00014503481402891876
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0001051179914151618
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245399,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009143603177641058
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.008132275075766362
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.007340319842200139
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005664305355120946
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0006085754486145618
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00037539768579473174
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.00037291394282983954
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0002607067858978353
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 5.647717881425319e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245400,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.00954779037811271
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.008061445441504918
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.006957560000298933
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005775490980018549
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0006107859757867814
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00043477779801519956
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0001437245432645868
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 7.9061004919951e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 5.27703817876156e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245468,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 0.009377503227101628
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 0.0078669888988169
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.0070055927944497704
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.005663953145494403
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.000829382386132649
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0005276663655348773
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00042455819595869194
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 0.00035029667638585856
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 0.0001487364528951815
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.8909090909090909,
+                "top10_overlap": 1.0
+            },
+            "shap_vs_lime": {
+                "spearman": 0.9636363636363635,
+                "top10_overlap": 1.0
+            },
+            "permutation_vs_lime": {
+                "spearman": 0.8909090909090909,
+                "top10_overlap": 1.0
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "linreg",
+                "method": "permutation",
+                "stability": 0.9999999999999999,
+                "fidelity_drop": 6.252153289237959e-05,
+                "agreement_mean": 0.8909090909090909,
+                "runtime": 0.01800227165222168,
+                "speed_score": 0.9823160790957727,
+                "final_score": 0.6264353086279077
+            },
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "linreg",
+                "method": "shap",
+                "stability": 0.8909090909090909,
+                "fidelity_drop": 6.916619724408745e-05,
+                "agreement_mean": 0.9272727272727272,
+                "runtime": 0.007999420166015625,
+                "speed_score": 0.9920640627306133,
+                "final_score": 0.596503341714824
+            },
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "linreg",
+                "method": "lime",
+                "stability": 0.9151515151515152,
+                "fidelity_drop": 2.7564390338746022e-05,
+                "agreement_mean": 0.9272727272727272,
+                "runtime": 1.7359180450439453,
+                "speed_score": 0.3655080245592436,
+                "final_score": 0.5423180257501187
+            }
+        ]
+    },
+    {
+        "dataset": "finance_regression_return_h5_time",
+        "task": "regression",
+        "model": "rf",
+        "model_metrics": {
+            "mae": 0.0008480755696382086,
+            "rmse": 0.0010427949036177515,
+            "r2": -0.9773163448593651
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__volume": 4.1932366568227633e-05,
+                    "num__number_of_trades": 4.0201222086012534e-05,
+                    "num__taker_buy_base_asset_volume": 3.59599978049215e-05,
+                    "num__quote_asset_volume": 2.784462967256946e-05,
+                    "num__taker_buy_quote_asset_volume": 2.6935164400519293e-05,
+                    "num__low": 2.2528493591694645e-05,
+                    "num__close": 1.8974635789050732e-05,
+                    "num__open": 1.758390591837641e-05,
+                    "num__high": 1.3319804444770243e-05,
+                    "bin__ignore": 0.0
+                },
+                "stability": 0.7333333333333332,
+                "runtime": 520.0347924232483,
+                "fidelity": {
+                    "baseline_score": 0.0009705722767036765,
+                    "perturbed_score": 0.0009548260079708924,
+                    "fidelity_drop": -1.574626873278415e-05,
+                    "top_k_used": [
+                        "num__volume",
+                        "num__number_of_trades",
+                        "num__taker_buy_base_asset_volume",
+                        "num__quote_asset_volume",
+                        "num__taker_buy_quote_asset_volume"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 245376,
+                        "top_features": [
+                            {
+                                "feature": "num__high",
+                                "value": -3.8706715374831704e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -3.350587888557527e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -3.313241931379374e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 2.695215741581051e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.5102699201205538e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.8613191584767835e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -2.8875918575255125e-06
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 2.409994916163655e-06
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 2.0274900680989104e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245377,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 1.960926851086728e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 1.3414419612420245e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.2907482694033783e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 1.117695534627844e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.1037464386000709e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -9.382014277890594e-06
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -3.709367962170103e-06
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -2.8892633721291896e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.4118883282485308e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245378,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -0.00015352987473450137
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -6.389216061455877e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -4.0142687226018716e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -2.1323913746785673e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.6981291539502872e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.6136311822688817e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -1.2688319179048147e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -6.793930656834868e-06
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -6.367077787624946e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245379,
+                        "top_features": [
+                            {
+                                "feature": "num__close",
+                                "value": 3.1712501988193456e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -2.7804731746297145e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -2.2306215280060725e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -2.224415797998637e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -1.6607977401052545e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -7.09757621138529e-06
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 5.099647468513724e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 2.616098564840585e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -1.5986298260522467e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245380,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -4.6055438894811965e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -2.8926948880928475e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -1.8919648569240082e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -1.836237271602061e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -1.6325299384498485e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -8.248418450229123e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -4.6873004070599855e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.917035645548455e-07
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -2.2614366284196492e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 245471,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -8.37255268403583e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -6.879488597439464e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -4.4728588642327166e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -3.1119061848506254e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -2.8093621199173955e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -2.343227230142673e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -2.3322056220630942e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -2.0335828590041338e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 9.300253989463205e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245475,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0003843456023075476
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.00012448854387425796
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -6.249679699767117e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -4.665848486849676e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -4.164082332910381e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.060107018560902e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -2.582087540213816e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -9.996573456253136e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -5.0968340516390245e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245476,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -6.562745650595667e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -5.133920490249655e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 4.4452911683383166e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -2.2206312924350136e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": -2.0202549543844872e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": -1.708272278059351e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -1.5765732899351717e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -1.1648987738438735e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 1.519910988811095e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245481,
+                        "top_features": [
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -7.809670071994514e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 7.111637298683107e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -6.75653247474164e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 4.422725996371127e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -3.929658752604757e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 2.4261654490792512e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -2.0119095212233993e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -1.5441533726200576e-06
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 9.629509414044573e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245487,
+                        "top_features": [
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 5.912736233459789e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 3.823756420774038e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 3.7080655038910616e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 2.2428321166549873e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -2.029485252626953e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -1.7652187605057957e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 1.0688559941225328e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 1.0246438898611045e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 9.375915019720349e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__number_of_trades": 0.017950640710913863,
+                    "num__high": 0.005753634805273726,
+                    "num__close": 0.004294148008672598,
+                    "num__open": 0.0005598230315393415,
+                    "bin__ignore": 0.0,
+                    "num__low": -0.0006685639083610825,
+                    "num__volume": -0.0009077316125845799,
+                    "num__quote_asset_volume": -0.002381170659144042,
+                    "num__taker_buy_base_asset_volume": -0.023362990473948447,
+                    "num__taker_buy_quote_asset_volume": -0.029762792861266336
+                },
+                "stability": 0.8787878787878788,
+                "runtime": 257.44253396987915,
+                "fidelity": {
+                    "baseline_score": 0.0009705722767036765,
+                    "perturbed_score": 0.00737180011831167,
+                    "fidelity_drop": 0.006401227841607993,
+                    "top_k_used": [
+                        "num__number_of_trades",
+                        "num__high",
+                        "num__close",
+                        "num__open",
+                        "bin__ignore"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "num__number_of_trades": 6.681489050572541e-05,
+                    "num__taker_buy_quote_asset_volume": 6.343485970395984e-05,
+                    "num__volume": 3.726462029902508e-05,
+                    "num__quote_asset_volume": 2.0509847732070725e-05,
+                    "num__taker_buy_base_asset_volume": 2.0192271139861166e-05,
+                    "num__open": 1.8041854357486486e-05,
+                    "num__close": 1.7319477576354383e-05,
+                    "num__high": 1.1817112050363444e-05,
+                    "num__low": 5.649274637451122e-06,
+                    "bin__ignore": 0.0
+                },
+                "stability": 0.7212121212121211,
+                "runtime": 5.02590274810791,
+                "fidelity": {
+                    "baseline_score": 0.0009705722767036765,
+                    "perturbed_score": 0.0009548260079708924,
+                    "fidelity_drop": -1.574626873278415e-05,
+                    "top_k_used": [
+                        "num__number_of_trades",
+                        "num__taker_buy_quote_asset_volume",
+                        "num__volume",
+                        "num__quote_asset_volume",
+                        "num__taker_buy_base_asset_volume"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 245376,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0001427576771886771
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 8.096235352642576e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 6.299944260304213e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 4.694705840890781e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.299938963810536e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.7171467402880386e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 1.7118571958286262e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 9.259392254542992e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 5.940373932926822e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245377,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.411490018584109e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.2959781118472746e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 2.8719293482572216e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 1.4081769873935691e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.0634201951280397e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 7.2757222121659526e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 6.60269447351618e-06
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 5.312938910660882e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 3.616647548801861e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245378,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0001421035868940527
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 8.510952197316425e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 5.159705374636932e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 4.4445802490395186e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.7686043462495114e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 2.6797434797775974e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 2.047900465239823e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.2765611042595646e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 5.8862560059443395e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245379,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.519969638558133e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 3.836400830975284e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.6051430436239723e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 2.1990188577070254e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 1.7983509278681642e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 8.987435562403484e-06
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 8.670502394727286e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 5.811853416301116e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 2.2975330725597657e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245380,
+                        "top_features": [
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 6.145535895077229e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 5.0029270378433074e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 2.8433846312385786e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 2.112349291146331e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 2.1100405735054706e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.054654728078125e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.4689629634887357e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 1.0776848576172913e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 9.415268426465907e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 245471,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00013631402526681813
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 8.948457016847632e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 5.1361694477236886e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.6304972223405346e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 1.9896927349565313e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 1.7305161936345177e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.3581029031361781e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 4.935055024321913e-06
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 4.52035521122627e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245475,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0001328165313504625
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 8.006772842179158e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 5.387302573777651e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 5.354595577903896e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.4621275218135452e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 2.342150695064517e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 2.289755945034103e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.1167619914857469e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 8.649708444682948e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245476,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0001406136932425709
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 8.107164948507508e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 5.6189439627913135e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 4.073698405564716e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.2312320041433566e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 1.2794248138464772e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 7.726868578111474e-06
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 7.243891921489132e-07
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 2.644022210931944e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245481,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.0001319558494449939
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.780029268501471e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 6.461543690035523e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 4.935608857870045e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.557600497987485e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 1.675495766875233e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 1.5601278436470967e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 1.2814209301114463e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 2.5990506660792452e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245487,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00013785415236884917
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.171590207587704e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.64694148500593e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.1848180073477866e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 1.6133356095432658e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 1.3553828829610805e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 1.3373350304809309e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 1.085128342779042e-05
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 1.0027391343058962e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": -0.33333333333333326,
+                "top10_overlap": 1.0
+            },
+            "shap_vs_lime": {
+                "spearman": 0.8060606060606059,
+                "top10_overlap": 1.0
+            },
+            "permutation_vs_lime": {
+                "spearman": -0.22424242424242422,
+                "top10_overlap": 1.0
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "rf",
+                "method": "lime",
+                "stability": 0.7212121212121211,
+                "fidelity_drop": -1.574626873278415e-05,
+                "agreement_mean": 0.29090909090909084,
+                "runtime": 5.02590274810791,
+                "speed_score": 0.16595023879434376,
+                "final_score": 0.3271955732914385
+            },
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "rf",
+                "method": "shap",
+                "stability": 0.7333333333333332,
+                "fidelity_drop": -1.574626873278415e-05,
+                "agreement_mean": 0.23636363636363633,
+                "runtime": 520.0347924232483,
+                "speed_score": 0.0019192576283613657,
+                "final_score": 0.3041258085081735
+            },
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "rf",
+                "method": "permutation",
+                "stability": 0.8787878787878788,
+                "fidelity_drop": 0.006401227841607993,
+                "agreement_mean": -0.27878787878787875,
+                "runtime": 257.44253396987915,
+                "speed_score": 0.003869332128265495,
+                "final_score": 0.25444554477557113
+            }
+        ]
+    },
+    {
+        "dataset": "finance_regression_return_h5_time",
+        "task": "regression",
+        "model": "xgb",
+        "model_metrics": {
+            "mae": 0.0005125376850660622,
+            "rmse": 0.0007687171817281458,
+            "r2": -0.07451264987853956
+        },
+        "xai": {
+            "shap": {
+                "global_importance": {
+                    "num__open": 0.00010217120870947838,
+                    "num__close": 6.353014759952202e-05,
+                    "num__high": 6.313803896773607e-05,
+                    "num__low": 3.2481224479852244e-05,
+                    "num__taker_buy_base_asset_volume": 2.9283351977937855e-05,
+                    "num__volume": 2.5753795853233896e-05,
+                    "num__taker_buy_quote_asset_volume": 2.158117786166258e-05,
+                    "num__quote_asset_volume": 1.305180830968311e-05,
+                    "num__number_of_trades": 7.84829808253562e-06,
+                    "bin__ignore": 0.0
+                },
+                "stability": 0.9030303030303028,
+                "runtime": 0.3639993667602539,
+                "fidelity": {
+                    "baseline_score": 0.0009686687092354354,
+                    "perturbed_score": 0.001468968032546807,
+                    "fidelity_drop": 0.0005002993233113717,
+                    "top_k_used": [
+                        "num__open",
+                        "num__close",
+                        "num__high",
+                        "num__low",
+                        "num__taker_buy_base_asset_volume"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 245376,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00027217945898883045
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.0001640509581193328
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -9.946600766852498e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -9.451495134271681e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -4.194185748929158e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 2.7970363589702174e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -1.8173539501731284e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 5.393029823608231e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -4.604733476298861e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245377,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00017233796825166792
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.0001447300164727494
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -5.233874617260881e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -4.731235094368458e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.004706715932116e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 3.151249620714225e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -2.30024779739324e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 9.089157174457796e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.706945681689831e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245378,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00020293954003136605
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.00013565925473812968
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -0.0001233825460076332
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -9.559335740050301e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -6.258460052777082e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 3.612695218180306e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -1.3933322406955995e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.914629592647543e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -1.1486681472661076e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245379,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00017411677981726825
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.00013896534801460803
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -5.423402035376057e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -4.9443890020484105e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 3.898987779393792e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -2.1910729628871195e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.2479605175030883e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.6953270005615195e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -1.1803956567746354e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245380,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0001761518360581249
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.0001415458245901391
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -5.430722012533806e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.3197505621938035e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.764108234667219e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -1.4752403330930974e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.3883252904633991e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -1.74478589087812e-06
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -7.147029350562661e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 245385,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00018898467533290386
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.00014946807641535997
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -5.501412306330167e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.4655054555041716e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.968648499925621e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -1.8898948837886564e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.5250575415848289e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": -2.6884979433816625e-06
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -1.7314890783381998e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245391,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00019337913545314223
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.00015233721933327615
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -6.011950608808547e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.355932444217615e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.5990178477950394e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -2.0827443222515285e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.6648262317175977e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -3.776822268264368e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 3.300394837424392e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245399,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0001691675279289484
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.0001581032993271947
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -6.683489482384175e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.4691281548002735e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 3.7286710721673444e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -3.358990579727106e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.8665408788365312e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 5.4222459766606335e-06
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 5.557907343245461e-07
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245400,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00019096149480901659
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -9.68342210398987e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -9.496860002400354e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -7.771955279167742e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 4.6702942199772224e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": -2.5960043785744347e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 1.007380797091173e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 7.381951490970096e-06
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.598950570449233e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245468,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00018586200894787908
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": -0.00011760148481698707
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": -0.00011583734885789454
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": -5.792187585029751e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": -3.623742304625921e-05
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 3.243386163376272e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 1.1530290066730231e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": -1.0804742487380281e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 8.944618457462639e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ]
+            },
+            "permutation": {
+                "global_importance": {
+                    "num__taker_buy_base_asset_volume": 0.09015374124583782,
+                    "num__close": 0.0622475747069926,
+                    "num__volume": 0.027719085480080913,
+                    "num__open": 0.023652760772387166,
+                    "num__quote_asset_volume": 0.02238511598326613,
+                    "num__taker_buy_quote_asset_volume": 0.005280320853667808,
+                    "bin__ignore": 0.0,
+                    "num__number_of_trades": -0.00837118656443292,
+                    "num__low": -0.012700549581402099,
+                    "num__high": -0.017811924252307487
+                },
+                "stability": 0.9999999999999999,
+                "runtime": 1.09552001953125,
+                "fidelity": {
+                    "baseline_score": 0.0009686687092354354,
+                    "perturbed_score": 0.001402440629990203,
+                    "fidelity_drop": 0.0004337719207547677,
+                    "top_k_used": [
+                        "num__taker_buy_base_asset_volume",
+                        "num__close",
+                        "num__volume",
+                        "num__open",
+                        "num__quote_asset_volume"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not local."
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": null,
+                        "top_features": [],
+                        "note": "Permutation importance is global, not suited for single error case explanations."
+                    }
+                ]
+            },
+            "lime": {
+                "global_importance": {
+                    "num__open": 0.0003761798775895008,
+                    "num__taker_buy_base_asset_volume": 0.00022024016606497144,
+                    "num__volume": 0.000215347594663192,
+                    "num__close": 9.702839616884096e-05,
+                    "num__high": 9.68510900867591e-05,
+                    "num__taker_buy_quote_asset_volume": 7.768803111575661e-05,
+                    "num__low": 4.67418025850568e-05,
+                    "num__number_of_trades": 4.593280545938693e-05,
+                    "num__quote_asset_volume": 2.7808615971925588e-05,
+                    "bin__ignore": 0.0
+                },
+                "stability": 0.9636363636363635,
+                "runtime": 2.205000877380371,
+                "fidelity": {
+                    "baseline_score": 0.0009686687092354354,
+                    "perturbed_score": 0.0011519277901890805,
+                    "fidelity_drop": 0.00018325908095364512,
+                    "top_k_used": [
+                        "num__open",
+                        "num__taker_buy_base_asset_volume",
+                        "num__volume",
+                        "num__close",
+                        "num__high"
+                    ]
+                },
+                "local_explanations": [
+                    {
+                        "sample_index": 245376,
+                        "top_features": [
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0004373172090687157
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.0003914257632607351
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0003522970355528011
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00016991286598003856
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.00014737626136713912
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 8.327816922665813e-05
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 6.440730219048864e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 5.650383042903045e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 2.7454810921621765e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245377,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0004043400765971455
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00016935936978059354
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00014221276477501387
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 0.00010927203898095249
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 9.578953401490348e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.863045038273748e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 6.58198204964945e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 3.7169077369649915e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 1.1174085607294428e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245378,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00039486665972101936
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0003709194451768217
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00017742959243185802
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00013318003474407716
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 7.902980494804231e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 6.731337215390766e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 6.106693996630167e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 5.605285478542258e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 5.194003014172325e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245379,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0003573928020281347
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0001490430354515557
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00014674462123661383
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 0.0001198804896991543
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 8.427531973382658e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 6.254857544505087e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.809357085320798e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 2.7616857077272223e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.3783504829329325e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245380,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.00035718044948497595
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00020369734787707036
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.0001384258850217279
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00011387193980715417
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 0.00010786082714486752
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 7.641696221648536e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 5.414909015643495e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 4.456884832270567e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 4.792632825759544e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ],
+                "debug_explanations": [
+                    {
+                        "sample_index": 245385,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0003448754015272846
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00017286923486026955
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 0.00013283356129114042
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00012904949078236609
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 5.769758350512785e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 4.726904552815096e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 3.0088707445362976e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 2.7633238267426803e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 1.1591565611445929e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245391,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0003142814002421443
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00016201615513788774
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00015351350033184004
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 0.00011545361183624997
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 8.47480602695593e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.075171438256226e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 3.206476059456584e-05
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 2.2950864413787442e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 7.056646414867057e-06
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245399,
+                        "top_features": [
+                            {
+                                "feature": "num__open",
+                                "value": 0.0003947790402435969
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0001660717310369279
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00013976197922535962
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00011526151599222108
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.00010217629224151005
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 7.905102363772226e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 6.884336513146553e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 6.00613706904741e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 3.2536822199509724e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245400,
+                        "top_features": [
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.0004503610738819555
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.00037037132144645624
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 0.00014903031310354068
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00014329141689568413
+                            },
+                            {
+                                "feature": "num__volume",
+                                "value": 0.00014141788061623666
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 0.00012926678377254237
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 6.0250828737509635e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 3.542130308399637e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 3.228953685711474e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    },
+                    {
+                        "sample_index": 245468,
+                        "top_features": [
+                            {
+                                "feature": "num__volume",
+                                "value": 0.0004439856990394276
+                            },
+                            {
+                                "feature": "num__open",
+                                "value": 0.00038901353064723596
+                            },
+                            {
+                                "feature": "num__taker_buy_base_asset_volume",
+                                "value": 0.00038645193549869907
+                            },
+                            {
+                                "feature": "num__taker_buy_quote_asset_volume",
+                                "value": 0.00012650602847584508
+                            },
+                            {
+                                "feature": "num__close",
+                                "value": 9.83863594277574e-05
+                            },
+                            {
+                                "feature": "num__quote_asset_volume",
+                                "value": 8.565407668179133e-05
+                            },
+                            {
+                                "feature": "num__number_of_trades",
+                                "value": 7.894818844735144e-05
+                            },
+                            {
+                                "feature": "num__high",
+                                "value": 7.875993941190041e-05
+                            },
+                            {
+                                "feature": "num__low",
+                                "value": 4.5684458417618825e-05
+                            },
+                            {
+                                "feature": "bin__ignore",
+                                "value": 0.0
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        "comparisons": {
+            "shap_vs_permutation": {
+                "spearman": 0.22424242424242422,
+                "top10_overlap": 1.0
+            },
+            "shap_vs_lime": {
+                "spearman": 0.7696969696969697,
+                "top10_overlap": 1.0
+            },
+            "permutation_vs_lime": {
+                "spearman": 0.5878787878787878,
+                "top10_overlap": 1.0
+            }
+        },
+        "ranking": [
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "xgb",
+                "method": "lime",
+                "stability": 0.9636363636363635,
+                "fidelity_drop": 0.00018325908095364512,
+                "agreement_mean": 0.6787878787878787,
+                "runtime": 2.205000877380371,
+                "speed_score": 0.31201239508469547,
+                "final_score": 0.5042956832171063
+            },
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "xgb",
+                "method": "shap",
+                "stability": 0.9030303030303028,
+                "fidelity_drop": 0.0005002993233113717,
+                "agreement_mean": 0.49696969696969695,
+                "runtime": 0.3639993667602539,
+                "speed_score": 0.733138170272895,
+                "final_score": 0.4889434672449939
+            },
+            {
+                "dataset": "finance_regression_return_h5_time",
+                "model": "xgb",
+                "method": "permutation",
+                "stability": 0.9999999999999999,
+                "fidelity_drop": 0.0004337719207547677,
+                "agreement_mean": 0.406060606060606,
+                "runtime": 1.09552001953125,
+                "speed_score": 0.4772085165875397,
+                "final_score": 0.4790847930431392
+            }
+        ]
+    }
+]

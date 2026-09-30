@@ -1,0 +1,21 @@
+The model predicted class '0'.
+
+The most influential variables for this decision were:
+ - num__quote_asset_volume (importance: 0.0149)
+ - num__taker_buy_base_asset_volume (importance: 0.0139)
+ - num__number_of_trades (importance: 0.0055)
+ - num__taker_buy_quote_asset_volume (importance: 0.0028)
+ - num__low (importance: 0.0027)
+
+Values of the most important features:
+ - quote_asset_volume: 2200783.929879
+ - taker_buy_base_asset_volume: 12.07094
+ - number_of_trades: 5618.0
+ - taker_buy_quote_asset_volume: 1107597.6923795
+ - low: 91710.5
+
+Model explanation reliability:
+- Explanations are moderately stable.
+- Important features moderately affect predictions.
+
+Comparison with other XAI methods:

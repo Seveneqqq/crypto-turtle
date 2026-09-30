@@ -1,0 +1,21 @@
+The model predicted class '0'.
+
+The most influential variables for this decision were:
+ - num__low (importance: 0.0064)
+ - num__volume (importance: 0.0054)
+ - num__close (importance: 0.0049)
+ - num__high (importance: 0.0038)
+ - num__open (importance: 0.0027)
+
+Values of the most important features:
+ - low: 91710.5
+ - volume: 23.98297
+ - close: 91747.99
+ - high: 91863.6
+ - open: 91851.21
+
+Model explanation reliability:
+- Explanations are unstable.
+- Important features strongly affect model predictions.
+
+Comparison with other XAI methods:
