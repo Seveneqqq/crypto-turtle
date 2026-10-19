@@ -1,0 +1,81 @@
+{
+  "protocol": "paired-xai-v2",
+  "files": {
+    "utils/preprocessing/pipeline_preprocessor.py": {
+      "original_sha256": "9d2ea3e704fd0a8e5d44b51f5c2c14d1c0ff961f7ade6cab8665c4751fe2ab90",
+      "package_sha256": "9d2ea3e704fd0a8e5d44b51f5c2c14d1c0ff961f7ade6cab8665c4751fe2ab90"
+    },
+    "utils/evaluation/feature_mapping.py": {
+      "original_sha256": "9de101edabccdd59f9c05bcafee5eb8abdd401cb52fa0a68cd15a97cbac973de",
+      "package_sha256": "9de101edabccdd59f9c05bcafee5eb8abdd401cb52fa0a68cd15a97cbac973de"
+    },
+    "utils/evaluation/xai_fidelity.py": {
+      "original_sha256": "e2d07da2576cf6c23666441c0cea1789187936c70957e172eba1b2abba9af7cf",
+      "package_sha256": "e2d07da2576cf6c23666441c0cea1789187936c70957e172eba1b2abba9af7cf"
+    },
+    "utils/explainers/output_contract.py": {
+      "original_sha256": null,
+      "package_sha256": "4a387aa069affe88a494741200f211e56f37773a435dfb742b037b1dc4307830"
+    },
+    "utils/explainers/shap_explainer.py": {
+      "original_sha256": "dba85dcfb09ddf22192be03bbe3633b3a7ab4f5d4be52c79db54e027cd42a0b6",
+      "package_sha256": "8f32701c95f757653f5ba8b4ba7afc70e9f758125c2734a0e64c394177199b47"
+    },
+    "utils/explainers/lime_explainer.py": {
+      "original_sha256": "dec46aba3818828f0e2f18402a148dbf717867e52902ea219c3a9090e9094767",
+      "package_sha256": "1198669b74e0acc871de167b0bb0a5b43e0cefd6d44c6af5036bc2d4edc7ace0"
+    },
+    "utils/explainers/permutation_explainer.py": {
+      "original_sha256": "c41a8ba41e5379ea13d743a1fb6fc024ae2c1210ef4cae357de3f1c17177cb45",
+      "package_sha256": "6efb7960dc89130935129500d1c324725290e5b8c534b84d83c07a7562ec6d56"
+    },
+    "utils/explainers/xai_factory.py": {
+      "original_sha256": "951f0788f77129b66751f62ffd1aa10fcba2249efbb953c98ef944c6464ee1e1",
+      "package_sha256": "0814df3d0dd22a4739ce0a8caac6405a27e05863ee692c8baba3a99c854b13ca"
+    },
+    "utils/evaluation/paired_evaluation.py": {
+      "original_sha256": null,
+      "package_sha256": "66f4cce82d9b7e6c0ff480d1e61e4de70745bada07285b0bd5257a7cff107f06"
+    },
+    "utils/evaluation/xai_stability.py": {
+      "original_sha256": "d95a16b67f9ec45528d7f42cf2ccdb10debdcbe92626e3a687bc8d384a26cdc6",
+      "package_sha256": "0a53e4a01b11827783c2305831fb2a81884782494ffdcaaa6f07d1b7d1fed5ec"
+    },
+    "utils/evaluation/xai_comparator.py": {
+      "original_sha256": "143701654de1d550f1fd23170a149e351cda24e22140867d0d03a68648c8c352",
+      "package_sha256": "e02ee8a792715cd77c48f36962ca7cc4597a4d2c102622f1e469a2e4360f2330"
+    },
+    "utils/evaluation/xai_local.py": {
+      "original_sha256": "fd46841713457bd2c86d729d836e118bf7f5c234596b6d54e942794483ebc60b",
+      "package_sha256": "b104f218b84b3db25bd9fd8ac5de8a4d361e9c1c97eebf5db689ae23a1673504"
+    },
+    "utils/evaluation/xai_debugger.py": {
+      "original_sha256": "42beea7200e2ab18e8f334ce8e59caa9d805bf783af0a0c89dd8327dee820aa4",
+      "package_sha256": "c489c7ae8e36ecdeaf3d08c7b78dbc4e2c45933420004a4c564ad587862a03e4"
+    },
+    "utils/evaluation/xai_summary.py": {
+      "original_sha256": "f2afd69b7ff4604c080172715c0d3c9fa4f4170bf2d93d6d2439c77c19c8736e",
+      "package_sha256": "308dd84c58669e3b001ea3dd75c262c3264f174042950815e8c470501721381d"
+    },
+    "utils/reporting/result_logger.py": {
+      "original_sha256": "d03bf75977128d68d7181d9cc8d68786800f92671d17fa45dfdc952084ba0679",
+      "package_sha256": "432882c48211cd0f3d7520335ccfe91f2ce56f84f8bfc0c22c364b291a585455"
+    },
+    "utils/experiments/experiment_pipeline.py": {
+      "original_sha256": "1a38713759c17e5b792db9acbc5cf6cb47afd2ac85b10de3af0685b2582a23a6",
+      "package_sha256": "c8311b29bbe64ebe0f62ddd63baedc2b4ebda8271b5a0a78fe603fde0b302256"
+    },
+    "test_procedure_fixes.py": {
+      "original_sha256": "d0ab69751efe3988ddfb5ab164795273568133f4823e6fa75053c70429a1580f",
+      "package_sha256": "d0ab69751efe3988ddfb5ab164795273568133f4823e6fa75053c70429a1580f"
+    },
+    "test_xai_stage2.py": {
+      "original_sha256": null,
+      "package_sha256": "874c35ea7cfde036e82ffd8de83847c1301949578a528c5fea3977c37dbd81d3"
+    },
+    "test_xai_stage2_integration.py": {
+      "original_sha256": null,
+      "package_sha256": "1eb92c015cb90a04dd1f6eceda8c3daa5add58d0b3a03e501b78049554c2f9b6"
+    }
+  }
+}

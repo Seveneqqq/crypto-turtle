@@ -1,84 +1,32 @@
-import shap
 import numpy as np
+import shap
+from utils.explainers.output_contract import OutputContract
 
-
-class ShapExplainer:
-
-    def __init__(self, pipeline):
+class ShapExplainer(OutputContract):
+    def __init__(self, pipeline, X_train, task='classification', class_index=None,
+                 random_state=42, background_size=50, permutations=3):
+        super().__init__(pipeline, task, class_index)
+        if background_size < 1 or permutations < 1:
+            raise ValueError('SHAP background size and permutation count must be positive')
         self.pipeline = pipeline
-        self.model = pipeline.named_steps["model"]
-        self.preprocessor = pipeline.named_steps["preprocessing"]
+        self.random_state = random_state
+        self.permutations = permutations
+        background = X_train.sample(min(background_size, len(X_train)), random_state=random_state)
+        self.background_indices = background.index.tolist()
+        self.background = self.transform(background)
+        self.feature_names = self.preprocessor.get_feature_names_out()
 
-    def explain(self, X_sample):
-
-        X_transformed = self.preprocessor.transform(X_sample)
-
-        if hasattr(X_transformed, "toarray"):
-            X_transformed = X_transformed.toarray()
-
-        X_transformed = np.asarray(X_transformed, dtype=np.float64)
-
-        # =========================
-        # TREE MODELS (RF, XGB itp.)
-        # =========================
-        if hasattr(self.model, "feature_importances_"):
-            explainer = shap.TreeExplainer(
-                self.model,
-                feature_perturbation="tree_path_dependent",
-                model_output="raw"
-            )
-
-            shap_values = explainer.shap_values(
-                X_transformed,
-                check_additivity=False
-            )
-
-            if isinstance(shap_values, list):
-                shap_values = shap_values[1]
-
-            elif hasattr(shap_values, "shape") and len(shap_values.shape) == 3:
-                shap_values = np.mean(np.abs(shap_values), axis=2) * np.sign(np.mean(shap_values, axis=2))
-
-            return shap_values
-
-        # =========================
-        # LINEAR MODELS (LogReg)
-        # =========================
-        if hasattr(self.model, "coef_"):
-            background = X_transformed[:min(100, X_transformed.shape[0])]
-
-            explainer = shap.LinearExplainer(
-                self.model,
-                background
-            )
-
-            shap_values = explainer.shap_values(X_transformed)
-
-            if isinstance(shap_values, list):
-                shap_values = np.mean(np.abs(np.stack(shap_values, axis=2)), axis=2)
-
-            elif len(shap_values.shape) == 3:
-                shap_values = np.mean(np.abs(shap_values), axis=2)
-
-            return shap_values
-
-        # =========================
-        # Fallback (rzadko)
-        # =========================
-
-        raise RuntimeError("Unsupported model type for SHAP in this implementation.")
+    def explain(self, X_sample, random_state=None):
+        seed = self.random_state if random_state is None else random_state
+        masker = shap.maskers.Independent(self.background, max_samples=len(self.background))
+        explainer = shap.PermutationExplainer(self.predict_output, masker,
+                                            feature_names=list(self.feature_names), seed=seed)
+        result = explainer(self.transform(X_sample),
+                           max_evals=(2*len(self.feature_names)+1)*self.permutations, silent=True)
+        self.last_base_values = np.asarray(result.base_values)
+        return np.asarray(result.values)
 
     def get_global_importance(self, shap_values):
-
-        feature_names = self.preprocessor.get_feature_names_out()
-
-        if len(shap_values.shape) == 1:
-            shap_values = shap_values.reshape(1, -1)
-
-        mean_importance = np.abs(shap_values).mean(axis=0)
-        sorted_idx = np.argsort(mean_importance)[::-1]
-
-        return {
-            feature_names[i]: float(mean_importance[i])
-            for i in sorted_idx
-        }
+        values = np.abs(np.atleast_2d(shap_values)).mean(axis=0)
+        return dict(sorted(zip(self.feature_names, map(float, values)),
+                           key=lambda pair: pair[1], reverse=True))

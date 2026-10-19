@@ -41,12 +41,10 @@ def setup_logger(
         "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
     )
 
-    # 📌 File handler
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
 
-    # 📌 Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)

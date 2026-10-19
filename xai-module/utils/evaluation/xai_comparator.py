@@ -18,20 +18,15 @@ class XaiComparator:
     @staticmethod
     def spearman(imp1, imp2):
 
-        df = pd.DataFrame({
-            "f": list(set(imp1) | set(imp2))
-        })
-
-        df["r1"] = df["f"].map(imp1).fillna(0)
-        df["r2"] = df["f"].map(imp2).fillna(0)
-
-        corr, _ = spearmanr(df["r1"], df["r2"])
-
-        return corr
+        from utils.evaluation.paired_evaluation import correlation
+        return correlation(imp1, imp2)
 
     @staticmethod
     def top_k_overlap(imp1, imp2, k=10):
 
+        k = min(k, len(imp1), len(imp2))
+        if k < 1:
+            return float("nan")
         top1 = set(
             sorted(imp1, key=imp1.get, reverse=True)[:k]
         )

@@ -18,6 +18,11 @@ class XaiSummary:
                     "model": model,
                     "method": method,
                     "stability": vals.get("stability"),
+                    "algorithm_randomness_spearman":vals.get("stability_details",{}).get("randomness_summary",{}).get("mean"),
+                    "algorithm_randomness_std":vals.get("stability_details",{}).get("randomness_summary",{}).get("std"),
+                    "algorithm_randomness_relative_l1":vals.get("stability_details",{}).get("randomness_relative_l1_summary",{}).get("mean"),
+                    "stability_std": vals.get("stability_details", {}).get("global_summary", {}).get("std"),
+                    "stability_valid_repeats": vals.get("stability_details", {}).get("global_summary", {}).get("valid_repeats"),
                     "runtime": vals.get("runtime"),
                     "fidelity_drop": vals.get("fidelity", {}).get("fidelity_drop")
                 })

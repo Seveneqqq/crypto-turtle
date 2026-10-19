@@ -23,12 +23,12 @@ import numpy as np
 
 @app.on_event("startup")
 def run_experiment_on_startup():
-    print("🚀 Starting all experiment pipelines...")
+    print("Starting all experiment pipelines...")
 
     for experiment_name, config in EXPERIMENTS.items():
         
         print("\n====================================")
-        print(f"🚀 Running experiment: {experiment_name}")
+        print(f"Running experiment: {experiment_name}")
         print("====================================")
     
         models = config.get("models")
@@ -44,17 +44,17 @@ def run_experiment_on_startup():
         try:
             results = pipeline.run()
 
-            print(f"\n✅ Finished experiment: {experiment_name}")
+            print(f"\nFinished experiment: {experiment_name}")
 
             for model_name, data in results.items():
                 print(f"\nModel: {model_name}")
                 print("Metrics:", data["metrics"])
 
         except Exception as e:
-            print(f"\n❌ Experiment failed: {experiment_name}")
+            print(f"\nExperiment failed: {experiment_name}")
             print(str(e))
 
-    print("\n🎉 All experiments finished.")
+    print("\nAll experiments finished.")
 
 
 

@@ -187,7 +187,6 @@ class XaiService:
             if not explainer_cls:
                 raise ValueError(f"Unknown explainer type: {explainer_type}")
 
-            # 🔥 WALIDACJA KOMPATYBILNOŚCI
             if explainer_type.lower() == "tree" and model_type == "lstm":
                 raise ValueError("TreeExplainer cannot be used with LSTM models")
 

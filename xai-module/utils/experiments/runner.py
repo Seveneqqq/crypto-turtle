@@ -1,4 +1,6 @@
 import numpy as np
+import hashlib
+import json
 from sklearn.pipeline import Pipeline
 
 from xgboost import XGBClassifier
@@ -26,6 +28,8 @@ class ExperimentRunner:
             split_type=self.config.get("split_type", "random"),
             test_size=self.config.get("test_size", 0.2),
             scaling=True,
+            random_state=self.config.get("split_seed", 42),
+            time_column=self.config.get("time_column"),
 
             # ===== POPRAWKA =====
             finance_horizon=self.config.get("finance_horizon", 1),
@@ -43,6 +47,10 @@ class ExperimentRunner:
             task=self.config["task"]
         )
 
+        if "random_state" in model.get_params():
+            model.set_params(random_state=self.config.get("model_seed", 42))
+        if "n_jobs" in model.get_params() and "n_jobs" in self.config:
+            model.set_params(n_jobs=self.config["n_jobs"])
         if self.config["task"] == "classification" and (
             isinstance(model, XGBClassifier) or self.model_name == "xgb"
         ):
@@ -86,9 +94,20 @@ class ExperimentRunner:
         else:
             metrics = evaluate_regression(y_test, y_pred)
 
-        print("📊 Metrics:", metrics)
+        print(" Metrics:", metrics)
 
         return {
+            "data_preparation": {
+                "chronology": preprocessor.chronology_,
+                "split_type": self.config.get("split_type", "random"),
+                "split_seed": self.config.get("split_seed", 42),
+                "model_seed": self.config.get("model_seed", 42),
+                "train_rows":len(X_train), "test_rows":len(X_test),
+                "split_metadata":getattr(preprocessor, "split_metadata_", {}),
+                "train_indices_sha256":hashlib.sha256(json.dumps(X_train.index.tolist(),default=str).encode()).hexdigest(),
+                "test_indices_sha256":hashlib.sha256(json.dumps(X_test.index.tolist(),default=str).encode()).hexdigest(),
+                "encoded_class_labels":preprocessor.label_encoder.classes_.tolist() if preprocessor.label_encoder is not None else None,
+                "fitted_model_parameters":model.get_params()},
             "pipeline": pipeline,
             "metrics": metrics,
             "X_test": X_test,

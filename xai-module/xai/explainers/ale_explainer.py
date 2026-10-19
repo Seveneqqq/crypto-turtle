@@ -64,12 +64,10 @@ class AleExplainer:
                 self.model = model
 
             def predict(self, X):
-                # jeśli klasyfikacja
                 if hasattr(self.model, "predict_proba"):
                     preds = self.model.predict_proba(X)[:, 1]
                     return preds.astype(float)
 
-                # fallback
                 preds = self.model.predict(X)
                 return np.array(preds, dtype=float)
 
@@ -98,7 +96,7 @@ class AleExplainer:
             for feat in features_to_compute:
                 ale_eff = ale(
                     X=df,
-                    model=wrapped_model,  # 🔥 obiekt z predict()
+                    model=wrapped_model,  
                     feature=[feat],
                     include_CI=False,
                     plot=False

@@ -2,11 +2,22 @@ import json
 import os
 from datetime import datetime
 import pandas as pd
+import math
+
+
+def json_safe(value):
+    if isinstance(value, dict):
+        return {k: json_safe(v) for k, v in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [json_safe(v) for v in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 class ResultLogger:
     def __init__(self, dataset_name: str):
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
 
         self.base_dir = f"results/experiments/{dataset_name}_{timestamp}"
         self.dataset_name = dataset_name
@@ -21,8 +32,9 @@ class ResultLogger:
 
     def save(self):
         json_path = f"{self.base_dir}/results.json"
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(self.results, f, indent=4, ensure_ascii=False)
+        with open(json_path + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(json_safe(self.results), f, indent=4, ensure_ascii=False, allow_nan=False)
+        os.replace(json_path + ".tmp", json_path)
 
         rows = []
 

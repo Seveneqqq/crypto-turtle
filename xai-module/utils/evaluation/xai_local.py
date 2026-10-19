@@ -19,6 +19,7 @@ class XaiLocal:
 
                 results.append({
                     "sample_index": int(X_local.index[i]),
+                    "output_metadata": explainer.output_metadata(),
                     "top_features": [
                         {"feature": f, "value": float(v)}
                         for f, v in pairs[:10]
@@ -27,7 +28,7 @@ class XaiLocal:
 
         elif method == "lime":
             for i in range(len(X_local)):
-                explanation = explainer.explain(X_local.iloc[i])
+                explanation = explainer.explain(X_local.iloc[i], random_state=explainer.random_state+i)
                 pairs = sorted(
                     explanation.items(),
                     key=lambda x: abs(x[1]),
@@ -36,6 +37,7 @@ class XaiLocal:
 
                 results.append({
                     "sample_index": int(X_local.index[i]),
+                    "output_metadata": explainer.output_metadata(),
                     "top_features": [
                         {"feature": f, "value": float(v)}
                         for f, v in pairs[:10]
@@ -45,7 +47,8 @@ class XaiLocal:
         elif method == "permutation":
             results.append({
                 "sample_index": None,
-                "top_features": [],
+                "output_metadata": explainer.output_metadata(),
+                    "top_features": [],
                 "note": "Permutation importance is global, not local."
             })
 

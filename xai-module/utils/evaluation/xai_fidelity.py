@@ -3,29 +3,10 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, mean_absolute_error, mean_squared_error
 
 
+from utils.evaluation.feature_mapping import transformed_to_raw
+
+
 class XaiFidelity:
-    @staticmethod
-    def _safe_feature_mapping(raw_feature_names, transformed_feature_names):
-        """
-        Mapowanie:
-        raw feature -> lista feature po preprocessingu
-        np. 'sex' -> ['cat__sex_F', 'cat__sex_M'] albo 'num__age'
-        """
-        mapping = {}
-
-        for raw_col in raw_feature_names:
-            matched = []
-            for tf in transformed_feature_names:
-                tf_clean = tf.lower()
-                raw_clean = raw_col.lower()
-
-                if raw_clean in tf_clean:
-                    matched.append(tf)
-
-            mapping[raw_col] = matched
-
-        return mapping
-
     @staticmethod
     def feature_removal_test(
         pipeline,
@@ -33,7 +14,8 @@ class XaiFidelity:
         y_test,
         importance,
         task="classification",
-        k=5
+        k=5,
+        feature_space="transformed"
     ):
         """
         Test fidelity:
@@ -46,26 +28,36 @@ class XaiFidelity:
         - perturbed_score
         - fidelity_drop
         """
+        if not isinstance(k, int) or k < 1:
+            raise ValueError("k must be a positive integer")
+        if not X_test.columns.is_unique:
+            raise ValueError("Masking requires unique input column names")
+        if feature_space == "raw":
+            mapping = {col: col for col in X_test.columns}
+        elif feature_space == "transformed":
+            mapping = transformed_to_raw(pipeline.named_steps["preprocessing"])
+        else:
+            raise ValueError("feature_space must be raw or transformed")
         top_features = list(importance.keys())[:k]
-
+        unknown = [feature for feature in top_features if feature not in mapping]
+        if unknown:
+            raise ValueError(f"Unmapped masking features: {unknown}")
+        selected_mapping = {feature: mapping[feature] for feature in top_features}
+        selected_columns = list(dict.fromkeys(selected_mapping.values()))
         X_modified = X_test.copy()
-
-        raw_columns = list(X_modified.columns)
-
-        for feature in top_features:
-            matched_raw_cols = [
-                col for col in raw_columns
-                if col.lower() in feature.lower() or feature.lower() in col.lower()
-            ]
-
-            for col in matched_raw_cols:
-                if pd.api.types.is_numeric_dtype(X_modified[col]):
-                    X_modified[col] = 0
-                else:
-                    if not X_modified[col].mode().empty:
-                        X_modified[col] = X_modified[col].mode()[0]
-                    else:
-                        X_modified[col] = "unknown"
+        modified_columns = []
+        changed_rows = {}
+        for col in selected_columns:
+            if pd.api.types.is_numeric_dtype(X_modified[col]):
+                X_modified[col] = 0
+            else:
+                mode = X_modified[col].mode()
+                X_modified[col] = mode.iloc[0] if not mode.empty else "unknown"
+            before, after = X_test[col], X_modified[col]
+            equal = before.eq(after).fillna(False) | (before.isna() & after.isna())
+            changed_rows[col] = int((~equal).sum())
+            if changed_rows[col]:
+                modified_columns.append(col)
 
         y_pred_base = pipeline.predict(X_test)
         y_pred_perturbed = pipeline.predict(X_modified)
@@ -83,5 +75,10 @@ class XaiFidelity:
             "baseline_score": float(baseline_score),
             "perturbed_score": float(perturbed_score),
             "fidelity_drop": float(fidelity_drop),
-            "top_k_used": top_features
+            "top_k_used": top_features,
+            "feature_space": feature_space,
+            "feature_to_column": selected_mapping,
+            "selected_columns": selected_columns,
+            "modified_columns": modified_columns,
+            "changed_rows_per_column": changed_rows
         }

@@ -24,10 +24,10 @@ class CounterfactualExplainer:
         instance: int = 0,
         target_class: int = 1,
         threshold: float = 0.5,
-        max_iter: int = 150,          # 🔥 zmniejszone
+        max_iter: int = 150,          
         step: float = 0.2,
         background_size: int = 200,
-        top_k: int = 6,              # 🔥 tylko top 6 feature
+        top_k: int = 6,              
         **kwargs
     ):
 
@@ -75,7 +75,7 @@ class CounterfactualExplainer:
 
             cf = flat_x0.copy()
 
-            # 🔥 wybór tylko top_k najbardziej odchylonych feature
+        
             feature_importance_proxy = np.abs(cf - np.mean(bg_flat, axis=0))
             important_idx = np.argsort(feature_importance_proxy)[::-1][:top_k]
 
@@ -153,7 +153,6 @@ class CounterfactualExplainer:
             f_min = np.min(bg, axis=0)
             f_max = np.max(bg, axis=0)
 
-            # 🔥 bez pandas w pętli
             def predict_fn(arr):
                 if hasattr(model, "predict_proba"):
                     return model.predict_proba(arr)[:, 1]
@@ -169,7 +168,6 @@ class CounterfactualExplainer:
 
             cf = x0.copy()
 
-            # 🔥 tylko top_k feature
             feature_importance_proxy = np.abs(cf - np.mean(bg, axis=0))
             important_idx = np.argsort(feature_importance_proxy)[::-1][:top_k]
 

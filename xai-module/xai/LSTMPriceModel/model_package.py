@@ -51,48 +51,39 @@ class FeatureEngineering:
         """Generate technical features from OHLCV data"""
         df = df.copy()
 
-        # Returns
         for window in [1, 5, 15, 60]:
             df[f'return_{window}'] = np.log(df['close'] / df['close'].shift(window))
 
-        # SMA ratios
         for window in [7, 14, 30]:
             sma = df['close'].rolling(window).mean()
             df[f'close_sma_{window}'] = df['close'] / sma
 
-        # EMA and MACD
         ema_12 = df['close'].ewm(span=12).mean()
         ema_26 = df['close'].ewm(span=26).mean()
         df['macd'] = ema_12 - ema_26
         df['macd_signal'] = df['macd'].ewm(span=9).mean()
         df['macd_diff'] = df['macd'] - df['macd_signal']
 
-        # RSI
         delta = df['close'].diff()
         gain = delta.where(delta > 0, 0).rolling(14).mean()
         loss = -delta.where(delta < 0, 0).rolling(14).mean()
         rs = gain / loss
         df['rsi'] = 100 - (100 / (1 + rs))
 
-        # Volatility
         for window in [7, 14, 30]:
             df[f'volatility_{window}'] = df['return_1'].rolling(window).std()
 
-        # Volume
         volume_sma = df['volume'].rolling(20).mean()
         df['relative_volume'] = df['volume'] / volume_sma
 
-        # Bollinger Bands
         bb_middle = df['close'].rolling(20).mean()
         bb_std = df['close'].rolling(20).std()
         bb_upper = bb_middle + 2 * bb_std
         bb_lower = bb_middle - 2 * bb_std
         df['bb_position'] = (df['close'] - bb_lower) / (bb_upper - bb_lower)
 
-        # High-Low range
         df['hl_range'] = (df['high'] - df['low']) / df['close']
 
-        # Time features
         dt = pd.to_datetime(df['open_time'])
         hour = dt.dt.hour
         dow = dt.dt.dayofweek
@@ -129,22 +120,18 @@ class ModelPredictor:
         """
         self.model_dir = model_dir
 
-        # Device detection with proper GPU support
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
             torch.backends.cudnn.benchmark = True
         else:
             self.device = torch.device('cpu')
 
-        # Load config
         config_path = os.path.join(model_dir, 'model_config.pkl')
         self.config = joblib.load(config_path)
 
-        # Load scalers
         self.feature_scaler = joblib.load(os.path.join(model_dir, 'feature_scaler.pkl'))
         self.price_scaler = joblib.load(os.path.join(model_dir, 'price_scaler.pkl'))
 
-        # Load model
         self.model = LSTMPriceModel(
             len(self.config['features']),
             self.config['hidden_size'],
@@ -159,7 +146,6 @@ class ModelPredictor:
         ))
         self.model.eval()
 
-        # Disable gradient computation
         for param in self.model.parameters():
             param.requires_grad = False
 
@@ -180,49 +166,39 @@ class ModelPredictor:
         use_precomputed = self.config.get('use_precomputed_features', False)
         use_log_prices = self.config.get('use_log_prices', True)
 
-        # Validate input
         if len(df) < lookback:
             raise ValueError(f"Need at least {lookback} rows, got {len(df)}")
 
-        # Prepare features
         if not use_precomputed:
             df = FeatureEngineering.prepare_features(df)
 
-        # Take last lookback rows
         df = df.tail(lookback + horizon).copy()
         df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
         if len(df) < lookback:
             raise ValueError(f"Insufficient data after cleaning")
 
-        # Scale features
         df[features] = self.feature_scaler.transform(df[features])
 
-        # Current price (before scaling)
         current_price = df['close'].iloc[-1]
 
-        # Scale price
         if use_log_prices:
             df['close'] = np.log(df['close'])
         df['close'] = self.price_scaler.transform(df['close'].values.reshape(-1, 1)).flatten()
 
-        # Create sequence
         X = df[features].tail(lookback).values.astype(np.float32)
         X = X.reshape(1, lookback, len(features))
 
-        # Predict
         with torch.no_grad():
             X_tensor = torch.FloatTensor(X).to(self.device)
             pred_scaled = self.model(X_tensor).squeeze().cpu().numpy()
 
-        # Denormalize
         if use_log_prices:
             pred_log = self.price_scaler.inverse_transform([[pred_scaled]])[0][0]
             predicted_price = np.exp(pred_log)
         else:
             predicted_price = self.price_scaler.inverse_transform([[pred_scaled]])[0][0]
 
-        # Calculate change
         price_change = predicted_price - current_price
         price_change_pct = (price_change / current_price) * 100
 
@@ -260,24 +236,19 @@ class ModelPredictor:
         if len(df) < lookback + horizon:
             raise ValueError(f"Need at least {lookback + horizon} rows")
 
-        # Prepare features
         if not use_precomputed:
             df = FeatureEngineering.prepare_features(df)
 
         df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
-        # Store original prices
         original_prices = df['close'].copy()
 
-        # Scale features
         df[features] = self.feature_scaler.transform(df[features])
 
-        # Scale prices
         if use_log_prices:
             df['close'] = np.log(df['close'])
         df['close'] = self.price_scaler.transform(df['close'].values.reshape(-1, 1)).flatten()
 
-        # Create all sequences at once
         data_array = df[features].values.astype(np.float32)
         prices = df['close'].values.astype(np.float32)
 
@@ -289,7 +260,6 @@ class ModelPredictor:
             X[i] = data_array[i:i + lookback]
             current_prices_scaled[i] = prices[i + lookback - 1]
 
-        # Batch predictions
         predictions_scaled = []
 
         with torch.no_grad():
@@ -297,7 +267,6 @@ class ModelPredictor:
                 batch_end = min(i + batch_size, len(X))
                 X_batch = torch.FloatTensor(X[i:batch_end])
 
-                # Move to device
                 X_batch = X_batch.to(self.device)
 
                 batch_pred = self.model(X_batch).squeeze().cpu().numpy()
@@ -309,7 +278,6 @@ class ModelPredictor:
 
         predictions_scaled = np.array(predictions_scaled)
 
-        # Denormalize predictions
         if use_log_prices:
             pred_log = self.price_scaler.inverse_transform(predictions_scaled.reshape(-1, 1)).flatten()
             predicted_prices = np.exp(pred_log)
@@ -319,7 +287,6 @@ class ModelPredictor:
             predicted_prices = self.price_scaler.inverse_transform(predictions_scaled.reshape(-1, 1)).flatten()
             current_prices_real = self.price_scaler.inverse_transform(current_prices_scaled.reshape(-1, 1)).flatten()
 
-        # Build results
         results = []
         for i in range(len(predictions_scaled)):
             current_price = current_prices_real[i]
@@ -327,7 +294,6 @@ class ModelPredictor:
             price_change = predicted_price - current_price
             price_change_pct = (price_change / current_price) * 100
 
-            # Get timestamp from original dataframe
             timestamp_idx = i + lookback - 1
             if 'open_time' in df.columns:
                 timestamp = df['open_time'].iloc[timestamp_idx]
@@ -370,7 +336,6 @@ class ModelPredictor:
         }
 
 
-# Convenience function for quick predictions
 def predict_price(model_dir, df, mode='streaming'):
     """
     Quick prediction function
@@ -408,10 +373,8 @@ if __name__ == "__main__":
     model_dir = sys.argv[1]
     batch_mode = '--batch' in sys.argv
 
-    # Load predictor
     predictor = ModelPredictor(model_dir)
 
-    # Show model info
     print("\n" + "=" * 70)
     print("MODEL INFO")
     print("=" * 70)
@@ -419,7 +382,6 @@ if __name__ == "__main__":
     for key, value in info.items():
         print(f"  {key:20s}: {value}")
 
-    # Test prediction if CSV provided
     if len(sys.argv) >= 3 and not sys.argv[2].startswith('--'):
         csv_file = sys.argv[2]
         print("\n" + "=" * 70)
@@ -445,7 +407,6 @@ if __name__ == "__main__":
                       f"Predicted: ${result['predicted_price']:,.2f} "
                       f"({result['price_change_pct']:+.2f}%) {result['direction']}")
 
-            # Calculate accuracy
             correct = sum(1 for r in results if (r['direction'] == 'UP' and r['price_change'] > 0) or
                          (r['direction'] == 'DOWN' and r['price_change'] < 0))
             accuracy = (correct / len(results)) * 100

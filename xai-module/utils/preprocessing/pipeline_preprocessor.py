@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.model_selection import train_test_split
 
@@ -15,7 +17,8 @@ class GenericPreprocessor:
         random_state: int = 42,
         scaling: bool = True,
         finance_horizon: int = 1,           
-        finance_target_type: str = "return" 
+        finance_target_type: str = "return",
+        time_column=None 
     ):
         self.target = target
         self.split_type = split_type
@@ -25,12 +28,25 @@ class GenericPreprocessor:
         self.label_encoder = None
         self.finance_horizon = finance_horizon
         self.finance_target_type = finance_target_type
+        self.time_column = time_column
 
     # =============================
     # MAIN
     # =============================
     def prepare(self, df: pd.DataFrame):
 
+        self.chronology_ = "random_split" if self.split_type == "random" else "ordered_rows_without_time_axis"
+        time_column = self.time_column
+        if self.split_type == "time" and self.target == "OFFENSE_CODE_GROUP" and time_column is None:
+            time_column = "OCCURRED_ON_DATE"
+        if self.split_type == "time" and time_column:
+            times = pd.to_datetime(df[time_column], errors="raise")
+            if times.isna().any():
+                raise ValueError("Missing timestamps in chronological split")
+            df = df.assign(**{time_column:times}).sort_values(time_column, kind="stable")
+            self.chronology_ = f"ascending:{time_column}"
+        if self.target in ["target", "target_direction"]:
+            self.chronology_ = "ascending:timestamp_or_datetime_index"
         df = self._clean(df)
 
         df = self._feature_engineering(df)
@@ -40,6 +56,7 @@ class GenericPreprocessor:
                 f"Target column '{self.target}' not found in dataframe columns: {list(df.columns)[:30]}..."
             )
 
+        df = df.dropna(subset=[self.target])
         X = df.drop(columns=[self.target])
         y = df[self.target]
 
@@ -54,7 +71,7 @@ class GenericPreprocessor:
 
             if (~mask).any():
                 dropped = y_test[~mask].unique()
-                print(f"⚠️ Dropping {len(y_test[~mask])} test rows with unseen classes: {dropped}")
+                print(f" Dropping {len(y_test[~mask])} test rows with unseen classes: {dropped}")
 
             X_test = X_test.loc[mask]
             y_test = y_test.loc[mask]
@@ -73,17 +90,12 @@ class GenericPreprocessor:
     # =============================
     def _clean(self, df: pd.DataFrame) -> pd.DataFrame:
 
-        df = df.drop_duplicates()
-        df = df.dropna(axis=1, how="all")
-        df = df.dropna(axis=0, how="all")
-
-        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
-        if len(numeric_cols) > 0:
-            df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
-
+        df = df.copy()
+        if self.target not in ["target", "target_direction"]:
+            df = df.drop_duplicates().dropna(axis=0, how="all")
         if self.target == "Diabetes_012" and self.target in df.columns:
-            df[self.target] = df[self.target].apply(lambda x: 1 if x > 0 else 0)
-
+            df = df.dropna(subset=[self.target])
+            df[self.target] = (df[self.target] > 0).astype(int)
         return df
 
     # =============================
@@ -115,26 +127,43 @@ class GenericPreprocessor:
                 )
         
             h = int(self.finance_horizon)
-        
-            if self.target == "target_direction" or self.finance_target_type == "direction":
-                df["target_direction"] = (
-                    df["close"].shift(-h) > df["close"]
-                ).astype(int)
-        
-                df = df.dropna(subset=["target_direction"])
-        
-            elif self.finance_target_type == "future_close":
-                df["target"] = df["close"].shift(-h)
-                df = df.dropna(subset=["target"])
-        
+            if h < 1 or h != self.finance_horizon:
+                raise ValueError("finance_horizon must be a positive integer")
+            if self.split_type != "time":
+                raise ValueError("Financial targets require a chronological split")
+            if "timestamp" in df.columns:
+                times = pd.to_datetime(df["timestamp"], errors="raise")
+                if times.isna().any() or times.duplicated().any():
+                    raise ValueError("Finance timestamps must be present and unique")
+                df = df.assign(timestamp=times).sort_values("timestamp", kind="stable")
+            elif not isinstance(df.index, pd.DatetimeIndex):
+                raise ValueError("Finance data require timestamp or a DatetimeIndex")
             else:
-                df["target"] = np.log(df["close"].shift(-h) / df["close"])
-                df = df.dropna(subset=["target"])
+                if df.index.hasnans or df.index.has_duplicates:
+                    raise ValueError("Finance time index must be present and unique")
+                df = df.sort_index()
+            current = pd.to_numeric(df["close"], errors="raise")
+            future = current.shift(-h)
+            valid = np.isfinite(current) & np.isfinite(future)
+            if self.target == "target_direction" or self.finance_target_type == "direction":
+                labels = (future > current).astype(float).where(valid)
+            elif self.finance_target_type == "future_close":
+                labels = future.where(valid)
+            elif self.finance_target_type == "return":
+                valid &= (current > 0) & (future > 0)
+                labels = np.log(future.where(valid) / current.where(valid))
+            else:
+                raise ValueError("Unknown finance_target_type")
+            df[self.target] = labels
+            df = df.loc[valid].copy()
 
         datetime_cols = []
         for col in df.columns:
             if "date" in col.lower() or "time" in col.lower():
-                converted = pd.to_datetime(df[col], errors="coerce")
+                if col == "close_time" and pd.api.types.is_numeric_dtype(df[col]):
+                    converted = pd.to_datetime(df[col], unit="ms", errors="coerce")
+                else:
+                    converted = pd.to_datetime(df[col], errors="coerce")
                 if converted.notna().sum() > 0:
                     df[col] = converted
                     df[f"{col}_year"] = df[col].dt.year
@@ -163,10 +192,16 @@ class GenericPreprocessor:
 
         elif self.split_type == "time":
             split_index = int(len(X) * (1 - self.test_size))
+            gap = int(self.finance_horizon) if self.target in ["target", "target_direction"] else 0
+            train_end = split_index - gap
+            if train_end < 1 or split_index >= len(X):
+                raise ValueError("Not enough observations for train/test split and horizon gap")
+            self.split_metadata_ = {"gap_rows": gap, "train_rows": train_end,
+                                    "test_rows": len(X) - split_index}
             return (
-                X.iloc[:split_index],
+                X.iloc[:train_end],
                 X.iloc[split_index:],
-                y.iloc[:split_index],
+                y.iloc[:train_end],
                 y.iloc[split_index:]
             )
 
@@ -178,7 +213,7 @@ class GenericPreprocessor:
     # =============================
     def _build_transformer(self, X: pd.DataFrame):
 
-        numeric_cols = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
+        numeric_cols = X.select_dtypes(include=["number"]).columns.tolist()
         categorical_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
 
         high_cardinality_cols = [
@@ -205,8 +240,11 @@ class GenericPreprocessor:
 
         transformers = []
 
-        if self.scaling and len(continuous_cols) > 0:
-            transformers.append(("num", StandardScaler(), continuous_cols))
+        if continuous_cols:
+            steps = [("imputation", SimpleImputer(strategy="median", keep_empty_features=True))]
+            if self.scaling:
+                steps.append(("scaling", StandardScaler()))
+            transformers.append(("num", Pipeline(steps), continuous_cols))
 
         if len(categorical_cols) > 0:
             transformers.append((
@@ -216,7 +254,7 @@ class GenericPreprocessor:
             ))
 
         if len(binary_cols) > 0:
-            transformers.append(("bin", "passthrough", binary_cols))
+            transformers.append(("bin", SimpleImputer(strategy="median", keep_empty_features=True), binary_cols))
 
         transformer = ColumnTransformer(
             transformers=transformers,
